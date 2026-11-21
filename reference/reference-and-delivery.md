@@ -1,0 +1,46 @@
+> Detailed production guidance: load only for the current task. The SKILL.md entrypoint and current user/project instructions take precedence. Section numbers below refer to this production manual; use the entrypoint guide table to locate a different topic. Do not assume any installed tool, private library, universal approval or specific narration provider.
+
+## 13. Reference-video protocol (if the user attaches references, use them)
+
+Always ask once: *«حط ٣ فيديوهات أو صور تعجبك في «إلهام»، أو الصق لي رابطها»*. Files dropped in the chat or in `إلهام/` are copied into the project's `assets/refs/`. A pasted link (Instagram, TikTok, YouTube) is downloaded with yt-dlp into `إلهام/` for study only (`python -m yt_dlp -o "<إلهام>/%(title).60s.%(ext)s" "<url>"`; install `yt-dlp[curl-cffi]` with the user's OK; YouTube may need `--js-runtimes node`). Never reuse its footage, music or sound in a delivery. Write what you learn into TASTE.md and the general rules into `user-taste.md`. **When the user gives a reference without saying what they like in it (1.7.1), never guess:** ask in one line before it shapes a plan, and wait: «وش يعجبك في هذا المرجع بالضبط؟ الشكل والألوان، ولا الحركة، ولا طريقة البداية، ولا تبي فيديو مثله كامل بموضوعك؟» Run `python <skill>/scripts/analyze_ref.py ref.mp4 [--dur 15] [--frames 3] [--stems]` (Windows `py <skill>\scripts\analyze_ref.py …`; on a Mac after the PATH line of `reference/mac.md`) — analyse ≤ 15 s per pass; for longer references run several `--start` windows on the important parts:
+1. **Picture:** `info.txt` (size, fps, duration); timestamped contact sheets (4 fps); **every frame of the first 3 s** (`frames/`, `strip_hook.jpg`) — the hook is where top designers hide the most technique, study it frame by frame (how each word enters, smear frames, overshoot, particles, transitions); `cuts.txt` (scene cuts); full-res stills of key frames.
+2. **Sound:** original-mix spectrogram/waveform and onset candidates; short visual-event crops; optional available CoNeTTE captions/PANNs clip tags, CLAP candidate ranking (§0f); VO word timing. Demucs only optional diagnostics, never a guaranteed SFX isolation or gain-ratio measurement.
+3. **Breakdown:** format & grade · type system (fonts, weights, hex colors, sizes, positions/safe area) · per-shot timeline (t, visual, motion, easing, transition) · recurring devices · SFX map (t → sound type → length → syncs to → level) · cut rhythm (avg shot length, BPM) · which pipeline (A/B/C, §2c) it was made with.
+4. Turn it into a recipe (format of §14), confirm with the user, then build. After v1, compare your contact sheets + onset list side by side with the reference's and list the gaps — that drives v2.
+   **The confirmation (1.7.1)** says, in short lines, what you carry from the reference, one line per device (the hook, the type, the transitions, what moves, the sound), and anything you leave out, with why. Nothing is dropped silently. A device this skill cannot make (a presenter who talks, footage the user does not have) is said with what you offer instead, never swapped for a card of words. Two cases are said in the same message, before anything is built:
+   - **Their own narration, much longer than the reference** (longer by more than 3 s and 10%: the reference's length from `info.txt`, the narration's from `ffprobe` or its `.words.json`). Say the two lengths and ask, with their numbers: «تعليقك 75 ثانية، والمرجع 35 ثانية. عندك طريقين، وكلامك يبقى مثل ما هو في الاثنين: 1. أخليه كامل، وأمسك إيقاع المرجع على طول الفيديو: مشاهد أكثر، مو مشاهد أطول. 2. أقسمه جزئين، كل جزء فيديو لحاله بطول المرجع تقريبًا. أيهم تبي؟» (the parts: the narration's length over about the reference's, two at least). **Never tell them to shorten their text, to cut sentences or to speed up:** both choices keep their words. Write the answer in TASTE.md. Pauses are cut as `voice_edit.py tighten` cuts them, never by speeding the voice.
+   - **A character who talks.** Nothing in this skill moves lips to a voice. When the reference's presenter talks to the camera, or the user sends a clip of a character or a person to carry the narration: «شخصيتك ما راح تنطق عندي: مزامنة الشفايف خارج المهارة. لو تبيها تتكلم، جيب لقطتها جاهزة وهي تتكلم بصوتها من الأداة اللي سويت فيها الشخصية، وأحطها مثل ما هي. ولقطتك الحالية بتطلع كشخصية في القصة، والتعليق صوت راوي.» A clip that arrives already talking, with its own voice, is used as it is. **A silent clip is never staged as the one speaking:** it waits, looks, reacts; no line is timed to its mouth, and it is not held through a sentence as if it said it.
+
+## 14. Reverse-engineered reference recipes (build these without seeing the videos)
+
+Four ready recipes built from analysed top-performing videos — A premium talking-head caption reel (9:16), B cinematic storyteller documentary (16:9), C SaaS launch Slack-style, D brand-agency kinetic promo — plus the shared taste behind them. Open `<skill>/reference/recipes.md` when the user's video matches one of them or has no reference, and use its format for your own recipes (§13).
+
+## 15. QA checklist before delivery
+
+- [ ] Plan (design.html) approved, preview approved (logged in PROGRESS.md → Approvals)
+- [ ] Hook lands in ≤ 3 s; CTA visible ≥ 2 s
+- [ ] VO is the approved final narration (the user's file or approved Eleven v4 takes, never v3); word/transcript diff vs the approved script is clean (or differences approved); no audio tag spoken aloud; chunk seams inaudible and loudness-matched
+- [ ] Captions match VO, no typos, inside safe zones, contrast ≥ 4.5:1
+- [ ] SFX synced (±1 frame), short and reference-matched (no stray whooshes/risers), clear between words and ducked under them, no hit on a word's first 50 ms, low sounds audible on a phone speaker, source audio muted when requested, no unwanted tails, VO intelligible over any permitted music, −14 LUFS with a voice (with no voice: nothing over −22 LUFS, the strongest effect at −24, no integrated target, `reference/film-sound.md` rule 8), every sound a real recording of the thing shown and no static floor (sound v2) / true peak under −1 dBTP (`scripts/sound_mix.py`, or gain + limiter, or a `loudnorm` pass whose `normalization_type` isn't `dynamic`), no noise lifted in the pauses, `scripts/check_mix.py` passed on the rendered video
+- [ ] Pace (`reference/pace.md`): `scripts/check_pace.py` passed on the rendered video (no FAIL; every WARN that stands has its reason in `TASTE.md`): the first word by 0.1 s or motion by 0.3 s, 1.9–2.4 words/s, true silence ≤ 10%, ≥ 4% of the screen moving, dead seconds within the limit
+- [ ] Frame 0 works as the thumbnail; the cover reads at profile-grid size (`reference/hooks.md` §3)
+- [ ] Every caption word passes the readability pass (§12) on its real background
+- [ ] Every feedback point from this round is fixed and written into `TASTE.md`; TASTE.md is complete enough for a new chat to continue in the same style (§11 checklist filled)
+- [ ] No halos on cutouts, no flicker, no dropped frames; `ffprobe` duration/fps/resolution correct
+- [ ] H.264 yuv420p, AAC 48 kHz, faststart (`-movflags +faststart`)
+- [ ] Contact sheets checked over the full duration (§2b), no framing/overlap issues left
+- [ ] manifest.json licenses complete (no `reference-only` asset in the final without user OK); LOG.md updated; final saved as new version
+- [ ] Font licences saved next to the fonts in `assets/fonts/` and listed in the credits
+- [ ] Final render log saved in `renders/logs/` and linked in LOG.md; TASTE.md, design.html, PROGRESS.md and manifest.json are up to date
+- [ ] No API key values in any log, manifest, script or rendered credit
+- [ ] Vertical/other aspect versions are native re-layouts (not crop/letterbox) and checked with contact sheets
+- [ ] PROGRESS.md marked `Phase: DONE` with final file path, specs and credits
+- [ ] Offer cleanup: move `cache/` (previews, logs, intermediates, stems) to the OS trash/Recycle Bin — never permanently delete; keep src, assets, renders
+
+## 16. Visual asset hunting with the Playwright MCP (browse any site, grab assets yourself)
+
+Whenever the plan needs an image, texture, footage, icon, mockup or style reference that the API MCPs don't cover: **find it yourself, don't ask the user to search.** Open `<skill>/reference/asset-hunting.md` for the loop (brief → search visually with the Playwright MCP → open candidates → download full-res → verify → contact sheet for approval → log licence in `manifest.json`) and the licence rules (Pinterest/Behance/Dribbble = `reference-only` unless the source licence allows use).
+
+
+### Reference-helper output ownership
+`analyze_ref.py` refreshes its numbered frame files, numbered sheets, hook strip and extracted audio/spectrogram on each run. Inputs must live outside that analysis directory. Silent references explicitly skip audio/spectrogram/stems. Check `analysis.json` for what this run produced; existing optional stems from older runs are not current results. Actual FFmpeg/probe failures are reported instead of a false Done. Sheets contain at most 30 frames. Pillow gives labels; the FFmpeg fallback explicitly warns that labels are unavailable. ImageMagick is not required by this Python helper.
