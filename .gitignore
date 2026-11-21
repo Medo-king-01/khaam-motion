@@ -1,0 +1,8 @@
+# Local dependencies, downloaded third-party tools and Python bytecode
+.cache/
+node_modules/
+.venv/
+__pycache__/
+*.py[cod]
+# Generated personal download archive
+khaam-motion-personal.zip

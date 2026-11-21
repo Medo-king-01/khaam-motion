@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import * as THREE from 'three';
+import { createFrame, createFx } from 'pixelfx';
+import * as frost from 'pixelfx/fx/ice/frost-nova';
+import { Physics } from '@react-three/rapier';
+import { Bloom, EffectComposer } from '@react-three/postprocessing';
+import RAPIER from '@dimforge/rapier3d-compat';
+
+const geometry = new THREE.BoxGeometry(1, 1, 1);
+assert.ok(geometry.getAttribute('position').count > 0);
+const frame = createFrame(32, 32);
+const fx = createFx(frost, { x: 16, y: 16, seed: 1 });
+fx.update(1 / 60);
+fx.draw(frame, 'back');
+assert.ok(Physics && Bloom && EffectComposer);
+await RAPIER.init();
+const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
+const body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(0, 2, 0));
+world.createCollider(RAPIER.ColliderDesc.ball(0.5), body);
+for (let i = 0; i < 60; i++) world.step();
+assert.ok(body.translation().y < 2, 'gravity should move the rigid body');
+world.free();
+console.log(`Three.js r${THREE.REVISION}: geometry OK; PixelFX: update/draw OK; Rapier: physics step OK; postprocessing: imports OK.`);
+geometry.dispose();
