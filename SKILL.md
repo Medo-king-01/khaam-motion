@@ -13,6 +13,12 @@ Act as director, motion designer, editor and sound designer. Read this short ent
 
 For every host, first read `reference/agent-compatibility.md`. Its capability checks and setup instructions override Claude-specific assumptions, model and menu directions below. Use the original workflow only where the current host actually supports it.
 
+## Integrated capabilities (use when relevant)
+- For Remotion starter templates, framework/docs/examples/package refs, use `reference/remotion.md`, `reference/remotion-templates.md`, `reference/remotion-capabilities.md`, `reference/remotion-docs/`, `reference/remotion-examples/`, `reference/remotion-package-refs/` and `templates/remotion/`; respect Remotion License/company-license boundaries.
+- For anything2explainer (topic→narrated explainer Remotion pipeline, private-use snapshot), use `reference/anything2explainer.md` and `integrations/anything2explainer/`; respect PolyForm NC 1.0.0 and SIL OFL fonts.
+- For motion-canvas, html-video, helios, awesome-canvas, mojs, gsap, particles.js, three.js, and tsparticles, use `reference/canvas-motion-integrations.md` and `integrations/`; preserve upstream licenses (GSAP Standard License is not MIT/Apache).
+- For icon/brand SVG assets (simple-icons, lucide, tabler-icons), use `reference/icon-asset-integrations.md` and `integrations/`; preserve licenses and respect brand trademark/context rules.
+
 ## 0. First run and language
 - **When onboarding runs:** the user says «ابدأ» / «ثبّت المهارة» / start / install, attaches this skill's folder or ZIP, or has no workspace yet. Follow the protocol at the end of `START-HERE.md`:
   1. Detect the host.
