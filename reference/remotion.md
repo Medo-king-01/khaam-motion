@@ -38,3 +38,7 @@ npx remotion browser ensure
 - Render long films in chunks with a fresh browser.
 - Check memory and other renders before a long job.
 - Preview stills first (`npx remotion still`), then the full render.
+
+## Ready-made Remotion templates
+
+For common Remotion patterns (overlay, animated code snippets, TikTok-style captions), see `reference/remotion-templates.md`. It covers the four repos requested by users, license caveats (Remotion License), vendored private-use starters in `templates/remotion/`, and the fetch script: `python scripts/fetch_remotion_templates.py`. For a broader capability map (core APIs/packages, 3D, captions, data-driven, rendering), see `reference/remotion-capabilities.md`.
