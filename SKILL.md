@@ -18,6 +18,7 @@ For every host, first read `reference/agent-compatibility.md`. Its capability ch
 - For anything2explainer (topic→narrated explainer Remotion pipeline, private-use snapshot), use `reference/anything2explainer.md` and `integrations/anything2explainer/`; respect PolyForm NC 1.0.0 and SIL OFL fonts.
 - For motion-canvas, html-video, helios, awesome-canvas, mojs, gsap, particles.js, three.js, and tsparticles, use `reference/canvas-motion-integrations.md` and `integrations/`; preserve upstream licenses (GSAP Standard License is not MIT/Apache).
 - For icon/brand SVG assets (simple-icons, lucide, tabler-icons), use `reference/icon-asset-integrations.md` and `integrations/`; preserve licenses and respect brand trademark/context rules.
+- For Lottie/AE JSON animation playback (lottie-web) and Lottie resource notes, use `reference/lottie-integrations.md` and `integrations/lottie-web/`; preserve licenses and verify rights of embedded Lottie animation assets.
 
 ## 0. First run and language
 - **When onboarding runs:** the user says «ابدأ» / «ثبّت المهارة» / start / install, attaches this skill's folder or ZIP, or has no workspace yet. Follow the protocol at the end of `START-HERE.md`:
@@ -276,6 +277,7 @@ Production rules behind the gates:
 | `reference/anything2explainer.md` | anything2explainer snapshot (private use): topic→narrated Remotion explainer pipeline, QC/motion scripts, template; PolyForm NC license |
 | `reference/canvas-motion-integrations.md` | motion-canvas, html-video, helios, awesome-canvas, mojs, gsap, particles.js, three.js, tsparticles snapshots (private use): capabilities, locations, licenses, cautions |
 | `reference/icon-asset-integrations.md` | simple-icons, lucide, tabler-icons SVG asset snapshots (private use): brand/UI icon selection, licenses, trademark cautions |
+| `reference/lottie-integrations.md` | lottie-web snapshot (private use) for AE/Lottie JSON playback; includes external awesome-lottie reference note (not vendored: no clear license) |
 | `reference/portability.md` | First setup, path/config resolution, fresh machines and OS differences |
 | `reference/mac.md` | **A Mac (1.7.1):** the tools with no Homebrew and no password (`scripts/mac_tools.sh`), Apple's install window, the privacy window and the way back, a folder instead of a ZIP, the hidden folder |
 | `reference/setup-and-integrations.md` | Prerequisites, optional integrations, keys and browser/tool setup |
