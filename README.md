@@ -19,6 +19,7 @@
 - **مرة وحدة وكاملة:** توافق على الخطة، وأول فيديو يوصلك فيه الحركة والمؤثرات والصوت مع بعض.
 - **الهوك أولاً:** أول ٣ ثواني تنبني على هوك مدروس (يقترح ٣)، والحركة تخدمه.
 - **محرك HyperFrames** للحركة والكابشن، وRemotion وقت الـ3D، وكل أداة لشغلتها.
+- **قوالب Remotion مدمجة (استخدام خاص):** overlay، وcode-hike، وtiktok-captions جاهزة داخل `templates/remotion/` مع سكربت نسخ `scripts/use_remotion_template.py`، وخريطة قدرات Remotion في `reference/remotion-capabilities.md` (مع مراعاة Remotion License).
 - **نصوص عربية صح:** الحروف ما تتكسر، والاتجاه من اليمين، وخطوط عربية مجربة مع فهرس ورخص (`reference/arabic-typography.md`، `reference/arabic-fonts.md`).
 - **ستايلك أنت:** يبني لك ستايل من مراجعك ويحفظه. وفيه 9 أمثلة للإلهام (`styles/`).
 - **نظام فيديوهات الشرح:** هيكل السكربت، والكابشن، والانتقالات، وخاتمة «علّق الكلمة» أو «الرابط في البايو» (`reference/explainer-reel-system.md`).
@@ -49,7 +50,7 @@
 | `reference/` | الأدلة: المجلد والذاكرة، وHyperFrames، والعربي، والخطوط، والتصميم، والصوت، والتسليم |
 | `styles/` | بناء ستايلك، وأمثلة للإلهام |
 | `scripts/` | أدوات: الفحص، والتثبيت في مجلدك، والمفتاح، والبلاغ، والخطوط، والأصوات، والمعاينة |
-| `templates/` | قالب HyperFrames العربي وقطع النص والقصة وطقم المشاهد، وقالب الرندر، وملفات الذاكرة، وملف الذوق، وخطة الحكاية، وقالب الكابشن |
+| `templates/` | قالب HyperFrames العربي وقطع النص والقصة وطقم المشاهد، وقالب الرندر، وملفات الذاكرة، وملف الذوق، وخطة الحكاية، وقالب الكابشن، وقوالب Remotion الجاهزة (`overlay`, `code-hike`, `tiktok-captions`) |
 | `CHANGELOG.md` | الإصدارات |
 | `LICENSE.md` | الرخصة: مجانية للاستعمال، وممنوع إعادة النشر |
 
@@ -62,6 +63,7 @@ What's in it:
 - **Memory.** A session handoff the workspace loads in every chat lets work pick up across chats («كمّل»).
 - **Taste.** It is learned from references, with an honest first-time line.
 - **Engines by job.** HyperFrames is the default engine (a pinned Arabic starter); Remotion is used on demand for 3D. FFmpeg, yt-dlp for references, and ElevenLabs complete the toolset.
+- **Remotion starters (private use).** Vendored templates in `templates/remotion/` for overlay, code-hike, and TikTok-style captions, plus `scripts/use_remotion_template.py` and Remotion capability/reference docs; Remotion License applies.
 - **Narration first (1.7).** The user's own recording is turned into word timings on their computer, or a voice is designed for them with ElevenLabs Voice Design; library voices only when the user names one. Scene events are placed by naming the spoken word.
 - **Stories (1.7).** Four ways of telling, a word-lit text block, a still card for verified quoted text, a ladder with «؟», comparison cards, a rewind cold open, an end card, the «حكاية بالضوء» style, and a code-drawn scene and faceless figure kit.
 - **Sound.** A film-style mix by default (since 1.7.0's sound v2: real recordings of what is shown, 3–5 of them, a real bed of the place or none, no music unless asked, a mix check that also fails static and buzz); 33 CC0 recordings ship in `sounds/library/`, and a free 1,409-sound library is built locally.
