@@ -6,3 +6,5 @@ __pycache__/
 *.py[cod]
 # Generated personal download archive
 khaam-motion-personal.zip
+# User data kept in a checkout (draft styles, inspiration images): never part of the skill, never committed
+.khaam/

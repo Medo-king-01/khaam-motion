@@ -29,6 +29,6 @@ These are separate third-party projects. The optional local installation and res
 - The isolated audio environment can run the existing onset workflow: `.cache/creative-tools/audio-env/bin/python scripts/audio_tag.py <audio-file> --onsets` on Unix-like systems (use the environment's `Scripts/python.exe` on Windows). Onsets are rough candidates; listen and refine them, and do not treat them as automatic word alignment. PANNs/CLAP models are separate optional requirements.
 - To use video-shotcraft, read the cached `.cache/creative-tools/video-shotcraft/SKILL.md` and relevant shot cards as references, subject to current host and user instructions. Choose a specific shot and make it suit the user's brand; do not automatically capture pages, publish, execute upstream scripts, or change agent configurations. The source is not a configured agent skill and the template/workbench dependencies and a full render have not been tested.
 
-## User's current visual direction
+## User's visual direction
 
-The Kodo Medo draft, if present in the current checkout, is `.khaam/styles/kodo-medo.md`. Its light grid, editorial collage and black/red palette make an original 2D or restrained 2.5D treatment a sensible starting proposal. PixelFX and Blender are optional and are not implied by the references. The six Pinterest links in that brief have not been reviewed.
+The user's visual direction, if one exists, lives in the workspace's own draft styles (`.khaam/styles/*.md` inside the workspace, not inside the installed skill). Treat it as an initial proposal to verify, not a locked decision. PixelFX and Blender are optional and are not implied by any reference the user provides.
