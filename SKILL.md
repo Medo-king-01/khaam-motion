@@ -269,6 +269,7 @@ Production rules behind the gates:
 | `reference/explainer-reel-system.md` | Explainer, tool, list and promo reels: script skeleton, HUD, captions, transitions, CTA end card, kit reference |
 | `reference/anything2explainer.md` | anything2explainer snapshot (private use): topic→narrated Remotion explainer pipeline, QC/motion scripts, template; PolyForm NC license |
 | `reference/canvas-motion-integrations.md` | motion-canvas, html-video, helios, awesome-canvas, mojs, gsap, particles.js, three.js, tsparticles snapshots (private use): capabilities, locations, licenses, cautions |
+| `reference/icon-asset-integrations.md` | simple-icons, lucide, tabler-icons SVG asset snapshots (private use): brand/UI icon selection, licenses, trademark cautions |
 | `reference/portability.md` | First setup, path/config resolution, fresh machines and OS differences |
 | `reference/mac.md` | **A Mac (1.7.1):** the tools with no Homebrew and no password (`scripts/mac_tools.sh`), Apple's install window, the privacy window and the way back, a folder instead of a ZIP, the hidden folder |
 | `reference/setup-and-integrations.md` | Prerequisites, optional integrations, keys and browser/tool setup |
