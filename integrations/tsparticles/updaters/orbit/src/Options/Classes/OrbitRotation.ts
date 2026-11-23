@@ -1,0 +1,18 @@
+import { type IValueWithRandom, type RecursivePartial, ValueWithRandom, isNull } from "@tsparticles/engine";
+
+/** Orbit rotation options class */
+export class OrbitRotation extends ValueWithRandom {
+  override value = 45;
+
+  /**
+   * Loads the orbit rotation from data
+   * @param data - The data to handle
+   */
+  override load(data?: RecursivePartial<IValueWithRandom>): void {
+    if (isNull(data)) {
+      return;
+    }
+
+    super.load(data);
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "name": "@tsparticles/plugin-polygon-mask",
+  "version": "4.6.0",
+  "description": "tsParticles plugin for constraining particles within SVG or image-based polygon mask shapes",
+  "homepage": "https://particles.js.org",
+  "scripts": {
+    "build": "tsparticles-build",
+    "version": "tsparticles-build -d && git add package.dist.json && tsparticles-build -p -l && git add .",
+    "prepack": "pnpm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tsparticles/tsparticles.git",
+    "directory": "plugins/polygonMask"
+  },
+  "keywords": [
+    "front-end",
+    "frontend",
+    "tsparticles",
+    "particles",
+    "particle",
+    "canvas",
+    "animation",
+    "web",
+    "html5",
+    "css3",
+    "animated",
+    "background",
+    "confetti",
+    "fireworks",
+    "typescript",
+    "javascript",
+    "tsparticles-plugin",
+    "polygon-mask"
+  ],
+  "author": "Matteo Bruni <matteo.bruni@me.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tsparticles/tsparticles/issues"
+  },
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "prettier": "@tsparticles/prettier-config",
+  "sideEffects": [
+    "dist/**/pathseg.js"
+  ],
+  "peerDependencies": {
+    "@tsparticles/engine": "workspace:*"
+  },
+  "devDependencies": {
+    "@tsparticles/cli-build": "workspace:*",
+    "@tsparticles/engine": "workspace:*"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "browser": "./dist/browser/browser.js",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./lazy": {
+      "types": "./dist/types/index.lazy.d.ts",
+      "browser": "./dist/browser/browser.js",
+      "import": "./dist/esm/index.lazy.js",
+      "require": "./dist/cjs/index.lazy.js",
+      "default": "./dist/esm/index.lazy.js"
+    },
+    "./package.json": "./dist/package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist",
+    "linkDirectory": true
+  },
+  "type": "module"
+}

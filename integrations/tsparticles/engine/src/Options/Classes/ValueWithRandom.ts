@@ -1,0 +1,34 @@
+import { AnimationOptions, RangedAnimationOptions } from "./AnimationOptions.js";
+import type { IAnimationValueWithRandom, IValueWithRandom } from "../Interfaces/IValueWithRandom.js";
+import { OptionLoader } from "../../Utils/OptionLoader.js";
+import type { RangeValue } from "../../Types/RangeValue.js";
+import type { RecursivePartial } from "../../Types/RecursivePartial.js";
+import { isNull } from "../../Utils/TypeUtils.js";
+import { loadNestedProperty } from "../../Utils/OptionsUtils.js";
+import { setRangeValue } from "../../Utils/MathUtils.js";
+
+/** Value with random range option class */
+export class ValueWithRandom extends OptionLoader<IValueWithRandom> implements IValueWithRandom {
+  value: RangeValue = 0;
+
+  protected doLoad(data: RecursivePartial<IValueWithRandom>): void {
+    if (!isNull(data.value)) {
+      this.value = setRangeValue(data.value);
+    }
+  }
+}
+
+/** Animation value with random range option class */
+export class AnimationValueWithRandom extends ValueWithRandom {
+  readonly animation = new AnimationOptions();
+
+  protected override doLoad(data: RecursivePartial<IAnimationValueWithRandom>): void {
+    super.doLoad(data);
+    loadNestedProperty(this, "animation", data.animation);
+  }
+}
+
+/** Ranged animation value with random range option class */
+export class RangedAnimationValueWithRandom extends AnimationValueWithRandom {
+  override readonly animation: RangedAnimationOptions = new RangedAnimationOptions();
+}

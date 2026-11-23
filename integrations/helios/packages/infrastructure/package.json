@@ -1,0 +1,43 @@
+{
+  "name": "@helios-project/infrastructure",
+  "version": "0.25.0",
+  "type": "module",
+  "description": "Distributed rendering orchestration and cloud execution adapters.",
+  "author": "Gavin Bintz <me@gavinbintz.com>",
+  "license": "ELv2",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BintzGavin/helios.git"
+  },
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "test": "vitest run",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.0",
+    "aws-sdk-client-mock": "^4.1.0",
+    "typescript": "^5.0.0",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "@aws-sdk/client-lambda": "^3.999.0",
+    "@aws-sdk/client-s3": "^3.1000.0",
+    "@google-cloud/storage": "^7.19.0",
+    "@kubernetes/client-node": "^0.20.0",
+    "google-auth-library": "^10.6.1"
+  }
+}

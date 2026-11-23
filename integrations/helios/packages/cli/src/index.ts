@@ -1,0 +1,79 @@
+import { readFileSync } from 'node:fs';
+import { Command } from 'commander';
+import { registerMcpCommand } from './commands/mcp.js';
+
+// The release script sets the version in package.json; read it rather than repeating it here.
+const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string };
+
+const program = new Command();
+
+program
+  .name('helios')
+  .description('Helios CLI')
+  .version(version);
+
+// AI hosts give `helios mcp` about two seconds to answer before they drop it, and loading the
+// other commands (job, studio, render...) takes ten times longer than the MCP server itself.
+if (process.argv[2] !== 'mcp') {
+  const [
+    { registerStudioCommand },
+    { registerInitCommand },
+    { registerAddCommand },
+    { registerComponentsCommand },
+    { registerRenderCommand },
+    { registerFrameCommands },
+    { registerMergeCommand },
+    { registerListCommand },
+    { registerRemoveCommand },
+    { registerUpdateCommand },
+    { registerBuildCommand },
+    { registerPreviewCommand },
+    { registerJobCommand },
+    { registerSkillsCommand },
+    { registerDiffCommand },
+    { registerDeployCommand },
+    { registerCheckCommand },
+    { registerAnalyzeCommand },
+  ] = await Promise.all([
+    import('./commands/studio.js'),
+    import('./commands/init.js'),
+    import('./commands/add.js'),
+    import('./commands/components.js'),
+    import('./commands/render.js'),
+    import('./commands/frames.js'),
+    import('./commands/merge.js'),
+    import('./commands/list.js'),
+    import('./commands/remove.js'),
+    import('./commands/update.js'),
+    import('./commands/build.js'),
+    import('./commands/preview.js'),
+    import('./commands/job.js'),
+    import('./commands/skills.js'),
+    import('./commands/diff.js'),
+    import('./commands/deploy.js'),
+    import('./commands/check.js'),
+    import('./commands/analyze.js'),
+  ]);
+
+  registerStudioCommand(program);
+  registerInitCommand(program);
+  registerAddCommand(program);
+  registerComponentsCommand(program);
+  registerRenderCommand(program);
+  registerFrameCommands(program);
+  registerMergeCommand(program);
+  registerListCommand(program);
+  registerRemoveCommand(program);
+  registerUpdateCommand(program);
+  registerBuildCommand(program);
+  registerPreviewCommand(program);
+  registerJobCommand(program);
+  registerSkillsCommand(program);
+  registerDiffCommand(program);
+  registerDeployCommand(program);
+  registerCheckCommand(program);
+  registerAnalyzeCommand(program);
+}
+registerMcpCommand(program);
+
+program.parse(process.argv);

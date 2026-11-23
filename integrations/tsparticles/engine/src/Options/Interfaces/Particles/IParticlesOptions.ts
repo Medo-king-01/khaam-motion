@@ -1,0 +1,69 @@
+/**
+ * [[include:Options/Particles.md]]
+ */
+import type { IEffect } from "./Effect/IEffect.js";
+import type { IMove } from "./Move/IMove.js";
+import type { IPaint } from "./IPaint.js";
+import type { IParticlesBounce } from "./Bounce/IParticlesBounce.js";
+import type { IParticlesNumber } from "./Number/IParticlesNumber.js";
+import type { IShape } from "./Shape/IShape.js";
+import type { IZIndex } from "./ZIndex/IZIndex.js";
+import type { ParticlesGroups } from "../../../Types/ParticlesGroups.js";
+import type { SingleOrMultiple } from "../../../Types/SingleOrMultiple.js";
+
+/**
+ * [[include:Options/Particles.md]]
+ */
+export interface IParticlesOptions {
+  [name: string]: unknown;
+
+  /**
+   * Options for customizing the behavior when a particle bounces
+   */
+  bounce: IParticlesBounce;
+
+  /**
+   * Particles effects options
+   */
+  effect: IEffect;
+
+  /**
+   * Particles groups
+   */
+  groups: ParticlesGroups;
+
+  /**
+   * Particles movement options
+   */
+  move: IMove;
+
+  /**
+   * Particles number options
+   */
+  number: IParticlesNumber;
+
+  /**
+   * Particles paint options, grouping fill and stroke variants together
+   */
+  paint: SingleOrMultiple<IPaint>;
+
+  /**
+   * Registered palette id to import particle fill/stroke/blend defaults
+   */
+  palette?: string;
+
+  /**
+   * Particles options for reducing the randomization of duplicate particles, the index will be used for choosing the array values
+   */
+  reduceDuplicates: boolean;
+
+  /**
+   * Particles shape options
+   */
+  shape: IShape;
+
+  /**
+   * Particles z-index options
+   */
+  zIndex: IZIndex;
+}

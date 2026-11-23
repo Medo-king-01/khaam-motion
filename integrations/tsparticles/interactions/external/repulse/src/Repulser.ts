@@ -1,0 +1,446 @@
+import {
+  type BaseRange,
+  Circle,
+  type ICoordinates,
+  type PluginManager,
+  Rectangle,
+  type RecursivePartial,
+  Vector,
+  clamp,
+  half,
+  hypot,
+  isInArray,
+  loadOptionProperty,
+  millisecondsToSeconds,
+  minRadius,
+  safeDocument,
+} from "@tsparticles/engine";
+import {
+  type DivEvent,
+  DivType,
+  ExternalInteractorBase,
+  type IInteractivityData,
+  type IModes,
+  type InteractivityParticle,
+  type Modes,
+  divMode,
+  divModeExecute,
+  isDivModeEnabled,
+  mouseMoveEvent,
+} from "@tsparticles/plugin-interactivity";
+import type { IRepulseMode, RepulseContainer, RepulseMode } from "./Types.js";
+import { Repulse } from "./Options/Classes/Repulse.js";
+import type { RepulseDiv } from "./Options/Classes/RepulseDiv.js";
+
+const repulseMode = "repulse",
+  minDistance = 0,
+  repulseRadiusFactor = 6,
+  repulseRadiusPower = 3,
+  minSpeed = 0,
+  easingOffset = 1,
+  minRestoreSpeed = 0.001,
+  maxRestoreSpeed = 1,
+  restoreEpsilon = 0.5;
+
+interface IRepulseRestoreData {
+  lastInteractionTime: number;
+  target: Vector;
+}
+
+/**
+ * Particle repulse manager
+ */
+export class Repulser extends ExternalInteractorBase<RepulseContainer> {
+  handleClickMode: (mode: string, interactivityData: IInteractivityData) => void;
+
+  readonly #clickVec: Vector;
+  readonly #interactedThisFrame;
+  #maxDistance;
+  readonly #normVec: Vector;
+  readonly #pluginManager;
+  readonly #restoreData;
+
+  constructor(pluginManager: PluginManager, container: RepulseContainer) {
+    super(container);
+
+    this.#pluginManager = pluginManager;
+    this.#maxDistance = 0;
+    this.#normVec = Vector.origin;
+    this.#interactedThisFrame = new Set<InteractivityParticle>();
+    this.#clickVec = Vector.origin;
+    this.#restoreData = new Map<InteractivityParticle, IRepulseRestoreData>();
+
+    container.repulse ??= { particles: [] };
+
+    this.handleClickMode = (mode, interactivityData): void => {
+      const options = this.container.actualOptions,
+        repulseOpts = options.interactivity?.modes.repulse;
+
+      if (!repulseOpts || mode !== repulseMode) {
+        return;
+      }
+
+      container.repulse ??= { particles: [] };
+
+      const repulse = container.repulse;
+
+      repulse.clicking = true;
+      repulse.count = 0;
+
+      for (const particle of container.repulse.particles) {
+        if (!this.isEnabled(interactivityData, particle)) {
+          continue;
+        }
+
+        particle.velocity.setTo(particle.initialVelocity);
+      }
+
+      repulse.particles = [];
+      repulse.finish = false;
+
+      setTimeout(() => {
+        if (container.destroyed) {
+          return;
+        }
+
+        repulse.clicking = false;
+      }, repulseOpts.duration * millisecondsToSeconds);
+    };
+  }
+
+  get maxDistance(): number {
+    return this.#maxDistance;
+  }
+
+  clear(): void {
+    // do nothing
+  }
+
+  init(): void {
+    const container = this.container,
+      repulse = container.actualOptions.interactivity?.modes.repulse;
+
+    if (!repulse) {
+      return;
+    }
+
+    this.#maxDistance = repulse.distance;
+
+    container.retina.repulseModeDistance = repulse.distance * container.retina.pixelRatio;
+  }
+
+  /**
+   * @param interactivityData - The interactivity data
+   */
+  interact(interactivityData: IInteractivityData): void {
+    this.#interactedThisFrame.clear();
+
+    const container = this.container,
+      options = container.actualOptions,
+      mouseMoveStatus = interactivityData.status === mouseMoveEvent,
+      events = options.interactivity?.events;
+
+    if (!events) {
+      return;
+    }
+
+    const hover = events.onHover,
+      hoverEnabled = hover.enable,
+      hoverMode = hover.mode,
+      click = events.onClick,
+      clickEnabled = click.enable,
+      clickMode = click.mode,
+      divs = events.onDiv;
+
+    if (mouseMoveStatus && hoverEnabled && isInArray(repulseMode, hoverMode)) {
+      this.#hoverRepulse(interactivityData);
+    } else if (clickEnabled && isInArray(repulseMode, clickMode)) {
+      this.#clickRepulse(interactivityData);
+    } else {
+      divModeExecute(repulseMode, divs, (selector, div): void => {
+        this.#singleSelectorRepulse(interactivityData, selector, div);
+      });
+    }
+
+    this.#restoreParticles();
+  }
+
+  /**
+   * @param interactivityData - The interactivity data
+   * @param particle - The particle to process
+   * @returns The boolean value
+   */
+  isEnabled(interactivityData: IInteractivityData, particle?: InteractivityParticle): boolean {
+    const container = this.container,
+      options = container.actualOptions,
+      mouse = interactivityData.mouse,
+      events = (particle?.interactivity ?? options.interactivity)?.events;
+
+    if (!events) {
+      return false;
+    }
+
+    const divs = events.onDiv,
+      hover = events.onHover,
+      click = events.onClick,
+      divRepulse = isDivModeEnabled(repulseMode, divs);
+
+    if (!(divRepulse || (hover.enable && !!mouse.position) || (click.enable && mouse.clickPosition))) {
+      return false;
+    }
+
+    const hoverMode = hover.mode,
+      clickMode = click.mode;
+
+    return isInArray(repulseMode, hoverMode) || isInArray(repulseMode, clickMode) || divRepulse;
+  }
+
+  /**
+   * @param options - The options to handle
+   * @param sources - The sources
+   */
+  loadModeOptions(
+    options: Modes & RepulseMode,
+    ...sources: RecursivePartial<(IModes & IRepulseMode) | undefined>[]
+  ): void {
+    loadOptionProperty(options, "repulse", Repulse, ...sources);
+  }
+
+  reset(): void {
+    // do nothing
+  }
+
+  #clickRepulse(interactivityData: IInteractivityData): void {
+    const container = this.container,
+      repulseOptions = container.actualOptions.interactivity?.modes.repulse;
+
+    if (!repulseOptions) {
+      return;
+    }
+
+    const repulse = container.repulse ?? { particles: [] };
+
+    if (!repulse.finish) {
+      repulse.count ??= 0;
+      repulse.count++;
+
+      if (repulse.count === container.particles.count) {
+        repulse.finish = true;
+      }
+    }
+
+    if (repulse.clicking) {
+      const repulseDistance = container.retina.repulseModeDistance;
+
+      if (!repulseDistance || repulseDistance < minDistance) {
+        return;
+      }
+
+      const repulseRadius = Math.pow(repulseDistance / repulseRadiusFactor, repulseRadiusPower),
+        mouseClickPos = interactivityData.mouse.clickPosition;
+
+      if (mouseClickPos === undefined) {
+        return;
+      }
+
+      const query = container.particles.grid.queryCircle(mouseClickPos, repulseRadius, p =>
+          this.isEnabled(interactivityData, p),
+        ),
+        forceScale = repulseRadius * repulseOptions.speed;
+
+      for (const particle of query) {
+        const dx = particle.position.x - mouseClickPos.x,
+          dy = particle.position.y - mouseClickPos.y,
+          distanceSq = dx * dx + dy * dy;
+
+        // Click repulse uses the same squared cutoff and inverse-square force.
+        if (distanceSq <= repulseRadius) {
+          this.#trackInteractedParticle(particle);
+
+          repulse.particles.push(particle);
+
+          const inverseDistance = distanceSq > minDistance ? 1 / Math.sqrt(distanceSq) : minSpeed,
+            force = distanceSq > minDistance ? forceScale / distanceSq : minSpeed;
+
+          this.#clickVec.x = dx * inverseDistance * force;
+          this.#clickVec.y = dy * inverseDistance * force;
+
+          particle.velocity.setTo(this.#clickVec);
+        }
+      }
+    } else if (repulse.clicking === false) {
+      for (const particle of repulse.particles) {
+        particle.velocity.setTo(particle.initialVelocity);
+      }
+
+      repulse.particles = [];
+    }
+  }
+
+  #hoverRepulse(interactivityData: IInteractivityData): void {
+    const container = this.container,
+      mousePos = interactivityData.mouse.position,
+      repulseRadius = container.retina.repulseModeDistance;
+
+    if (!repulseRadius || repulseRadius < minRadius || !mousePos) {
+      return;
+    }
+
+    this.#processRepulse(interactivityData, mousePos, repulseRadius, new Circle(mousePos.x, mousePos.y, repulseRadius));
+  }
+
+  #processRepulse(
+    interactivityData: IInteractivityData,
+    position: ICoordinates,
+    repulseRadius: number,
+    area: BaseRange,
+    divRepulse?: RepulseDiv,
+  ): void {
+    const container = this.container,
+      query = container.particles.grid.query(area, p => this.isEnabled(interactivityData, p)),
+      repulseOptions = container.actualOptions.interactivity?.modes.repulse;
+
+    if (!repulseOptions) {
+      return;
+    }
+
+    const { easing, speed, factor, maxSpeed } = repulseOptions,
+      easingFunc = this.#pluginManager.getEasing(easing),
+      velocity = (divRepulse?.speed ?? speed) * factor;
+
+    for (const particle of query) {
+      const dx = particle.position.x - position.x,
+        dy = particle.position.y - position.y,
+        distance = hypot(dx, dy),
+        repulseFactor = clamp(easingFunc(easingOffset - distance / repulseRadius) * velocity, minSpeed, maxSpeed);
+
+      this.#normVec.x = !distance ? velocity : (dx / distance) * repulseFactor;
+      this.#normVec.y = !distance ? velocity : (dy / distance) * repulseFactor;
+
+      this.#trackInteractedParticle(particle);
+      particle.position.addTo(this.#normVec);
+    }
+  }
+
+  #restoreParticles(): void {
+    const restore = this.container.actualOptions.interactivity?.modes.repulse?.restore;
+
+    if (!restore?.enable || !this.#restoreData.size) {
+      return;
+    }
+
+    const now = Date.now(),
+      restoreDelay = restore.delay * millisecondsToSeconds,
+      restoreSpeed = Math.max(minRestoreSpeed, Math.min(maxRestoreSpeed, restore.speed));
+
+    for (const [particle, restoreData] of this.#restoreData) {
+      if (this.#interactedThisFrame.has(particle)) {
+        continue;
+      }
+
+      if (particle.destroyed) {
+        this.#restoreData.delete(particle);
+
+        continue;
+      }
+
+      const target = restoreData.target;
+
+      if (now - restoreData.lastInteractionTime < restoreDelay) {
+        continue;
+      }
+
+      if (restore.follow && particle.options.move.enable) {
+        target.x += particle.velocity.x;
+        target.y += particle.velocity.y;
+        target.z += particle.velocity.z;
+      }
+
+      const dx = target.x - particle.position.x,
+        dy = target.y - particle.position.y,
+        dz = target.z - particle.position.z;
+
+      particle.position.x += dx * restoreSpeed;
+      particle.position.y += dy * restoreSpeed;
+      particle.position.z += dz * restoreSpeed;
+
+      if (Math.abs(dx) <= restoreEpsilon && Math.abs(dy) <= restoreEpsilon) {
+        particle.position.x = target.x;
+        particle.position.y = target.y;
+        particle.position.z = target.z;
+
+        this.#restoreData.delete(particle);
+
+        continue;
+      }
+    }
+  }
+
+  #singleSelectorRepulse(interactivityData: IInteractivityData, selector: string, div: DivEvent): void {
+    const container = this.container,
+      repulse = container.actualOptions.interactivity?.modes.repulse;
+
+    if (!repulse) {
+      return;
+    }
+
+    const query = safeDocument().querySelectorAll(selector);
+
+    if (!query.length) {
+      return;
+    }
+
+    query.forEach(item => {
+      const elem = item as HTMLElement,
+        pxRatio = container.retina.pixelRatio,
+        pos = {
+          x: (elem.offsetLeft + elem.offsetWidth * half) * pxRatio,
+          y: (elem.offsetTop + elem.offsetHeight * half) * pxRatio,
+        },
+        repulseRadius = elem.offsetWidth * half * pxRatio,
+        area =
+          div.type === DivType.circle
+            ? new Circle(pos.x, pos.y, repulseRadius)
+            : new Rectangle(
+                elem.offsetLeft * pxRatio,
+                elem.offsetTop * pxRatio,
+                elem.offsetWidth * pxRatio,
+                elem.offsetHeight * pxRatio,
+              ),
+        divs = repulse.divs,
+        divRepulse = divMode(divs, elem);
+
+      this.#processRepulse(interactivityData, pos, repulseRadius, area, divRepulse);
+    });
+  }
+
+  #trackInteractedParticle(particle: InteractivityParticle): void {
+    this.#interactedThisFrame.add(particle);
+
+    const restore = this.container.actualOptions.interactivity?.modes.repulse?.restore;
+
+    if (!restore?.enable) {
+      return;
+    }
+
+    const now = Date.now();
+    let restoreData = this.#restoreData.get(particle);
+
+    if (!restoreData) {
+      restoreData = {
+        target: particle.position.copy(),
+        lastInteractionTime: now,
+      };
+
+      this.#restoreData.set(particle, restoreData);
+    }
+
+    restoreData.lastInteractionTime = now;
+
+    if (restore.follow && particle.options.move.enable) {
+      restoreData.target.x += particle.velocity.x;
+      restoreData.target.y += particle.velocity.y;
+      restoreData.target.z += particle.velocity.z;
+    }
+  }
+}

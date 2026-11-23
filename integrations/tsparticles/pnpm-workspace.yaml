@@ -1,0 +1,86 @@
+packages:
+  - bundles/*
+  - cli/commands/*
+  - cli/packages/*
+  - cli/utils/*
+  - demo/*
+  - effects/*
+  - engine
+  - integrations/*
+  - interactions/*
+  - interactions/external/*
+  - interactions/particles/*
+  - wrappers/*
+  - wrappers/inferno-hooks
+  - templates/*
+  - palettes/*/*
+  - paths/*
+  - plugins/*
+  - plugins/colors/*
+  - plugins/easings/*
+  - plugins/emittersShapes/*
+  - plugins/exports/*
+  - presets/*
+  - shapes/*
+  - updaters/*
+  - utils/*
+  - websites/*
+allowBuilds:
+  '@parcel/watcher': true
+  '@swc/core': true
+  '@tsparticles/engine': true
+  canvas: true
+  core-js: true
+  core-js-bundle: true
+  core-js-pure: true
+  electron: true
+  esbuild: true
+  fsevents: true
+  inferno: true
+  lmdb: true
+  msgpackr-extract: true
+  nuxt: true
+  nx: true
+  puppeteer: true
+  sharp: true
+  svelte-preprocess: true
+  unrs-resolver: true
+linkWorkspacePackages: deep
+
+onlyBuiltDependencies:
+  - "@parcel/watcher"
+  - "@swc/core"
+  - "@tsparticles/engine"
+  - canvas
+  - core-js
+  - core-js-bundle
+  - core-js-pure
+  - electron
+  - esbuild
+  - fsevents
+  - inferno
+  - lmdb
+  - msgpackr-extract
+  - nuxt
+  - nx
+  - puppeteer
+  - sharp
+  - unrs-resolver
+patchedDependencies:
+  vue-server-renderer@2.7.16: patches/vue-server-renderer@2.7.16.patch
+
+overrides:
+  "@nuxt/vue-app@2.18.1>vue": "2.7.16"
+  "@nuxt/vue-renderer@2.18.1>vue": "2.7.16"
+  "vue-server-renderer@2.7.16>vue": "2.7.16"
+  "vue-template-compiler@2.7.16>vue": "2.7.16"
+
+packageExtensions:
+  vue-server-renderer@*:
+    dependencies:
+      vue: "2.7.16"
+  vue-template-compiler@*:
+    dependencies:
+      vue: "2.7.16"
+
+minimumReleaseAge: 0

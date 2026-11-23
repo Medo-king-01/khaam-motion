@@ -1,0 +1,460 @@
+# Change Log
+
+All notable changes to this project will be documented in this file.
+See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+
+# [4.6.0](https://github.com/tsparticles/tsparticles/compare/v4.5.4...v4.6.0) (2026-11-13)
+
+### Bug Fixes
+
+* fixed movement decay with fps limiter ([817251d](https://github.com/tsparticles/tsparticles/commit/817251d3482a9929414ba514da280d25ffd089d3))
+* fixes after AI reviews ([049bf70](https://github.com/tsparticles/tsparticles/commit/049bf70d67701b14010f324d2726ff426fced0c8))
+* fixes after AI reviews ([08f1b2d](https://github.com/tsparticles/tsparticles/commit/08f1b2d13b5f349f3d0749c60e53c6c329416331))
+* fixes after AI reviews ([5a324dc](https://github.com/tsparticles/tsparticles/commit/5a324dcc527f67bd7876ab6168dbf421384fef2c))
+* fixes after AI reviews ([ccf3f98](https://github.com/tsparticles/tsparticles/commit/ccf3f9843ddc3caf93d99d79aa954b704f92b2de))
+* fixes after AI reviews ([5ea587f](https://github.com/tsparticles/tsparticles/commit/5ea587f8134782c7a5b31f7e741d696765e1c4dc))
+
+## [4.5.4](https://github.com/tsparticles/tsparticles/compare/v4.5.3...v4.5.4) (2026-11-11)
+
+### Bug Fixes
+
+* fixes after AI reviews ([529bf85](https://github.com/tsparticles/tsparticles/commit/529bf857557b9e267ea80d4b79bedfc0b0ca3082))
+* fixes after AI reviews ([bc16c9f](https://github.com/tsparticles/tsparticles/commit/bc16c9f6f819da274c563d3d19fe2f5c00e128f4))
+* fixes after AI reviews ([7f6c676](https://github.com/tsparticles/tsparticles/commit/7f6c676d662c3b24516db389780eeb3f221e2d20))
+* fixes after AI reviews ([5d452c9](https://github.com/tsparticles/tsparticles/commit/5d452c99d5902dd38b60403bc1da925e5d3f11cc))
+* fixes after AI reviews ([5334c1b](https://github.com/tsparticles/tsparticles/commit/5334c1b56bedd65cd9b2486853280b292f6b38d2))
+* fixes after AI reviews ([d8a54c0](https://github.com/tsparticles/tsparticles/commit/d8a54c0ec642935fd07ef66b534175957003ffb6))
+* fixes after AI reviews ([d641680](https://github.com/tsparticles/tsparticles/commit/d6416808aec6d99afefaf80b0e88b9e0b9cef21d))
+* fixes after AI reviews ([95083a5](https://github.com/tsparticles/tsparticles/commit/95083a5e3ebab1003bb29d1376acfbc2f1e9c317))
+* fixes from v4 plan ([49d614d](https://github.com/tsparticles/tsparticles/commit/49d614d937df608ded6417f077cff5c3328e55b0))
+
+## [4.5.3](https://github.com/tsparticles/tsparticles/compare/v4.5.2...v4.5.3) (2026-11-06)
+
+### Bug Fixes
+
+* fixes after AI reviews ([e9653fc](https://github.com/tsparticles/tsparticles/commit/e9653fcaf711ebaff97b4c2bb5a438c5ce2b3374))
+* fixes after AI reviews ([a26d678](https://github.com/tsparticles/tsparticles/commit/a26d678ab9998222e0575df5faa0f40d3ebbb7c2))
+
+## [4.5.2](https://github.com/tsparticles/tsparticles/compare/v4.5.1...v4.5.2) (2026-11-05)
+
+### Bug Fixes
+
+* fixed after AI reviews ([b6a043a](https://github.com/tsparticles/tsparticles/commit/b6a043a63713bb74412ec408bf8c6de35f40fb08))
+* fixes after AI reviews ([2950455](https://github.com/tsparticles/tsparticles/commit/29504552aa774152483817c2a6b2d478ee02c2c2))
+* fixes after AI reviews ([1376c14](https://github.com/tsparticles/tsparticles/commit/1376c14c08e0abbe065fcf1ee8fce05b7c1931e1))
+* fixes after AI reviews ([d056b3d](https://github.com/tsparticles/tsparticles/commit/d056b3d30561965cff12b02e6d4b54cf1b8139be))
+* fixes after AI reviews ([84927c6](https://github.com/tsparticles/tsparticles/commit/84927c6bb6523398f283a6273758adc3c616a3d6))
+* fixes after AI reviews ([389323b](https://github.com/tsparticles/tsparticles/commit/389323bd95fb0a88e3636055af9469f0150fe96c))
+* fixes after AI reviews ([65e664c](https://github.com/tsparticles/tsparticles/commit/65e664c039bfb68463242df877d3f3bb38508825))
+* fixes after AI reviews ([d8de9a5](https://github.com/tsparticles/tsparticles/commit/d8de9a5af46173f30809860db390cbcd2202f509))
+* fixes after AI reviews ([f82fbfa](https://github.com/tsparticles/tsparticles/commit/f82fbfad468395e6b0ea1081f105392d7d491f84))
+* fixes after AI reviews ([1975dbe](https://github.com/tsparticles/tsparticles/commit/1975dbedbb1be445db53794ca86ed3924843d798))
+* fixes after AI reviews ([cfbf8c7](https://github.com/tsparticles/tsparticles/commit/cfbf8c76a3c159c4ce415c8c1dcb697c463aaf84))
+* fixes after AI reviews ([f6e2dab](https://github.com/tsparticles/tsparticles/commit/f6e2dabc9bd6038f377456239716412ea8ca8cdd))
+* fixes after AI reviews ([54ebd32](https://github.com/tsparticles/tsparticles/commit/54ebd32cab83ecce224b6df5f39d17e8fe222fc4))
+* fixes after AI reviews ([feb0028](https://github.com/tsparticles/tsparticles/commit/feb002871091228db8d77c48a19430277e030111))
+
+## [4.5.1](https://github.com/tsparticles/tsparticles/compare/v4.5.0...v4.5.1) (2026-11-02)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.5.0](https://github.com/tsparticles/tsparticles/compare/v4.4.0...v4.5.0) (2026-10-25)
+
+### Bug Fixes
+
+- coderabbit alerts fixed ([4bfb84c](https://github.com/tsparticles/tsparticles/commit/4bfb84c52fdd5f4fe331037d76e69a0b9da3945f))
+- fixed some coderabbit findings ([d5bac26](https://github.com/tsparticles/tsparticles/commit/d5bac26aa1e573939963ae2d6253c14942111e9a))
+- fixed some issues found by coderabbit, added more docs ([b54a5a7](https://github.com/tsparticles/tsparticles/commit/b54a5a79921a62fd1e0652d6e3c146e7bf358552))
+- fixed some issues in mcp server and some coderabbit reports ([4700d3e](https://github.com/tsparticles/tsparticles/commit/4700d3e953f3a3a1930db064a6b6b21d61233cdf))
+- more fixes for mcp and engine ([46bc117](https://github.com/tsparticles/tsparticles/commit/46bc11792bf3c06fb54b8036a21cfdf2913ceb3f))
+
+### Features
+
+- added absorbers split feature (improved pr [#5923](https://github.com/tsparticles/tsparticles/issues/5923)) and improved absorbers attraction ([35ac7ca](https://github.com/tsparticles/tsparticles/commit/35ac7caa754801a427a285aeeb160e2796af827e))
+- added error code/message management ([56d0a8f](https://github.com/tsparticles/tsparticles/commit/56d0a8f4312530c08b3415c421d0f7e635b002c9))
+- completed absorbers improvements ([3acbce9](https://github.com/tsparticles/tsparticles/commit/3acbce97625f30a1b5679741d76d048fdcda74c4))
+- first good iteration of fluid collision ([96bf3cc](https://github.com/tsparticles/tsparticles/commit/96bf3cce5d53d50472eacb42842380498a0da076))
+- implemented emitters draw/drag feature ([3b70d3f](https://github.com/tsparticles/tsparticles/commit/3b70d3f6a01eb911c66ccaa1ab8826ae2de9b54f))
+- improved absorbers split ([0039243](https://github.com/tsparticles/tsparticles/commit/0039243e64b5d349c8c56c8702a0757788331400))
+- improved absorbers split ([378f843](https://github.com/tsparticles/tsparticles/commit/378f8437802c3831f9dd2d338069962c07fd9c8a))
+
+# [4.4.0](https://github.com/tsparticles/tsparticles/compare/v4.3.3...v4.4.0) (2026-08-30)
+
+### Bug Fixes
+
+- various fixes for 4.4.0 ([475d06d](https://github.com/tsparticles/tsparticles/commit/475d06da27e1497bb097c0822fcfcb72d7142456))
+
+## [4.3.3](https://github.com/tsparticles/tsparticles/compare/v4.3.2...v4.3.3) (2026-07-23)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+## [4.3.2](https://github.com/tsparticles/tsparticles/compare/v4.3.1...v4.3.2) (2026-07-10)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+## [4.3.1](https://github.com/tsparticles/tsparticles/compare/v4.3.0...v4.3.1) (2026-07-01)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.3.0](https://github.com/tsparticles/tsparticles/compare/v4.2.1...v4.3.0) (2026-06-27)
+
+### Features
+
+- added support for canvas background and custom draw callbacks ([fb71bd9](https://github.com/tsparticles/tsparticles/commit/fb71bd974412666b0207b3823a81f078090357a9))
+- improved support for canvas background and custom draw callbacks ([a88798c](https://github.com/tsparticles/tsparticles/commit/a88798c72ff3c981fa8828bb9b51cd6f29245463))
+
+## [4.2.1](https://github.com/tsparticles/tsparticles/compare/v4.2.0...v4.2.1) (2026-06-19)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.2.0](https://github.com/tsparticles/tsparticles/compare/v4.1.3...v4.2.0) (2026-06-17)
+
+### Bug Fixes
+
+- fixed some eslint configs and circular deps ([93d7b8b](https://github.com/tsparticles/tsparticles/commit/93d7b8b766e2d13a4e2c8c18c6ac66f5b460e71b))
+
+## [4.1.3](https://github.com/tsparticles/tsparticles/compare/v4.1.2...v4.1.3) (2026-06-03)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+## [4.1.2](https://github.com/tsparticles/tsparticles/compare/v4.1.1...v4.1.2) (2026-06-01)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+## [4.1.1](https://github.com/tsparticles/tsparticles/compare/v4.1.0...v4.1.1) (2026-05-31)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.1.0](https://github.com/tsparticles/tsparticles/compare/v4.0.5...v4.1.0) (2026-05-29)
+
+### Features
+
+- improved ribbon shape ([dff3e87](https://github.com/tsparticles/tsparticles/commit/dff3e875c2c64a62e34deafd07027066d3b33178))
+
+## [4.0.5](https://github.com/tsparticles/tsparticles/compare/v4.0.4...v4.0.5) (2026-05-19)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+## [4.0.4](https://github.com/tsparticles/tsparticles/compare/v4.0.3...v4.0.4) (2026-05-19)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+## [4.0.3](https://github.com/tsparticles/tsparticles/compare/v4.0.2...v4.0.3) (2026-05-18)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+## [4.0.2](https://github.com/tsparticles/tsparticles/compare/v4.0.1...v4.0.2) (2026-05-16)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+## [4.0.1](https://github.com/tsparticles/tsparticles/compare/v4.0.0...v4.0.1) (2026-05-15)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.17...v4.0.0) (2026-05-15)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-beta.17](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.16...v4.0.0-beta.17) (2026-05-15)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-beta.16](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.15...v4.0.0-beta.16) (2026-05-09)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-beta.15](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.14...v4.0.0-beta.15) (2026-05-09)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-beta.12](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.11...v4.0.0-beta.12) (2026-04-15)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-beta.11](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.10...v4.0.0-beta.11) (2026-04-08)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-beta.10](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.9...v4.0.0-beta.10) (2026-04-08)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-beta.9](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.8...v4.0.0-beta.9) (2026-04-08)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-beta.8](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.7...v4.0.0-beta.8) (2026-04-07)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-beta.7](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.6...v4.0.0-beta.7) (2026-04-07)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-beta.6](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.5...v4.0.0-beta.6) (2026-04-02)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-beta.5](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.4...v4.0.0-beta.5) (2026-04-02)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-beta.4](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.3...v4.0.0-beta.4) (2026-04-02)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-beta.3](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.2...v4.0.0-beta.3) (2026-04-02)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-beta.2](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.1...v4.0.0-beta.2) (2026-04-02)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-beta.1](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.0...v4.0.0-beta.1) (2026-03-31)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-beta.0](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.28...v4.0.0-beta.0) (2026-03-19)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.28](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.27...v4.0.0-alpha.28) (2026-03-15)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.27](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.26...v4.0.0-alpha.27) (2026-03-09)
+
+### Features
+
+- replaced particles.color with particles.fill to have (almost) same options as particles.stroke ([d1793cc](https://github.com/tsparticles/tsparticles/commit/d1793cc8a5933281b10a72ae2d04e58ca7ceb8b0))
+
+# [4.0.0-alpha.26](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.25...v4.0.0-alpha.26) (2026-02-26)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.25](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.24...v4.0.0-alpha.25) (2026-02-21)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.24](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.23...v4.0.0-alpha.24) (2026-02-12)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.23](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.22...v4.0.0-alpha.23) (2026-02-11)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.22](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.21...v4.0.0-alpha.22) (2026-02-05)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.21](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.20...v4.0.0-alpha.21) (2026-02-04)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.20](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.19...v4.0.0-alpha.20) (2026-02-04)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.19](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.18...v4.0.0-alpha.19) (2026-02-04)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.18](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.17...v4.0.0-alpha.18) (2026-02-04)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.17](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.16...v4.0.0-alpha.17) (2026-02-04)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.16](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.15...v4.0.0-alpha.16) (2026-02-03)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.15](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.14...v4.0.0-alpha.15) (2026-02-03)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.14](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.13...v4.0.0-alpha.14) (2026-02-02)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.10](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.9...v4.0.0-alpha.10) (2026-02-02)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.9](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.8...v4.0.0-alpha.9) (2026-02-02)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.8](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.7...v4.0.0-alpha.8) (2026-01-22)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.7](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.6...v4.0.0-alpha.7) (2026-01-22)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.6](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.5...v4.0.0-alpha.6) (2026-01-22)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.5](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.4...v4.0.0-alpha.5) (2026-01-21)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.4](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.3...v4.0.0-alpha.4) (2026-01-21)
+
+### Bug Fixes
+
+- removed some duplicated constants ([2e46059](https://github.com/tsparticles/tsparticles/commit/2e460599a6763d22663e0f2c402867f569890e00))
+
+### Features
+
+- reworked parallax mover plugin to parallax external interaction plugin ([6e2052c](https://github.com/tsparticles/tsparticles/commit/6e2052c5ec2412b7aa2b63a688b06af1c9ef4ec9))
+
+# [4.0.0-alpha.3](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.2...v4.0.0-alpha.3) (2026-01-10)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.2](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.1...v4.0.0-alpha.2) (2026-01-08)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.1](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.0...v4.0.0-alpha.1) (2026-01-08)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [4.0.0-alpha.0](https://github.com/tsparticles/tsparticles/compare/v3.9.1...v4.0.0-alpha.0) (2026-01-07)
+
+### Features
+
+- improved hdr management, improved also big particles config ([92af429](https://github.com/tsparticles/tsparticles/commit/92af429a2c18976267579cc732492dbb7cb3f67a))
+
+## [3.9.1](https://github.com/tsparticles/tsparticles/compare/v3.9.0...v3.9.1) (2025-08-03)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [3.9.0](https://github.com/tsparticles/tsparticles/compare/v3.8.1...v3.9.0) (2025-08-01)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+## [3.8.1](https://github.com/tsparticles/tsparticles/compare/v3.8.0...v3.8.1) (2025-01-31)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [3.8.0](https://github.com/tsparticles/tsparticles/compare/v3.7.3...v3.8.0) (2025-01-23)
+
+### Bug Fixes
+
+- fixed imports and constants ([caaf603](https://github.com/tsparticles/tsparticles/commit/caaf603932fb64de5c34bc075e0bbf2fb7821818))
+
+## [3.7.1](https://github.com/tsparticles/tsparticles/compare/v3.7.0...v3.7.1) (2024-11-24)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [3.7.0](https://github.com/tsparticles/tsparticles/compare/v3.6.0...v3.7.0) (2024-11-24)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [3.6.0](https://github.com/tsparticles/tsparticles/compare/v3.6.0-beta.1...v3.6.0) (2024-11-18)
+
+### Bug Fixes
+
+- fixed color syntaxes, fixes [#5409](https://github.com/tsparticles/tsparticles/issues/5409) ([f3c976f](https://github.com/tsparticles/tsparticles/commit/f3c976f451c5bc6a37338cba0cc1ce80c4e9b137))
+
+### Features
+
+- added isNull function, more secure checks ([891e2a2](https://github.com/tsparticles/tsparticles/commit/891e2a25fb64b7f89ce0c75dbe49bd0b28d9a72d))
+
+# [3.6.0-beta.1](https://github.com/tsparticles/tsparticles/compare/v3.6.0-beta.0...v3.6.0-beta.1) (2024-10-13)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [3.6.0-beta.0](https://github.com/tsparticles/tsparticles/compare/v3.5.0...v3.6.0-beta.0) (2024-10-07)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [3.6.0](https://github.com/tsparticles/tsparticles/compare/v3.5.0...v3.6.0) (2024-10-07)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [3.5.0](https://github.com/tsparticles/tsparticles/compare/v3.4.0...v3.5.0) (2024-07-01)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [3.4.0](https://github.com/tsparticles/tsparticles/compare/v3.3.0...v3.4.0) (2024-05-12)
+
+### Bug Fixes
+
+- fixed tests ([c88a3f4](https://github.com/tsparticles/tsparticles/commit/c88a3f4d2b7142f9f8a747a3d572affd86721024))
+
+# [3.3.0](https://github.com/tsparticles/tsparticles/compare/v3.2.2...v3.3.0) (2024-02-27)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+## [3.2.2](https://github.com/tsparticles/tsparticles/compare/v3.2.1...v3.2.2) (2024-02-20)
+
+### Bug Fixes
+
+- fixed circular deps detection and other issues with dynamic imports ([b6ed5d3](https://github.com/tsparticles/tsparticles/commit/b6ed5d3eaa41e0ad50c55807e1ec6439eeacd0c1))
+
+## [3.2.1](https://github.com/tsparticles/tsparticles/compare/v3.2.0...v3.2.1) (2024-01-31)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [3.2.0](https://github.com/tsparticles/tsparticles/compare/v3.1.0...v3.2.0) (2024-01-31)
+
+### Features
+
+- added background mask image support ([0b30b1c](https://github.com/tsparticles/tsparticles/commit/0b30b1c122bc9546727fd66d1e9393c1e05b643e))
+- improving dynamic imports ([f01a44b](https://github.com/tsparticles/tsparticles/commit/f01a44b22240ece1575cc431da8ca5902268fd2f))
+- improving dynamic imports ([7674ee3](https://github.com/tsparticles/tsparticles/commit/7674ee37c0db306afd1338ae0bcba764cc11d5f5))
+
+# [3.1.0](https://github.com/tsparticles/tsparticles/compare/v3.0.3...v3.1.0) (2024-01-13)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+## [3.0.3](https://github.com/tsparticles/tsparticles/compare/v3.0.2...v3.0.3) (2023-12-26)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+## [3.0.2](https://github.com/tsparticles/tsparticles/compare/v3.0.1...v3.0.2) (2023-12-06)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+## [3.0.1](https://github.com/tsparticles/tsparticles/compare/v3.0.0...v3.0.1) (2023-12-06)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [3.0.0](https://github.com/tsparticles/tsparticles/compare/v3.0.0-beta.5...v3.0.0) (2023-12-04)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [3.0.0-beta.5](https://github.com/tsparticles/tsparticles/compare/v3.0.0-beta.4...v3.0.0-beta.5) (2023-12-03)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [3.0.0-beta.4](https://github.com/tsparticles/tsparticles/compare/v3.0.0-beta.3...v3.0.0-beta.4) (2023-11-16)
+
+### Features
+
+- removed multiline text shape, implemented in standard text shape ([d48d911](https://github.com/tsparticles/tsparticles/commit/d48d9116f910da987075d64e31cd3b8eecd46fe0))
+
+# [3.0.0-beta.3](https://github.com/tsparticles/tsparticles/compare/v3.0.0-beta.2...v3.0.0-beta.3) (2023-09-20)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [3.0.0-beta.2](https://github.com/tsparticles/tsparticles/compare/v3.0.0-beta.1...v3.0.0-beta.2) (2023-09-11)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [3.0.0-beta.1](https://github.com/tsparticles/tsparticles/compare/v3.0.0-beta.0...v3.0.0-beta.1) (2023-08-25)
+
+**Note:** Version bump only for package @tsparticles/tests
+
+# [3.0.0-beta.0](https://github.com/tsparticles/tsparticles/compare/v2.12.0...v3.0.0-beta.0) (2023-08-24)
+
+**Note:** Version bump only for package @tsparticles/tests

@@ -1,0 +1,28 @@
+import { type IOptionLoader, type RecursivePartial, isNull, loadProperty } from "@tsparticles/engine";
+import type { IMotion } from "../Interfaces/IMotion.js";
+import { MotionReduce } from "./MotionReduce.js";
+
+/**
+ * [[include:Options/Motion.md]]
+ */
+export class Motion implements IMotion, IOptionLoader<IMotion> {
+  /**
+   * Disables motions for users with `prefer-reduced-motion` enabled
+   */
+  disable = true;
+  /**
+   * Reduce motion settings for users with `prefer-reduced-motion` enabled
+   * If {@link disable} is `true` these values will be ignored
+   */
+  readonly reduce = new MotionReduce();
+
+  load(data?: RecursivePartial<IMotion>): void {
+    if (isNull(data)) {
+      return;
+    }
+
+    loadProperty(this, "disable", data.disable);
+
+    this.reduce.load(data.reduce);
+  }
+}

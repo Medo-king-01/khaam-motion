@@ -1,0 +1,652 @@
+// @vitest-environment jsdom
+// @vitest-environment jsdom
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { connectToParent } from './bridge';
+
+const mockFaderEnable = vi.fn();
+const mockFaderDisable = vi.fn();
+
+// Mock AudioFader
+vi.mock('./features/audio-fader', () => ({
+    AudioFader: class {
+        connect = vi.fn();
+        enable = mockFaderEnable;
+        disable = mockFaderDisable;
+        dispose = vi.fn();
+    }
+}));
+
+// Mock Helios
+vi.mock('@helios-project/core', () => {
+    return {
+        Helios: vi.fn()
+    };
+});
+
+// Mock dom-capture
+vi.mock('./features/dom-capture', () => ({
+    captureDomToBitmap: vi.fn()
+}));
+
+// Mock audio-utils
+vi.mock('./features/audio-utils', () => ({
+    getAudioAssets: vi.fn()
+}));
+
+// Mock audio-metering
+vi.mock('./features/audio-metering', () => {
+    return {
+        AudioMeter: class {
+            connect = vi.fn();
+            enable = vi.fn();
+            disable = vi.fn();
+            getLevels = vi.fn().mockReturnValue([0.5, 0.5]);
+            dispose = vi.fn();
+        }
+    };
+});
+
+describe('connectToParent', () => {
+    let mockHelios: any;
+    let messageHandlers: ((ev: MessageEvent) => void)[] = [];
+    let parentPostMessage: any;
+
+    beforeEach(() => {
+        messageHandlers = [];
+        mockHelios = {
+            play: vi.fn(),
+            pause: vi.fn(),
+            seek: vi.fn(),
+            setPlaybackRate: vi.fn(),
+            setPlaybackRange: vi.fn(),
+            clearPlaybackRange: vi.fn(),
+            setAudioVolume: vi.fn(),
+            setAudioMuted: vi.fn(),
+            setAudioTrackVolume: vi.fn(),
+            setAudioTrackMuted: vi.fn(),
+            setLoop: vi.fn(),
+            setInputProps: vi.fn(),
+            setCaptions: vi.fn(),
+            setDuration: vi.fn(),
+            setFps: vi.fn(),
+            setSize: vi.fn(),
+            setMarkers: vi.fn(),
+            getState: vi.fn().mockReturnValue({}),
+            subscribe: vi.fn(),
+            schema: { type: 'object' }
+        };
+        (mockHelios.constructor as any) = {
+            diagnose: vi.fn().mockResolvedValue({ status: 'ok' })
+        };
+
+        // Mock window.addEventListener
+        vi.spyOn(window, 'addEventListener').mockImplementation((event, handler) => {
+            if (event === 'message') {
+                messageHandlers.push(handler as any);
+            }
+        });
+
+        // Mock window.parent
+        parentPostMessage = vi.fn();
+        Object.defineProperty(window, 'parent', {
+            value: {
+                postMessage: parentPostMessage
+            },
+            writable: true
+        });
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    const triggerMessage = (data: any, source: any) => {
+        const event = new MessageEvent('message', { data, source });
+        messageHandlers.forEach(h => h(event));
+    };
+
+    it('should process messages from window.parent', () => {
+        connectToParent(mockHelios);
+
+        triggerMessage({ type: 'HELIOS_PLAY' }, window.parent);
+
+        expect(mockHelios.play).toHaveBeenCalled();
+
+        triggerMessage({ type: 'HELIOS_PAUSE' }, window.parent);
+        expect(mockHelios.pause).toHaveBeenCalled();
+    });
+
+    it('should process playback range setting messages', () => {
+        connectToParent(mockHelios);
+
+        triggerMessage({ type: 'HELIOS_SET_PLAYBACK_RANGE', start: 10, end: 20 }, window.parent);
+        expect(mockHelios.setPlaybackRange).toHaveBeenCalledWith(10, 20);
+
+        // invalid range
+        mockHelios.setPlaybackRange.mockClear();
+        triggerMessage({ type: 'HELIOS_SET_PLAYBACK_RANGE', start: '10', end: 20 }, window.parent);
+        expect(mockHelios.setPlaybackRange).not.toHaveBeenCalled();
+
+        triggerMessage({ type: 'HELIOS_CLEAR_PLAYBACK_RANGE' }, window.parent);
+        expect(mockHelios.clearPlaybackRange).toHaveBeenCalled();
+    });
+
+    it('should process audio and volume setting messages', () => {
+        connectToParent(mockHelios);
+
+        triggerMessage({ type: 'HELIOS_SET_VOLUME', volume: 0.5 }, window.parent);
+        expect(mockHelios.setAudioVolume).toHaveBeenCalledWith(0.5);
+
+        // invalid volume
+        mockHelios.setAudioVolume.mockClear();
+        triggerMessage({ type: 'HELIOS_SET_VOLUME', volume: 'loud' }, window.parent);
+        expect(mockHelios.setAudioVolume).not.toHaveBeenCalled();
+
+        triggerMessage({ type: 'HELIOS_SET_MUTED', muted: true }, window.parent);
+        expect(mockHelios.setAudioMuted).toHaveBeenCalledWith(true);
+
+        // invalid muted
+        mockHelios.setAudioMuted.mockClear();
+        triggerMessage({ type: 'HELIOS_SET_MUTED', muted: 'yes' }, window.parent);
+        expect(mockHelios.setAudioMuted).not.toHaveBeenCalled();
+
+        triggerMessage({ type: 'HELIOS_SET_AUDIO_TRACK_VOLUME', trackId: 'track1', volume: 0.8 }, window.parent);
+        expect(mockHelios.setAudioTrackVolume).toHaveBeenCalledWith('track1', 0.8);
+
+        // invalid track volume
+        mockHelios.setAudioTrackVolume.mockClear();
+        triggerMessage({ type: 'HELIOS_SET_AUDIO_TRACK_VOLUME', trackId: 'track1', volume: 'high' }, window.parent);
+        expect(mockHelios.setAudioTrackVolume).not.toHaveBeenCalled();
+
+        triggerMessage({ type: 'HELIOS_SET_AUDIO_TRACK_MUTED', trackId: 'track2', muted: false }, window.parent);
+        expect(mockHelios.setAudioTrackMuted).toHaveBeenCalledWith('track2', false);
+
+        // invalid track muted
+        mockHelios.setAudioTrackMuted.mockClear();
+        triggerMessage({ type: 'HELIOS_SET_AUDIO_TRACK_MUTED', trackId: 'track2', muted: 'no' }, window.parent);
+        expect(mockHelios.setAudioTrackMuted).not.toHaveBeenCalled();
+    });
+
+    it('should process general player state messages', () => {
+        connectToParent(mockHelios);
+
+        triggerMessage({ type: 'HELIOS_SET_PLAYBACK_RATE', rate: 1.5 }, window.parent);
+        expect(mockHelios.setPlaybackRate).toHaveBeenCalledWith(1.5);
+
+        // invalid playback rate
+        mockHelios.setPlaybackRate.mockClear();
+        triggerMessage({ type: 'HELIOS_SET_PLAYBACK_RATE', rate: 'fast' }, window.parent);
+        expect(mockHelios.setPlaybackRate).not.toHaveBeenCalled();
+
+        triggerMessage({ type: 'HELIOS_SET_LOOP', loop: true }, window.parent);
+        expect(mockHelios.setLoop).toHaveBeenCalledWith(true);
+
+        // invalid loop
+        mockHelios.setLoop.mockClear();
+        triggerMessage({ type: 'HELIOS_SET_LOOP', loop: 'yes' }, window.parent);
+        expect(mockHelios.setLoop).not.toHaveBeenCalled();
+
+        const props = { text: 'hello' };
+        triggerMessage({ type: 'HELIOS_SET_PROPS', props }, window.parent);
+        expect(mockHelios.setInputProps).toHaveBeenCalledWith(props);
+
+        // missing props
+        mockHelios.setInputProps.mockClear();
+        triggerMessage({ type: 'HELIOS_SET_PROPS' }, window.parent);
+        expect(mockHelios.setInputProps).not.toHaveBeenCalled();
+
+        const captions = [{ id: '1', start: 0, end: 5, text: 'caption' }];
+        triggerMessage({ type: 'HELIOS_SET_CAPTIONS', captions }, window.parent);
+        expect(mockHelios.setCaptions).toHaveBeenCalledWith(captions);
+
+        // undefined captions
+        mockHelios.setCaptions.mockClear();
+        triggerMessage({ type: 'HELIOS_SET_CAPTIONS' }, window.parent);
+        expect(mockHelios.setCaptions).not.toHaveBeenCalled();
+    });
+
+    it('should handle HELIOS_SEEK and dispatch HELIOS_SEEK_DONE', async () => {
+        vi.useFakeTimers();
+        connectToParent(mockHelios);
+
+        triggerMessage({ type: 'HELIOS_SEEK', frame: 100 }, window.parent);
+        expect(mockHelios.seek).toHaveBeenCalledWith(100);
+
+        // invalid seek
+        mockHelios.seek.mockClear();
+        triggerMessage({ type: 'HELIOS_SEEK', frame: '100' }, window.parent);
+        expect(mockHelios.seek).not.toHaveBeenCalled();
+
+        // Advance timers to trigger the nested requestAnimationFrames
+        vi.advanceTimersByTime(32); // Roughly 2 frames at 60fps
+
+        expect(parentPostMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'HELIOS_SEEK_DONE', frame: 100 }),
+            '*'
+        );
+
+        vi.useRealTimers();
+    });
+
+    it('should handle HELIOS_GET_AUDIO_TRACKS and dispatch HELIOS_AUDIO_DATA', async () => {
+        const { getAudioAssets } = await import('./features/audio-utils');
+        (getAudioAssets as any).mockResolvedValue([{ id: 'track1', buffer: new ArrayBuffer(8) }]);
+
+        mockHelios.getState.mockReturnValue({ availableAudioTracks: [], audioTracks: [] });
+
+        connectToParent(mockHelios);
+        triggerMessage({ type: 'HELIOS_GET_AUDIO_TRACKS' }, window.parent);
+
+        // Allow promise to resolve
+        await new Promise(r => setTimeout(r, 0));
+
+        expect(parentPostMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'HELIOS_AUDIO_DATA', assets: [{ id: 'track1', buffer: expect.any(ArrayBuffer) }] }),
+            '*',
+            [expect.any(ArrayBuffer)]
+        );
+    });
+
+    it('should process composition setting messages', () => {
+        connectToParent(mockHelios);
+
+        triggerMessage({ type: 'HELIOS_SET_DURATION', duration: 30 }, window.parent);
+        expect(mockHelios.setDuration).toHaveBeenCalledWith(30);
+
+        // invalid duration
+        mockHelios.setDuration.mockClear();
+        triggerMessage({ type: 'HELIOS_SET_DURATION', duration: '30s' }, window.parent);
+        expect(mockHelios.setDuration).not.toHaveBeenCalled();
+
+        triggerMessage({ type: 'HELIOS_SET_FPS', fps: 24 }, window.parent);
+        expect(mockHelios.setFps).toHaveBeenCalledWith(24);
+
+        // invalid fps
+        mockHelios.setFps.mockClear();
+        triggerMessage({ type: 'HELIOS_SET_FPS', fps: '24' }, window.parent);
+        expect(mockHelios.setFps).not.toHaveBeenCalled();
+
+        triggerMessage({ type: 'HELIOS_SET_SIZE', width: 800, height: 600 }, window.parent);
+        expect(mockHelios.setSize).toHaveBeenCalledWith(800, 600);
+
+        // invalid size
+        mockHelios.setSize.mockClear();
+        triggerMessage({ type: 'HELIOS_SET_SIZE', width: '800', height: 600 }, window.parent);
+        expect(mockHelios.setSize).not.toHaveBeenCalled();
+
+        const markers = [{ id: '1', time: 5, label: 'Test' }];
+        triggerMessage({ type: 'HELIOS_SET_MARKERS', markers }, window.parent);
+        expect(mockHelios.setMarkers).toHaveBeenCalledWith(markers);
+
+        // invalid markers
+        mockHelios.setMarkers.mockClear();
+        triggerMessage({ type: 'HELIOS_SET_MARKERS', markers: 'not array' }, window.parent);
+        expect(mockHelios.setMarkers).not.toHaveBeenCalled();
+    });
+
+    it('should IGNORE messages from other sources', () => {
+        connectToParent(mockHelios);
+
+        // Send message from 'window' (self), NOT window.parent
+        triggerMessage({ type: 'HELIOS_PLAY' }, window);
+
+        expect(mockHelios.play).not.toHaveBeenCalled();
+    });
+
+    it('should IGNORE messages from nested iframes', () => {
+        connectToParent(mockHelios);
+
+        // Send message from an untrusted source (e.g. nested iframe)
+        const nestedIframe = {};
+        triggerMessage({ type: 'HELIOS_PLAY' }, nestedIframe);
+
+        expect(mockHelios.play).not.toHaveBeenCalled();
+    });
+
+    it('should handle deferred message processing and property updates during initialization safely', async () => {
+        // Test that sending messages rapidly before and during connect doesn't cause errors
+        connectToParent(mockHelios);
+
+        // Simulate properties sent right as it connects
+        triggerMessage({ type: 'HELIOS_SET_SIZE', width: 1920, height: 1080 }, window.parent);
+        triggerMessage({ type: 'HELIOS_SET_FPS', fps: 60 }, window.parent);
+
+        // The bridge itself dispatches immediately to Helios methods
+        expect(mockHelios.setSize).toHaveBeenCalledWith(1920, 1080);
+        expect(mockHelios.setFps).toHaveBeenCalledWith(60);
+
+        // And simulate connection completion
+        triggerMessage({ type: 'HELIOS_CONNECT' }, window.parent);
+
+        expect(parentPostMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'HELIOS_READY' }),
+            '*'
+        );
+    });
+
+    it('should strictly verify event source against malicious or deeply nested frames', () => {
+        connectToParent(mockHelios);
+
+        const maliciousSource = {
+            parent: window.parent,
+            top: window.parent
+        };
+
+        triggerMessage({ type: 'HELIOS_PLAY' }, maliciousSource);
+        expect(mockHelios.play).not.toHaveBeenCalled();
+
+        triggerMessage({ type: 'HELIOS_SET_DURATION', duration: 10 }, maliciousSource);
+        expect(mockHelios.setDuration).not.toHaveBeenCalled();
+    });
+
+    it('should handle property update commands', () => {
+        connectToParent(mockHelios);
+        triggerMessage({ type: 'HELIOS_PAUSE' }, window.parent);
+        expect(mockHelios.pause).toHaveBeenCalled();
+
+        triggerMessage({ type: 'HELIOS_SET_PLAYBACK_RATE', rate: 2.0 }, window.parent);
+        expect(mockHelios.setPlaybackRate).toHaveBeenCalledWith(2.0);
+
+        triggerMessage({ type: 'HELIOS_SET_PLAYBACK_RANGE', start: 10, end: 50 }, window.parent);
+        expect(mockHelios.setPlaybackRange).toHaveBeenCalledWith(10, 50);
+
+        triggerMessage({ type: 'HELIOS_CLEAR_PLAYBACK_RANGE' }, window.parent);
+        expect(mockHelios.clearPlaybackRange).toHaveBeenCalled();
+
+        triggerMessage({ type: 'HELIOS_SET_VOLUME', volume: 0.5 }, window.parent);
+        expect(mockHelios.setAudioVolume).toHaveBeenCalledWith(0.5);
+
+        triggerMessage({ type: 'HELIOS_SET_MUTED', muted: true }, window.parent);
+        expect(mockHelios.setAudioMuted).toHaveBeenCalledWith(true);
+
+        triggerMessage({ type: 'HELIOS_SET_AUDIO_TRACK_VOLUME', trackId: 'test', volume: 0.8 }, window.parent);
+        expect(mockHelios.setAudioTrackVolume).toHaveBeenCalledWith('test', 0.8);
+
+        triggerMessage({ type: 'HELIOS_SET_AUDIO_TRACK_MUTED', trackId: 'test', muted: true }, window.parent);
+        expect(mockHelios.setAudioTrackMuted).toHaveBeenCalledWith('test', true);
+
+        triggerMessage({ type: 'HELIOS_SET_LOOP', loop: true }, window.parent);
+        expect(mockHelios.setLoop).toHaveBeenCalledWith(true);
+
+        triggerMessage({ type: 'HELIOS_SET_PROPS', props: { a: 1 } }, window.parent);
+        expect(mockHelios.setInputProps).toHaveBeenCalledWith({ a: 1 });
+
+        triggerMessage({ type: 'HELIOS_SET_CAPTIONS', captions: [{ start: 0, end: 1, text: 'a' }] }, window.parent);
+        expect(mockHelios.setCaptions).toHaveBeenCalledWith([{ start: 0, end: 1, text: 'a' }]);
+    });
+
+    it('should handle HELIOS_GET_AUDIO_TRACKS', async () => {
+        connectToParent(mockHelios);
+
+        // Ensure promise resolves and pushes HELIOS_AUDIO_DATA to postMessage
+        parentPostMessage.mockClear();
+        triggerMessage({ type: 'HELIOS_GET_AUDIO_TRACKS' }, window.parent);
+        await new Promise(r => setTimeout(r, 0));
+
+        expect(parentPostMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'HELIOS_AUDIO_DATA' }),
+            '*',
+            expect.any(Array)
+        );
+    });
+
+    it('should handle HELIOS_SEEK message', async () => {
+        const originalRaf = window.requestAnimationFrame;
+        let cbs: Function[] = [];
+        window.requestAnimationFrame = (cb) => { cbs.push(cb); return 0; };
+
+        connectToParent(mockHelios);
+        parentPostMessage.mockClear();
+
+        triggerMessage({ type: 'HELIOS_SEEK', frame: 50 }, window.parent);
+        expect(mockHelios.seek).toHaveBeenCalledWith(50);
+
+        // requestAnimationFrame(() => requestAnimationFrame(() => postMessage))
+        cbs.forEach(cb => cb(0));
+        cbs.shift(); // The outer raf cb fired and registered an inner one.
+        cbs.forEach(cb => cb(0)); // Second frame
+
+        expect(parentPostMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'HELIOS_SEEK_DONE', frame: 50 }),
+            '*'
+        );
+
+        window.requestAnimationFrame = originalRaf;
+    });
+
+    it('should handle HELIOS_GET_SCHEMA message', () => {
+        connectToParent(mockHelios);
+        triggerMessage({ type: 'HELIOS_GET_SCHEMA' }, window.parent);
+
+        expect(parentPostMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'HELIOS_SCHEMA', schema: { type: 'object' } }),
+            '*'
+        );
+    });
+
+    it('should handle HELIOS_START_METERING and HELIOS_STOP_METERING messages', () => {
+        vi.useFakeTimers();
+        connectToParent(mockHelios);
+
+        triggerMessage({ type: 'HELIOS_START_METERING' }, window.parent);
+        vi.advanceTimersByTime(16); // allow raf to fire
+
+        // Since AudioMeter is mocked, we verify that postMessage receives HELIOS_AUDIO_LEVELS
+        expect(parentPostMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'HELIOS_AUDIO_LEVELS', levels: [0.5, 0.5] }),
+            '*'
+        );
+
+        triggerMessage({ type: 'HELIOS_STOP_METERING' }, window.parent);
+        vi.useRealTimers();
+    });
+
+    it('should handle HELIOS_DIAGNOSE message', async () => {
+        const { Helios } = await import('@helios-project/core');
+        Helios.diagnose = vi.fn().mockResolvedValue({ status: 'ok' });
+
+        connectToParent(mockHelios);
+        triggerMessage({ type: 'HELIOS_DIAGNOSE' }, window.parent);
+
+        // Allow async promise to resolve
+        await new Promise(r => setTimeout(r, 0));
+
+        expect(parentPostMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'HELIOS_DIAGNOSE_RESULT', report: { status: 'ok' } }),
+            '*'
+        );
+    });
+
+    it('should update AudioFader based on play state from subscribe callback', () => {
+        connectToParent(mockHelios);
+
+        // extract the subscribed callback
+        const subscribeCallback = mockHelios.subscribe.mock.calls[0][0];
+
+        subscribeCallback({ isPlaying: true });
+        expect(mockFaderEnable).toHaveBeenCalled();
+
+        subscribeCallback({ isPlaying: false });
+        expect(mockFaderDisable).toHaveBeenCalled();
+    });
+
+    it('should capture global errors and dispatch HELIOS_ERROR', () => {
+        // Need to explicitly trigger the error event to bypass JSDOM not handling our custom mock Event properly
+        let errorHandler: any;
+        vi.spyOn(window, 'addEventListener').mockImplementation((event, handler) => {
+            if (event === 'error') {
+                errorHandler = handler;
+            }
+        });
+
+        connectToParent(mockHelios);
+
+        // Reset call count because connectToParent calls postMessage HELIOS_READY
+        parentPostMessage.mockClear();
+
+        errorHandler({
+            message: 'Test Error',
+            filename: 'test.ts',
+            lineno: 10,
+            colno: 5,
+        } as any);
+
+        expect(parentPostMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'HELIOS_ERROR',
+                error: expect.objectContaining({
+                    message: 'Test Error',
+                    filename: 'test.ts',
+                    lineno: 10,
+                    colno: 5
+                })
+            }),
+            '*'
+        );
+    });
+
+    it('should capture unhandled promise rejections and dispatch HELIOS_ERROR', () => {
+        let rejectionHandler: any;
+        vi.spyOn(window, 'addEventListener').mockImplementation((event, handler) => {
+            if (event === 'unhandledrejection') {
+                rejectionHandler = handler;
+            }
+        });
+
+        connectToParent(mockHelios);
+
+        parentPostMessage.mockClear();
+
+        rejectionHandler({
+            reason: { message: 'Test Rejection' }
+        } as any);
+
+        expect(parentPostMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'HELIOS_ERROR',
+                error: expect.objectContaining({
+                    message: 'Test Rejection'
+                })
+            }),
+            '*'
+        );
+    });
+
+    it('should handle HELIOS_CAPTURE_FRAME in dom mode', async () => {
+        const { captureDomToBitmap } = await import('./features/dom-capture');
+        const mockBitmap = {} as ImageBitmap;
+        (captureDomToBitmap as any).mockResolvedValue(mockBitmap);
+
+        connectToParent(mockHelios);
+
+        // Mock requestAnimationFrame for the handleCaptureFrame waiting logic
+        const originalRaf = window.requestAnimationFrame;
+        window.requestAnimationFrame = (cb) => {
+            cb(0);
+            return 0;
+        };
+
+        const triggerMessage = (data: any, source: any) => {
+            const event = new MessageEvent('message', { data, source });
+            messageHandlers.forEach(h => h(event));
+        };
+
+        triggerMessage({ type: 'HELIOS_CAPTURE_FRAME', frame: 5, mode: 'dom', width: 100, height: 100 }, window.parent);
+
+        await new Promise(r => setTimeout(r, 0)); // wait for async
+
+        expect(mockHelios.seek).toHaveBeenCalledWith(5);
+        expect(captureDomToBitmap).toHaveBeenCalledWith(document.body, { targetWidth: 100, targetHeight: 100 });
+        expect(parentPostMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'HELIOS_FRAME_DATA', frame: 5, success: true, bitmap: mockBitmap }),
+            '*',
+            [mockBitmap]
+        );
+
+        window.requestAnimationFrame = originalRaf;
+    });
+
+    it('should handle HELIOS_CAPTURE_FRAME dom mode error', async () => {
+        const { captureDomToBitmap } = await import('./features/dom-capture');
+        (captureDomToBitmap as any).mockRejectedValue(new Error('DOM Error'));
+
+        connectToParent(mockHelios);
+
+        const originalRaf = window.requestAnimationFrame;
+        window.requestAnimationFrame = (cb) => { cb(0); return 0; };
+
+        const triggerMessage = (data: any, source: any) => {
+            const event = new MessageEvent('message', { data, source });
+            messageHandlers.forEach(h => h(event));
+        };
+
+        triggerMessage({ type: 'HELIOS_CAPTURE_FRAME', frame: 5, mode: 'dom' }, window.parent);
+
+        await new Promise(r => setTimeout(r, 0)); // wait for async
+
+        expect(parentPostMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'HELIOS_FRAME_DATA', frame: 5, success: false, error: 'DOM Error' }),
+            '*'
+        );
+
+        window.requestAnimationFrame = originalRaf;
+    });
+
+    it('should handle HELIOS_CAPTURE_FRAME canvas mode and send back bitmap', async () => {
+        connectToParent(mockHelios);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 100;
+        canvas.height = 100;
+        document.body.appendChild(canvas);
+
+        const mockBitmap = {} as ImageBitmap;
+        window.createImageBitmap = vi.fn().mockResolvedValue(mockBitmap);
+
+        const originalRaf = window.requestAnimationFrame;
+        window.requestAnimationFrame = (cb) => { cb(0); return 0; };
+
+        const triggerMessage = (data: any, source: any) => {
+            const event = new MessageEvent('message', { data, source });
+            messageHandlers.forEach(h => h(event));
+        };
+
+        triggerMessage({ type: 'HELIOS_CAPTURE_FRAME', frame: 5, selector: 'canvas' }, window.parent);
+
+        await new Promise(r => setTimeout(r, 0)); // wait for async
+
+        expect(window.createImageBitmap).toHaveBeenCalledWith(canvas);
+        expect(parentPostMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'HELIOS_FRAME_DATA', frame: 5, success: true, bitmap: mockBitmap }),
+            '*',
+            [mockBitmap]
+        );
+
+        window.requestAnimationFrame = originalRaf;
+        canvas.remove();
+    });
+
+    it('should handle HELIOS_CAPTURE_FRAME canvas mode not found', async () => {
+        connectToParent(mockHelios);
+        parentPostMessage.mockClear();
+
+        const originalRaf = window.requestAnimationFrame;
+        window.requestAnimationFrame = (cb) => { cb(0); return 0; };
+
+        const triggerMessage = (data: any, source: any) => {
+            const event = new MessageEvent('message', { data, source });
+            messageHandlers.forEach(h => h(event));
+        };
+
+        triggerMessage({ type: 'HELIOS_CAPTURE_FRAME', frame: 5, selector: '.non-existent' }, window.parent);
+
+        await new Promise(r => setTimeout(r, 0)); // wait for async
+
+        expect(parentPostMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'HELIOS_FRAME_DATA', frame: 5, success: false, error: 'Canvas not found' }),
+            '*'
+        );
+
+        window.requestAnimationFrame = originalRaf;
+    });
+});

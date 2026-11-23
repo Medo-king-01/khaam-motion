@@ -1,0 +1,531 @@
+import type { BubbleContainer, BubbleMode, IBubbleMode } from "./Types.js";
+import {
+  Circle,
+  type IDelta,
+  type Particle,
+  type PluginManager,
+  Rectangle,
+  type RecursivePartial,
+  colorMix,
+  defaultRatio,
+  double,
+  getDistance,
+  getDistanceSq,
+  half,
+  isInArray,
+  itemFromSingleOrMultiple,
+  loadOptionProperty,
+  millisecondsToSeconds,
+  rangeColorToHsl,
+  rgbToHsl,
+  safeDocument,
+} from "@tsparticles/engine";
+import {
+  type DivEvent,
+  DivType,
+  ExternalInteractorBase,
+  type IInteractivityData,
+  type IModes,
+  type InteractivityParticle,
+  type Modes,
+  divMode,
+  divModeExecute,
+  isDivModeEnabled,
+  mouseLeaveEvent,
+  mouseMoveEvent,
+} from "@tsparticles/plugin-interactivity";
+import { Bubble } from "./Options/Classes/Bubble.js";
+import type { BubbleDiv } from "./Options/Classes/BubbleDiv.js";
+import { BubbleModifier } from "./BubbleModifier.js";
+import type { Interfaces } from "./Interfaces.js";
+import { ProcessBubbleType } from "./Enums.js";
+import { calculateBubbleValue } from "./Utils.js";
+
+const bubbleMode = "bubble",
+  minDistance = 0,
+  defaultClickTime = 0,
+  defaultOpacity = 1,
+  ratioOffset = 1,
+  defaultBubbleValue = 0,
+  minRatio = 0;
+
+/**
+ * Particle bubble manager
+ */
+export class Bubbler extends ExternalInteractorBase<BubbleContainer> {
+  handleClickMode: (mode: string, interactivityData: IInteractivityData) => void;
+
+  #maxDistance;
+  readonly #modifiers = new WeakMap<Particle, BubbleModifier>();
+  readonly #pluginManager;
+
+  constructor(pluginManager: PluginManager, container: BubbleContainer) {
+    super(container);
+
+    this.#pluginManager = pluginManager;
+    this.#maxDistance = 0;
+
+    container.bubble ??= {};
+
+    this.handleClickMode = (mode): void => {
+      if (mode !== bubbleMode) {
+        return;
+      }
+
+      container.bubble ??= {};
+
+      container.bubble.clicking = true;
+    };
+  }
+
+  get maxDistance(): number {
+    return this.#maxDistance;
+  }
+
+  clear(particle: Particle, _delta: IDelta, force?: boolean): void {
+    const mod = this.#modifiers.get(particle);
+
+    if (mod?.inRange && !force) {
+      return;
+    }
+
+    particle.removeModifier(bubbleMode);
+
+    this.#modifiers.delete(particle);
+  }
+
+  getOrCreateModifier(particle: Particle): BubbleModifier {
+    let mod = this.#modifiers.get(particle);
+
+    if (!mod) {
+      mod = new BubbleModifier();
+
+      this.#modifiers.set(particle, mod);
+    }
+
+    if (particle.getModifier(mod.id) !== mod) {
+      /* A pooled particle is recycled after destroy() clears its modifiers, so the
+       * cached modifier must be re-attached to keep applying bubble overrides. */
+      particle.addModifier(mod);
+    }
+
+    return mod;
+  }
+
+  init(): void {
+    const container = this.container,
+      bubble = container.actualOptions.interactivity?.modes.bubble;
+
+    if (!bubble) {
+      return;
+    }
+
+    this.#maxDistance = bubble.distance;
+
+    container.retina.bubbleModeDistance = bubble.distance * container.retina.pixelRatio;
+
+    if (bubble.size !== undefined) {
+      container.retina.bubbleModeSize = bubble.size * container.retina.pixelRatio;
+    }
+  }
+
+  interact(interactivityData: IInteractivityData, delta: IDelta): void {
+    const options = this.container.actualOptions,
+      events = options.interactivity?.events;
+
+    if (!events) {
+      return;
+    }
+
+    const onHover = events.onHover,
+      onClick = events.onClick,
+      hoverEnabled = onHover.enable,
+      hoverMode = onHover.mode,
+      clickEnabled = onClick.enable,
+      clickMode = onClick.mode,
+      divs = events.onDiv;
+
+    /* on hover event */
+    if (hoverEnabled && isInArray(bubbleMode, hoverMode)) {
+      this.#hoverBubble(interactivityData);
+    } else if (clickEnabled && isInArray(bubbleMode, clickMode)) {
+      this.#clickBubble(interactivityData);
+    } else {
+      divModeExecute(bubbleMode, divs, (selector, div): void => {
+        this.#singleSelectorHover(interactivityData, delta, selector, div);
+      });
+    }
+  }
+
+  isEnabled(interactivityData: IInteractivityData, particle?: InteractivityParticle): boolean {
+    const container = this.container,
+      options = container.actualOptions,
+      mouse = interactivityData.mouse,
+      events = (particle?.interactivity ?? options.interactivity)?.events;
+
+    if (!events) {
+      return false;
+    }
+
+    const { onClick, onDiv, onHover } = events,
+      divBubble = isDivModeEnabled(bubbleMode, onDiv);
+
+    if (!(divBubble || (onHover.enable && !!mouse.position) || (onClick.enable && mouse.clickPosition))) {
+      return false;
+    }
+
+    return isInArray(bubbleMode, onHover.mode) || isInArray(bubbleMode, onClick.mode) || divBubble;
+  }
+
+  loadModeOptions(
+    options: Modes & BubbleMode,
+    ...sources: RecursivePartial<(IModes & IBubbleMode) | undefined>[]
+  ): void {
+    loadOptionProperty(options, "bubble", Bubble, ...sources);
+  }
+
+  reset(_interactivityData: IInteractivityData, particle: Particle): void {
+    const mod = this.#modifiers.get(particle);
+
+    if (mod) {
+      mod.enabled = false;
+      mod.inRange = false;
+    }
+  }
+
+  #clickBubble(interactivityData: IInteractivityData): void {
+    const container = this.container,
+      options = container.actualOptions,
+      mouseClickPos = interactivityData.mouse.clickPosition,
+      bubbleOptions = options.interactivity?.modes.bubble;
+
+    if (!bubbleOptions || !mouseClickPos) {
+      return;
+    }
+
+    container.bubble ??= {};
+
+    const distance = container.retina.bubbleModeDistance;
+
+    if (!distance || distance < minDistance) {
+      return;
+    }
+
+    const distanceSq = distance * distance,
+      query = container.particles.grid.queryCircle(mouseClickPos, distance, p => this.isEnabled(interactivityData, p)),
+      { bubble } = container;
+
+    for (const particle of query) {
+      if (!bubble.clicking) {
+        continue;
+      }
+
+      const mod = this.getOrCreateModifier(particle);
+
+      mod.enabled = !bubble.durationEnd;
+      mod.inRange = !bubble.durationEnd;
+
+      const pos = particle.getPosition(),
+        mouseDistanceSq = getDistanceSq(pos, mouseClickPos),
+        timeSpent =
+          (performance.now() - (interactivityData.mouse.clickTime ?? defaultClickTime)) / millisecondsToSeconds;
+
+      if (timeSpent > bubbleOptions.duration) {
+        bubble.durationEnd = true;
+      }
+
+      if (timeSpent > bubbleOptions.duration * double) {
+        bubble.clicking = false;
+        bubble.durationEnd = false;
+      }
+
+      const sizeData: Interfaces = {
+        bubbleObj: {
+          optValue: container.retina.bubbleModeSize,
+          value: mod.radius,
+        },
+        particlesObj: {
+          optValue: particle.size.max,
+          value: particle.size.value,
+        },
+        type: ProcessBubbleType.size,
+      };
+
+      this.#process(particle, mouseDistanceSq, timeSpent, sizeData);
+
+      const opacityData: Interfaces = {
+        bubbleObj: {
+          optValue: bubbleOptions.opacity,
+          value: mod.opacity,
+        },
+        particlesObj: {
+          optValue: particle.opacity?.max ?? defaultOpacity,
+          value: particle.opacity?.value ?? defaultOpacity,
+        },
+        type: ProcessBubbleType.opacity,
+      };
+
+      this.#process(particle, mouseDistanceSq, timeSpent, opacityData);
+
+      if (!bubble.durationEnd && mouseDistanceSq <= distanceSq) {
+        this.#hoverBubbleColor(particle, Math.sqrt(mouseDistanceSq));
+      } else {
+        mod.fillColor = undefined;
+        mod.strokeColor = undefined;
+      }
+    }
+  }
+
+  #hoverBubble(interactivityData: IInteractivityData): void {
+    const container = this.container,
+      mousePos = interactivityData.mouse.position,
+      distance = container.retina.bubbleModeDistance;
+
+    if (!distance || distance < minDistance || !mousePos) {
+      return;
+    }
+
+    const query = container.particles.grid.queryCircle(mousePos, distance, p => this.isEnabled(interactivityData, p));
+
+    for (const particle of query) {
+      const mod = this.getOrCreateModifier(particle);
+
+      mod.enabled = true;
+      mod.inRange = true;
+
+      const pos = particle.getPosition(),
+        pointDistance = getDistance(pos, mousePos),
+        ratio = ratioOffset - pointDistance / distance;
+
+      /* mousemove - check ratio */
+      if (pointDistance <= distance) {
+        if (ratio >= minRatio && interactivityData.status === mouseMoveEvent) {
+          /* size */
+          this.#hoverBubbleSize(particle, ratio);
+
+          /* opacity */
+          this.#hoverBubbleOpacity(particle, ratio);
+
+          /* color */
+          this.#hoverBubbleColor(particle, ratio);
+        }
+      } else {
+        this.reset(interactivityData, particle);
+      }
+
+      /* mouseleave */
+      if (interactivityData.status === mouseLeaveEvent) {
+        this.reset(interactivityData, particle);
+      }
+    }
+  }
+
+  #hoverBubbleColor(particle: Particle, ratio: number, divBubble?: BubbleDiv): void {
+    const options = this.container.actualOptions,
+      bubbleOptions = divBubble ?? options.interactivity?.modes.bubble,
+      mod = this.getOrCreateModifier(particle);
+
+    if (!bubbleOptions) {
+      return;
+    }
+
+    if (!mod.finalColor) {
+      const modeColor = bubbleOptions.color;
+
+      if (!modeColor) {
+        return;
+      }
+
+      const bubbleColor = itemFromSingleOrMultiple(modeColor);
+
+      mod.finalColor = rangeColorToHsl(this.#pluginManager, bubbleColor);
+    }
+
+    if (!mod.finalColor) {
+      return;
+    }
+
+    if (bubbleOptions.mix) {
+      mod.fillColor = undefined;
+      mod.strokeColor = undefined;
+
+      const pColor = particle.getFillColor();
+
+      if (pColor) {
+        const mixedColor = rgbToHsl(colorMix(pColor, mod.finalColor, ratioOffset - ratio, ratio, this.container.hdr));
+
+        mod.fillColor = mixedColor;
+        mod.strokeColor = mixedColor;
+      } else {
+        mod.fillColor = mod.finalColor;
+        mod.strokeColor = mod.finalColor;
+      }
+    } else {
+      mod.fillColor = mod.finalColor;
+      mod.strokeColor = mod.finalColor;
+    }
+  }
+
+  #hoverBubbleOpacity(particle: Particle, ratio: number, divBubble?: BubbleDiv): void {
+    const container = this.container,
+      options = container.actualOptions,
+      modeOpacity = divBubble?.opacity ?? options.interactivity?.modes.bubble?.opacity;
+
+    if (!modeOpacity) {
+      return;
+    }
+
+    const pOpacity = particle.opacity?.value ?? defaultOpacity,
+      opacity = calculateBubbleValue(pOpacity, modeOpacity, particle.opacity?.max ?? defaultOpacity, ratio);
+
+    if (opacity !== undefined) {
+      const mod = this.getOrCreateModifier(particle);
+
+      mod.opacity = opacity;
+    }
+  }
+
+  #hoverBubbleSize(particle: Particle, ratio: number, divBubble?: BubbleDiv): void {
+    const container = this.container,
+      modeSize = divBubble?.size ? divBubble.size * container.retina.pixelRatio : container.retina.bubbleModeSize;
+
+    if (modeSize === undefined) {
+      return;
+    }
+
+    const pSize = particle.size.value,
+      size = calculateBubbleValue(pSize, modeSize, particle.size.max, ratio);
+
+    if (size !== undefined) {
+      const mod = this.getOrCreateModifier(particle);
+
+      mod.radius = size;
+    }
+  }
+
+  #process(particle: Particle, mouseDistanceSq: number, timeSpent: number, data: Interfaces): void {
+    const container = this.container,
+      bubbleParam = data.bubbleObj.optValue,
+      options = container.actualOptions,
+      bubbleOptions = options.interactivity?.modes.bubble;
+
+    if (!bubbleOptions || bubbleParam === undefined) {
+      return;
+    }
+
+    const bubbleDuration = bubbleOptions.duration,
+      bubbleDistance = container.retina.bubbleModeDistance,
+      particlesParam = data.particlesObj.optValue,
+      pObjBubble = data.bubbleObj.value,
+      pObj = data.particlesObj.value ?? defaultBubbleValue,
+      type = data.type;
+
+    if (!bubbleDistance || bubbleDistance < minDistance || bubbleParam === particlesParam) {
+      return;
+    }
+
+    container.bubble ??= {};
+
+    const mod = this.getOrCreateModifier(particle);
+
+    if (container.bubble.durationEnd) {
+      if (pObjBubble) {
+        if (type === ProcessBubbleType.size) {
+          mod.radius = undefined;
+        }
+
+        if (type === ProcessBubbleType.opacity) {
+          mod.opacity = undefined;
+        }
+      }
+    } else {
+      if (mouseDistanceSq <= bubbleDistance * bubbleDistance) {
+        const obj = pObjBubble ?? pObj;
+
+        if (obj !== bubbleParam) {
+          const value = pObj - (timeSpent * (pObj - bubbleParam)) / bubbleDuration;
+
+          if (type === ProcessBubbleType.size) {
+            mod.radius = value;
+          }
+
+          if (type === ProcessBubbleType.opacity) {
+            mod.opacity = value;
+          }
+        }
+      } else {
+        if (type === ProcessBubbleType.size) {
+          mod.radius = undefined;
+        }
+
+        if (type === ProcessBubbleType.opacity) {
+          mod.opacity = undefined;
+        }
+      }
+    }
+  }
+
+  #singleSelectorHover(interactivityData: IInteractivityData, delta: IDelta, selector: string, div: DivEvent): void {
+    const container = this.container,
+      selectors = safeDocument().querySelectorAll(selector),
+      bubble = container.actualOptions.interactivity?.modes.bubble;
+
+    if (!bubble || !selectors.length) {
+      return;
+    }
+
+    selectors.forEach(item => {
+      const elem = item as HTMLElement,
+        pxRatio = container.retina.pixelRatio,
+        pos = {
+          x: (elem.offsetLeft + elem.offsetWidth * half) * pxRatio,
+          y: (elem.offsetTop + elem.offsetHeight * half) * pxRatio,
+        },
+        repulseRadius = elem.offsetWidth * half * pxRatio,
+        area =
+          div.type === DivType.circle
+            ? new Circle(pos.x, pos.y, repulseRadius)
+            : new Rectangle(
+                elem.offsetLeft * pxRatio,
+                elem.offsetTop * pxRatio,
+                elem.offsetWidth * pxRatio,
+                elem.offsetHeight * pxRatio,
+              ),
+        query = container.particles.grid.query(area, p => this.isEnabled(interactivityData, p));
+
+      for (const particle of query) {
+        if (!area.contains(particle.getPosition())) {
+          continue;
+        }
+
+        let mod = this.getOrCreateModifier(particle);
+
+        mod.enabled = true;
+        mod.inRange = true;
+
+        const divs = bubble.divs,
+          divBubble = divMode(divs, elem);
+
+        if (!mod.div || mod.div !== elem) {
+          this.clear(particle, delta, true);
+
+          /* clearing detached the modifier: re-acquire and re-enable it for the new div */
+          mod = this.getOrCreateModifier(particle);
+
+          mod.enabled = true;
+          mod.inRange = true;
+          mod.div = elem;
+        }
+
+        /* size */
+        this.#hoverBubbleSize(particle, defaultRatio, divBubble);
+
+        /* opacity */
+        this.#hoverBubbleOpacity(particle, defaultRatio, divBubble);
+
+        /* color */
+        this.#hoverBubbleColor(particle, defaultRatio, divBubble);
+      }
+    });
+  }
+}

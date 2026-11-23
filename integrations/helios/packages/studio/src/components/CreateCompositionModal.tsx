@@ -1,0 +1,154 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useStudio } from '../context/StudioContext';
+import './CreateCompositionModal.css';
+
+export const CreateCompositionModal: React.FC = () => {
+  const { isCreateOpen, setCreateOpen, createComposition, templates } = useStudio();
+  const [name, setName] = useState('');
+  const [template, setTemplate] = useState('vanilla');
+  const [width, setWidth] = useState(1920);
+  const [height, setHeight] = useState(1080);
+  const [fps, setFps] = useState(30);
+  const [duration, setDuration] = useState(5);
+
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isCreateOpen) {
+      setName('');
+      if (templates.length > 0) {
+        const hasVanilla = templates.some(t => t.id === 'vanilla');
+        setTemplate(hasVanilla ? 'vanilla' : templates[0].id);
+      }
+      setWidth(1920);
+      setHeight(1080);
+      setFps(30);
+      setDuration(5);
+      setError(null);
+      setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 10);
+    }
+  }, [isCreateOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await createComposition(name, template, { width, height, fps, duration });
+      // Modal closes automatically via context update in createComposition
+    } catch (err: any) {
+      setError(err.message || 'Failed to create composition');
+      setLoading(false);
+    }
+  };
+
+  if (!isCreateOpen) return null;
+
+  return (
+    <div className="create-modal-overlay" onClick={() => setCreateOpen(false)}>
+      <div className="create-modal-content" onClick={e => e.stopPropagation()}>
+        <div className="create-modal-header">New Composition</div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="create-modal-input-group">
+            <label>Composition Name</label>
+            <input
+              ref={inputRef}
+              className="create-modal-input"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="e.g. My Amazing Video"
+              disabled={loading}
+            />
+          </div>
+
+          <div className="create-modal-input-group">
+            <label>Template</label>
+            <select
+              className="create-modal-select"
+              value={template}
+              onChange={e => setTemplate(e.target.value)}
+              disabled={loading}
+            >
+              {templates.map(t => (
+                <option key={t.id} value={t.id}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="create-modal-row">
+            <div className="create-modal-input-group">
+              <label>Width</label>
+              <input
+                type="number"
+                className="create-modal-input"
+                value={width}
+                onChange={e => setWidth(Number(e.target.value))}
+                disabled={loading}
+              />
+            </div>
+            <div className="create-modal-input-group">
+              <label>Height</label>
+              <input
+                type="number"
+                className="create-modal-input"
+                value={height}
+                onChange={e => setHeight(Number(e.target.value))}
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          <div className="create-modal-row">
+            <div className="create-modal-input-group">
+              <label>FPS</label>
+              <input
+                type="number"
+                className="create-modal-input"
+                value={fps}
+                onChange={e => setFps(Number(e.target.value))}
+                disabled={loading}
+              />
+            </div>
+            <div className="create-modal-input-group">
+              <label>Duration (sec)</label>
+              <input
+                type="number"
+                className="create-modal-input"
+                value={duration}
+                onChange={e => setDuration(Number(e.target.value))}
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          {error && <div className="create-modal-error">{error}</div>}
+
+          <div className="create-modal-actions">
+            <button
+              type="button"
+              className="create-modal-button cancel"
+              onClick={() => setCreateOpen(false)}
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="create-modal-button create"
+              disabled={loading || !name.trim()}
+            >
+              {loading ? 'Creating...' : 'Create'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};

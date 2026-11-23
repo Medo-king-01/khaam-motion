@@ -1,0 +1,51 @@
+import { type IOptionLoader, type RecursivePartial, isNull, loadProperty } from "@tsparticles/engine";
+import type { IRepulseBase, IRepulseRestore } from "../Interfaces/IRepulseBase.js";
+
+/**
+ * Repulse mode base options
+ */
+export abstract class RepulseBase implements IRepulseBase, IOptionLoader<IRepulseBase> {
+  /** Repulse distance in pixels */
+  distance = 200;
+  /** Repulse animation duration in seconds */
+  duration = 0.4;
+  /** Easing type used for the repulse animation */
+  easing = "ease-out-quad";
+  /** Repulse factor multiplier */
+  factor = 100;
+  /** Maximum repulse speed */
+  maxSpeed = 50;
+  /** Restore behavior after repulse interaction */
+  restore: IRepulseRestore;
+  /** Repulse speed */
+  speed = 1;
+
+  constructor() {
+    this.restore = {
+      enable: false,
+      delay: 0,
+      speed: 0.08,
+      follow: true,
+    };
+  }
+
+  load(data?: RecursivePartial<IRepulseBase>): void {
+    if (isNull(data)) {
+      return;
+    }
+
+    loadProperty(this, "distance", data.distance);
+    loadProperty(this, "duration", data.duration);
+    loadProperty(this, "easing", data.easing);
+    loadProperty(this, "factor", data.factor);
+    loadProperty(this, "speed", data.speed);
+    loadProperty(this, "maxSpeed", data.maxSpeed);
+
+    if (data.restore !== undefined) {
+      this.restore.enable = data.restore.enable ?? this.restore.enable;
+      this.restore.delay = data.restore.delay ?? this.restore.delay;
+      this.restore.speed = data.restore.speed ?? this.restore.speed;
+      this.restore.follow = data.restore.follow ?? this.restore.follow;
+    }
+  }
+}

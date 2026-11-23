@@ -1,0 +1,14 @@
+import type { IParticlesBounce } from "../../../Interfaces/Particles/Bounce/IParticlesBounce.js";
+import { OptionLoader } from "../../../../Utils/OptionLoader.js";
+import { ParticlesBounceFactor } from "./ParticlesBounceFactor.js";
+import type { RecursivePartial } from "../../../../Types/RecursivePartial.js";
+
+export class ParticlesBounce extends OptionLoader<IParticlesBounce> implements IParticlesBounce {
+  readonly horizontal = new ParticlesBounceFactor();
+  readonly vertical = new ParticlesBounceFactor();
+
+  protected doLoad(data: RecursivePartial<IParticlesBounce>): void {
+    this.horizontal.load(data.horizontal);
+    this.vertical.load(data.vertical);
+  }
+}

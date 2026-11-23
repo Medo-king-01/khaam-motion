@@ -1,0 +1,400 @@
+import { HeliosController } from "../controllers";
+import { CaptionCue } from "@helios-project/core";
+import { stringifySRT, SubtitleCue } from "./caption-parser";
+import {
+  Output,
+  BufferTarget,
+  Mp4OutputFormat,
+  WebMOutputFormat,
+  VideoSampleSource,
+  AudioSampleSource,
+  VideoSample,
+  AudioSample,
+  VideoEncodingConfig,
+  AudioEncodingConfig
+} from "mediabunny";
+import { mixAudio } from "./audio-utils";
+
+export class ClientSideExporter {
+  constructor(
+    private controller: HeliosController
+  ) {}
+
+  public async export(options: {
+    onProgress: (progress: number) => void;
+    signal?: AbortSignal;
+    mode?: 'auto' | 'canvas' | 'dom';
+    canvasSelector?: string;
+    format?: 'mp4' | 'webm' | 'png' | 'jpeg';
+    includeCaptions?: boolean;
+    captionStyle?: {
+      color?: string;
+      backgroundColor?: string;
+      fontFamily?: string;
+      scale?: number;
+    };
+    width?: number;
+    height?: number;
+    bitrate?: number;
+    filename?: string;
+  }): Promise<void> {
+    const { onProgress, signal, mode = 'auto', canvasSelector = 'canvas', format = 'mp4', includeCaptions = true, captionStyle, width: targetWidth, height: targetHeight, bitrate, filename = 'video' } = options;
+
+    console.log(`Client-side rendering started! Format: ${format}`);
+    this.controller.pause();
+
+    try {
+      const state = this.controller.getState();
+
+      // Image Export Logic
+      if (format === 'png' || format === 'jpeg') {
+        // For snapshot, use current frame
+        const frameToCapture = state.currentFrame;
+        let effectiveMode = mode;
+
+        if (effectiveMode === 'auto') {
+            const result = await this.controller.captureFrame(frameToCapture, {
+                selector: canvasSelector,
+                mode: 'canvas',
+                width: targetWidth,
+                height: targetHeight
+            });
+
+            if (result && result.frame) {
+                effectiveMode = 'canvas';
+                result.frame.close();
+            } else {
+                effectiveMode = 'dom';
+                console.log("Canvas not found for snapshot, falling back to DOM mode.");
+            }
+        }
+
+        const result = await this.controller.captureFrame(frameToCapture, {
+            selector: canvasSelector,
+            mode: effectiveMode as 'canvas' | 'dom',
+            width: targetWidth,
+            height: targetHeight
+        });
+
+        if (!result || !result.frame) {
+            throw new Error(`Failed to capture snapshot frame in mode: ${effectiveMode}`);
+        }
+
+        const { frame, captions } = result;
+
+        let finalFrame = frame;
+        if (includeCaptions && captions && captions.length > 0) {
+            finalFrame = await this.drawCaptions(frame, captions, captionStyle);
+            frame.close();
+        }
+
+        // Convert to Blob
+        const width = finalFrame.displayWidth;
+        const height = finalFrame.displayHeight;
+
+        let canvas: OffscreenCanvas | HTMLCanvasElement;
+        let ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D | null;
+
+        if (typeof OffscreenCanvas !== 'undefined') {
+            canvas = new OffscreenCanvas(width, height);
+            ctx = canvas.getContext('2d');
+        } else {
+            canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            ctx = canvas.getContext('2d');
+        }
+
+        if (!ctx) throw new Error("Failed to create canvas context for snapshot");
+        ctx.drawImage(finalFrame, 0, 0);
+        finalFrame.close();
+
+        let blob: Blob | null = null;
+        const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+
+        if (canvas instanceof OffscreenCanvas) {
+            blob = await canvas.convertToBlob({ type: mimeType });
+        } else {
+            blob = await new Promise<Blob | null>(resolve => (canvas as HTMLCanvasElement).toBlob(resolve, mimeType));
+        }
+
+        if (blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${filename}.${format}`;
+            a.click();
+            URL.revokeObjectURL(url);
+            console.log("Snapshot download finished!");
+        } else {
+            throw new Error("Failed to create image blob");
+        }
+
+        onProgress(1);
+        return;
+      }
+
+      let startFrame = 0;
+      let totalFrames = state.duration * state.fps;
+
+      if (state.playbackRange && state.playbackRange.length === 2) {
+          startFrame = state.playbackRange[0];
+          const endFrame = state.playbackRange[1];
+          totalFrames = endFrame - startFrame;
+      }
+
+      // 1. Determine effective mode
+      let effectiveMode = mode;
+
+      if (effectiveMode === 'auto') {
+          const result = await this.controller.captureFrame(startFrame, {
+              selector: canvasSelector,
+              mode: 'canvas',
+              width: targetWidth,
+              height: targetHeight
+          });
+
+          if (result && result.frame) {
+              effectiveMode = 'canvas';
+              result.frame.close();
+          } else {
+              effectiveMode = 'dom';
+              console.log("Canvas not found for auto export, falling back to DOM mode.");
+          }
+      }
+
+      // 2. Capture first frame to determine dimensions
+      const firstResult = await this.controller.captureFrame(startFrame, {
+          selector: canvasSelector,
+          mode: effectiveMode as 'canvas' | 'dom',
+          width: targetWidth,
+          height: targetHeight
+      });
+
+      if (!firstResult || !firstResult.frame) {
+         throw new Error(`Failed to capture first frame in mode: ${effectiveMode}`);
+      }
+
+      const { frame: firstFrame, captions: firstCaptions } = firstResult;
+
+      // 3. Setup Mediabunny Output
+      const target = new BufferTarget();
+      const outputFormat = format === 'webm' ? new WebMOutputFormat() : new Mp4OutputFormat();
+      const output = new Output({
+          format: outputFormat,
+          target
+      });
+
+      // 4. Setup Video Track
+      const videoConfig: VideoEncodingConfig = {
+          codec: format === 'webm' ? 'vp9' : 'avc',
+          bitrate: bitrate ?? 5_000_000
+      };
+
+      const videoSource = new VideoSampleSource(videoConfig);
+      output.addVideoTrack(videoSource);
+
+      // 5. Setup Audio Track
+      let audioSource: AudioSampleSource | null = null;
+      let audioTracks: any[] = [];
+
+      try {
+          audioTracks = await this.controller.getAudioTracks();
+          if (audioTracks && audioTracks.length > 0) {
+              const audioConfig: AudioEncodingConfig = format === 'webm'
+                  ? { codec: 'opus' }
+                  : { codec: 'aac' };
+
+              audioSource = new AudioSampleSource(audioConfig);
+              output.addAudioTrack(audioSource);
+          }
+      } catch (e) {
+          console.warn("Failed to setup audio:", e);
+      }
+
+      await output.start();
+
+      // 6. Encode Loop
+      // Encode first frame
+      let frameToEncode = firstFrame;
+      if (includeCaptions && firstCaptions && firstCaptions.length > 0) {
+          frameToEncode = await this.drawCaptions(firstFrame, firstCaptions, captionStyle);
+          firstFrame.close();
+      }
+
+      await videoSource.add(new VideoSample(frameToEncode), { keyFrame: true });
+      frameToEncode.close();
+
+      onProgress(1 / totalFrames);
+
+      for (let i = 1; i < totalFrames; i++) {
+        if (signal?.aborted) {
+            throw new Error("Export aborted");
+        }
+
+        const frameIndex = startFrame + i;
+        const result = await this.controller.captureFrame(frameIndex, {
+            selector: canvasSelector,
+            mode: effectiveMode as 'canvas' | 'dom',
+            width: targetWidth,
+            height: targetHeight
+        });
+
+        if (!result || !result.frame) {
+            throw new Error(`Frame ${frameIndex} missing during export.`);
+        }
+
+        const { frame: videoFrame, captions } = result;
+        const keyFrame = i % (state.fps * 2) === 0;
+
+        let finalFrame = videoFrame;
+        if (includeCaptions && captions && captions.length > 0) {
+             finalFrame = await this.drawCaptions(videoFrame, captions, captionStyle);
+             videoFrame.close();
+        }
+
+        await videoSource.add(new VideoSample(finalFrame), { keyFrame });
+        finalFrame.close();
+
+        onProgress((i + 1) / totalFrames);
+      }
+
+      // 7. Process Audio
+      if (audioSource && audioTracks.length > 0) {
+          const durationInSeconds = totalFrames / state.fps;
+          const rangeStartInSeconds = startFrame / state.fps;
+          const audioBuffer = await mixAudio(audioTracks, durationInSeconds, 48000, rangeStartInSeconds);
+
+          const c0 = audioBuffer.getChannelData(0);
+          const c1 = audioBuffer.getChannelData(1);
+
+          const planarData = new Float32Array(c0.length + c1.length);
+          planarData.set(c0, 0);
+          planarData.set(c1, c0.length);
+
+          const sample = new AudioSample({
+              format: 'f32-planar',
+              sampleRate: 48000,
+              numberOfChannels: 2,
+              timestamp: 0,
+              data: planarData
+          });
+
+          await audioSource.add(sample);
+      }
+
+      await output.finalize();
+
+      if (target.buffer) {
+        this.download(target.buffer, format, filename);
+        console.log("Client-side rendering and download finished!");
+      } else {
+        throw new Error("Export failed: Output buffer is empty");
+      }
+
+    } catch (e: any) {
+      if (e.message === "Export aborted") {
+          console.log("Export aborted by user.");
+          return;
+      }
+      console.error("Client-side rendering failed:", e);
+      throw e;
+    }
+  }
+
+  private async drawCaptions(frame: VideoFrame, captions: CaptionCue[], style?: {
+      color?: string;
+      backgroundColor?: string;
+      fontFamily?: string;
+      scale?: number;
+  }): Promise<VideoFrame> {
+      const width = frame.displayWidth;
+      const height = frame.displayHeight;
+      let canvas: OffscreenCanvas | HTMLCanvasElement;
+      let ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D | null;
+
+      if (typeof OffscreenCanvas !== 'undefined') {
+          canvas = new OffscreenCanvas(width, height);
+          ctx = canvas.getContext('2d');
+      } else {
+          canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          ctx = canvas.getContext('2d');
+      }
+
+      if (!ctx) throw new Error("Failed to create canvas context for captions");
+
+      ctx.drawImage(frame, 0, 0);
+
+      ctx.save();
+
+      const scale = style?.scale ?? 0.05;
+      const fontSize = Math.max(16, Math.round(height * scale));
+      const padding = fontSize * 0.5;
+      const lineHeight = fontSize * 1.2;
+      const bottomMargin = height * 0.05;
+
+      ctx.font = `${fontSize}px ${style?.fontFamily || 'sans-serif'}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+
+      let currentBottomY = height - bottomMargin;
+      const reversedCaptions = [...captions].reverse();
+
+      reversedCaptions.forEach(cue => {
+          const lines = cue.text.split('\n');
+          const cueHeight = lines.length * lineHeight + (padding * 2);
+
+          let maxLineWidth = 0;
+          lines.forEach((line: any) => {
+             const m = ctx!.measureText(line);
+             if (m.width > maxLineWidth) maxLineWidth = m.width;
+          });
+
+          const bgWidth = maxLineWidth + (fontSize * 1.0);
+          const bgTopY = currentBottomY - cueHeight;
+
+          ctx!.shadowColor = 'transparent';
+          ctx!.fillStyle = style?.backgroundColor || 'rgba(0, 0, 0, 0.7)';
+          ctx!.fillRect((width / 2) - (bgWidth / 2), bgTopY, bgWidth, cueHeight);
+
+          ctx!.shadowColor = 'black';
+          ctx!.shadowBlur = 2;
+          ctx!.shadowOffsetY = 1;
+          ctx!.fillStyle = style?.color || 'white';
+          lines.forEach((line: any, i: any) => {
+              const y = bgTopY + padding + (i * lineHeight);
+              ctx!.fillText(line, width / 2, y);
+          });
+
+          currentBottomY -= (cueHeight + 4);
+      });
+
+      ctx.restore();
+
+      return new VideoFrame(canvas, { timestamp: frame.timestamp });
+  }
+
+  private download(buffer: ArrayBuffer, format: 'mp4' | 'webm', filename: string) {
+      const type = format === 'webm' ? "video/webm" : "video/mp4";
+      const blob = new Blob([buffer], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${filename}.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+  }
+
+  public saveCaptionsAsSRT(cues: SubtitleCue[], filename: string) {
+    const srtContent = stringifySRT(cues);
+    const blob = new Blob([srtContent], { type: "text/srt" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+}

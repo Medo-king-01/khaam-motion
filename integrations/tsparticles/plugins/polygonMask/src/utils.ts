@@ -1,0 +1,255 @@
+import {
+  type HdrMode,
+  type ICoordinates,
+  type PluginManager,
+  Vector,
+  defaultTransform,
+  double,
+  getStyleFromRgb,
+  rangeColorToRgb,
+} from "@tsparticles/engine";
+import type {
+  SVGPathSeg,
+  SVGPathSegLinetoHorizontalAbs,
+  SVGPathSegLinetoHorizontalRel,
+  SVGPathSegLinetoVerticalAbs,
+  SVGPathSegLinetoVerticalRel,
+} from "./pathseg.js";
+import type { SvgAbsoluteCoordinatesTypes, SvgRelativeCoordinatesTypes } from "./types.js";
+import type { IPolygonMaskDrawStroke } from "./Options/Interfaces/IPolygonMaskDrawStroke.js";
+import type { ISvgPath } from "./Interfaces/ISvgPath.js";
+
+const inSegmentRange = {
+  min: 0,
+  max: 1,
+};
+
+/**
+ * @param pluginManager - The plugin manager
+ * @param context - The rendering context
+ * @param rawData - The rawData
+ * @param stroke - The stroke flag
+ * @param hdr - The hdr
+ * @param peakNits - The peak nits value
+ * @param mode - The HDR mode
+ */
+export function drawPolygonMask(
+  pluginManager: PluginManager,
+  context: OffscreenCanvasRenderingContext2D,
+  rawData: ICoordinates[],
+  stroke: IPolygonMaskDrawStroke,
+  hdr = false,
+  peakNits?: number,
+  mode?: HdrMode,
+): void {
+  const color = rangeColorToRgb(pluginManager, stroke.color);
+
+  if (!color) {
+    return;
+  }
+
+  const firstIndex = 0,
+    firstItem = rawData[firstIndex];
+
+  if (!firstItem) {
+    return;
+  }
+
+  context.beginPath();
+  context.moveTo(firstItem.x, firstItem.y);
+
+  for (const item of rawData) {
+    context.lineTo(item.x, item.y);
+  }
+
+  context.closePath();
+  context.strokeStyle = getStyleFromRgb(color, hdr, undefined, peakNits, mode);
+  context.lineWidth = stroke.width;
+  context.stroke();
+}
+
+/**
+ * @param pluginManager - The plugin manager
+ * @param context - The rendering context
+ * @param path - The path
+ * @param stroke - The stroke flag
+ * @param position - The position
+ * @param hdr - The hdr
+ * @param peakNits - The peak nits value
+ * @param mode - The HDR mode
+ */
+export function drawPolygonMaskPath(
+  pluginManager: PluginManager,
+  context: OffscreenCanvasRenderingContext2D,
+  path: Path2D,
+  stroke: IPolygonMaskDrawStroke,
+  position: ICoordinates,
+  hdr = false,
+  peakNits?: number,
+  mode?: HdrMode,
+): void {
+  context.setTransform(
+    defaultTransform.a,
+    defaultTransform.b,
+    defaultTransform.c,
+    defaultTransform.d,
+    position.x,
+    position.y,
+  );
+
+  const color = rangeColorToRgb(pluginManager, stroke.color);
+
+  if (!color) {
+    return;
+  }
+
+  context.strokeStyle = getStyleFromRgb(color, hdr, stroke.opacity, peakNits, mode);
+  context.lineWidth = stroke.width;
+  context.stroke(path);
+  context.resetTransform();
+}
+
+/**
+ * @param paths - The paths
+ * @param scale - The scale
+ * @param offset - The offset
+ * @returns the coordinates of the points
+ */
+export function parsePaths(paths: ISvgPath[], scale: number, offset: ICoordinates): ICoordinates[] {
+  const res: ICoordinates[] = [],
+    defaultCount = 0;
+
+  for (const path of paths) {
+    const segments = path.element.pathSegList,
+      len = segments?.numberOfItems ?? defaultCount,
+      p = {
+        x: 0,
+        y: 0,
+      };
+
+    for (let i = 0; i < len; i++) {
+      const segment: SVGPathSeg | undefined = segments?.getItem(i),
+        svgPathSeg = globalThis.SVGPathSeg;
+
+      switch (segment?.pathSegType) {
+        //
+        // Absolute
+        //
+        case svgPathSeg.PATHSEG_MOVETO_ABS:
+        case svgPathSeg.PATHSEG_LINETO_ABS:
+        case svgPathSeg.PATHSEG_CURVETO_CUBIC_ABS:
+        case svgPathSeg.PATHSEG_CURVETO_QUADRATIC_ABS:
+        case svgPathSeg.PATHSEG_ARC_ABS:
+        case svgPathSeg.PATHSEG_CURVETO_CUBIC_SMOOTH_ABS:
+        case svgPathSeg.PATHSEG_CURVETO_QUADRATIC_SMOOTH_ABS: {
+          const absSeg = segment as SvgAbsoluteCoordinatesTypes;
+
+          p.x = absSeg.x;
+          p.y = absSeg.y;
+          break;
+        }
+        case svgPathSeg.PATHSEG_LINETO_HORIZONTAL_ABS:
+          p.x = (segment as SVGPathSegLinetoHorizontalAbs).x;
+          break;
+
+        case svgPathSeg.PATHSEG_LINETO_VERTICAL_ABS:
+          p.y = (segment as SVGPathSegLinetoVerticalAbs).y;
+          break;
+
+        //
+        // Relative
+        //
+        case svgPathSeg.PATHSEG_LINETO_REL:
+        case svgPathSeg.PATHSEG_MOVETO_REL:
+        case svgPathSeg.PATHSEG_CURVETO_CUBIC_REL:
+        case svgPathSeg.PATHSEG_CURVETO_QUADRATIC_REL:
+        case svgPathSeg.PATHSEG_ARC_REL:
+        case svgPathSeg.PATHSEG_CURVETO_CUBIC_SMOOTH_REL:
+        case svgPathSeg.PATHSEG_CURVETO_QUADRATIC_SMOOTH_REL: {
+          const relSeg = segment as SvgRelativeCoordinatesTypes;
+
+          p.x += relSeg.x;
+          p.y += relSeg.y;
+          break;
+        }
+        case svgPathSeg.PATHSEG_LINETO_HORIZONTAL_REL:
+          p.x += (segment as SVGPathSegLinetoHorizontalRel).x;
+          break;
+
+        case svgPathSeg.PATHSEG_LINETO_VERTICAL_REL:
+          p.y += (segment as SVGPathSegLinetoVerticalRel).y;
+          break;
+
+        case svgPathSeg.PATHSEG_UNKNOWN:
+        case svgPathSeg.PATHSEG_CLOSEPATH:
+          continue; // Skip the closing path (and the UNKNOWN)
+
+        default:
+          // no-op
+          continue;
+      }
+
+      res.push({
+        x: p.x * scale + offset.x,
+        y: p.y * scale + offset.y,
+      });
+    }
+  }
+
+  return res;
+}
+
+/**
+ * @param s1 - The s1
+ * @param s2 - The s2
+ * @param pos - The pos
+ * @returns the closest point on the segment
+ */
+export function calcClosestPointOnSegment(
+  s1: ICoordinates,
+  s2: ICoordinates,
+  pos: ICoordinates,
+): ICoordinates & { isOnSegment: boolean } {
+  // calc delta distance: source point to line start, line start to end
+  const dx1 = pos.x - s1.x,
+    dy1 = pos.y - s1.y,
+    dx2 = s2.x - s1.x,
+    dy2 = s2.y - s1.y,
+    // Calc position on line normalized between 0.00 & 1.00
+    // == dot product divided by delta line distances squared
+    t = (dx1 * dx2 + dy1 * dy2) / (dx2 * dx2 + dy2 * dy2),
+    // calc nearest pt on line
+    res = {
+      x: s1.x + dx2 * t,
+      y: s1.y + dy2 * t,
+      isOnSegment: t >= inSegmentRange.min && t <= inSegmentRange.max,
+    };
+
+  // clamp results to being on the segment
+  if (t < inSegmentRange.min) {
+    res.x = s1.x;
+    res.y = s1.y;
+  } else if (t > inSegmentRange.max) {
+    res.x = s2.x;
+    res.y = s2.y;
+  }
+
+  return res;
+}
+
+/**
+ * @param start - The start value
+ * @param stop - The stop
+ * @param velocity - The velocity
+ */
+export function segmentBounce(start: ICoordinates, stop: ICoordinates, velocity: Vector): void {
+  const dx = start.x - stop.x,
+    dy = start.y - stop.y,
+    wallAngle = Math.atan2(dy, dx), // + Math.PI / 2;
+    wallNormal = Vector.create(Math.sin(wallAngle), -Math.cos(wallAngle)),
+    d = double * (velocity.x * wallNormal.x + velocity.y * wallNormal.y);
+
+  wallNormal.multTo(d);
+
+  velocity.subFrom(wallNormal);
+}

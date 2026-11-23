@@ -1,0 +1,182 @@
+{
+  "name": "@tsparticles/shape-cards",
+  "version": "4.6.0",
+  "description": "tsParticles shape for rendering particles as playing card suit symbols",
+  "homepage": "https://particles.js.org",
+  "scripts": {
+    "build": "tsparticles-build",
+    "version": "tsparticles-build -d && git add package.dist.json && tsparticles-build -p -l && git add .",
+    "prepack": "pnpm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tsparticles/tsparticles.git",
+    "directory": "shapes/cards"
+  },
+  "keywords": [
+    "front-end",
+    "frontend",
+    "tsparticles",
+    "particles",
+    "particle",
+    "canvas",
+    "animation",
+    "web",
+    "html5",
+    "css3",
+    "animated",
+    "background",
+    "confetti",
+    "fireworks",
+    "typescript",
+    "javascript",
+    "tsparticles-shape",
+    "cards"
+  ],
+  "author": "Matteo Bruni <matteo.bruni@me.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tsparticles/tsparticles/issues"
+  },
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/matteobruni"
+    },
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/tsparticles"
+    },
+    {
+      "type": "buymeacoffee",
+      "url": "https://www.buymeacoffee.com/matteobruni"
+    }
+  ],
+  "prettier": "@tsparticles/prettier-config",
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "browser": "dist/browser/browser.js",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "browser": "./dist/browser/browser.js",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./lazy": {
+      "types": "./dist/types/index.lazy.d.ts",
+      "browser": "./dist/browser/browser.js",
+      "import": "./dist/esm/index.lazy.js",
+      "require": "./dist/cjs/index.lazy.js",
+      "default": "./dist/esm/index.lazy.js"
+    },
+    "./cards": {
+      "types": "./dist/types/cards/index.d.ts",
+      "browser": "./dist/browser/cards/index.js",
+      "import": "./dist/esm/cards/index.js",
+      "require": "./dist/cjs/cards/index.js",
+      "default": "./dist/esm/cards/index.js"
+    },
+    "./cards/lazy": {
+      "types": "./dist/types/cards/index.lazy.d.ts",
+      "browser": "./dist/browser/cards/index.lazy.js",
+      "import": "./dist/esm/cards/index.lazy.js",
+      "require": "./dist/cjs/cards/index.lazy.js",
+      "default": "./dist/esm/cards/index.lazy.js"
+    },
+    "./clubs": {
+      "types": "./dist/types/clubs/index.d.ts",
+      "browser": "./dist/browser/clubs/index.js",
+      "import": "./dist/esm/clubs/index.js",
+      "require": "./dist/cjs/clubs/index.js",
+      "default": "./dist/esm/clubs/index.js"
+    },
+    "./clubs/lazy": {
+      "types": "./dist/types/clubs/index.lazy.d.ts",
+      "browser": "./dist/browser/clubs/index.lazy.js",
+      "import": "./dist/esm/clubs/index.lazy.js",
+      "require": "./dist/cjs/clubs/index.lazy.js",
+      "default": "./dist/esm/clubs/index.lazy.js"
+    },
+    "./diamonds": {
+      "types": "./dist/types/diamonds/index.d.ts",
+      "browser": "./dist/browser/diamonds/index.js",
+      "import": "./dist/esm/diamonds/index.js",
+      "require": "./dist/cjs/diamonds/index.js",
+      "default": "./dist/esm/diamonds/index.js"
+    },
+    "./diamonds/lazy": {
+      "types": "./dist/types/diamonds/index.lazy.d.ts",
+      "browser": "./dist/browser/diamonds/index.lazy.js",
+      "import": "./dist/esm/diamonds/index.lazy.js",
+      "require": "./dist/cjs/diamonds/index.lazy.js",
+      "default": "./dist/esm/diamonds/index.lazy.js"
+    },
+    "./hearts": {
+      "types": "./dist/types/hearts/index.d.ts",
+      "browser": "./dist/browser/hearts/index.js",
+      "import": "./dist/esm/hearts/index.js",
+      "require": "./dist/cjs/hearts/index.js",
+      "default": "./dist/esm/hearts/index.js"
+    },
+    "./hearts/lazy": {
+      "types": "./dist/types/hearts/index.lazy.d.ts",
+      "browser": "./dist/browser/hearts/index.lazy.js",
+      "import": "./dist/esm/hearts/index.lazy.js",
+      "require": "./dist/cjs/hearts/index.lazy.js",
+      "default": "./dist/esm/hearts/index.lazy.js"
+    },
+    "./spades": {
+      "types": "./dist/types/spades/index.d.ts",
+      "browser": "./dist/browser/spades/index.js",
+      "import": "./dist/esm/spades/index.js",
+      "require": "./dist/cjs/spades/index.js",
+      "default": "./dist/esm/spades/index.js"
+    },
+    "./spades/lazy": {
+      "types": "./dist/types/spades/index.lazy.d.ts",
+      "browser": "./dist/browser/spades/index.lazy.js",
+      "import": "./dist/esm/spades/index.lazy.js",
+      "require": "./dist/cjs/spades/index.lazy.js",
+      "default": "./dist/esm/spades/index.lazy.js"
+    },
+    "./suits": {
+      "types": "./dist/types/suits.d.ts",
+      "browser": "./dist/browser/suits.js",
+      "import": "./dist/esm/suits.js",
+      "require": "./dist/cjs/suits.js",
+      "default": "./dist/esm/suits.js"
+    },
+    "./suits/lazy": {
+      "types": "./dist/types/suits.lazy.d.ts",
+      "browser": "./dist/browser/suits.lazy.js",
+      "import": "./dist/esm/suits.lazy.js",
+      "require": "./dist/cjs/suits.lazy.js",
+      "default": "./dist/esm/suits.lazy.js"
+    },
+    "./package.json": "./dist/package.json"
+  },
+  "peerDependencies": {
+    "@tsparticles/engine": "workspace:*"
+  },
+  "devDependencies": {
+    "@tsparticles/cli-build": "workspace:*",
+    "@tsparticles/engine": "workspace:*",
+    "@tsparticles/path-utils": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist",
+    "linkDirectory": true
+  },
+  "type": "module",
+  "dependencies": {
+    "@tsparticles/path-utils": "workspace:*"
+  }
+}

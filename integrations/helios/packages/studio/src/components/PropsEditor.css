@@ -1,0 +1,303 @@
+.props-editor {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prop-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prop-label {
+  font-size: 0.8em;
+  font-weight: bold;
+  color: #333;
+}
+
+.prop-input {
+  padding: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.prop-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.prop-input.error {
+  border-color: #dc3545;
+  background-color: #fff5f5;
+}
+
+.prop-input.error:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.1);
+}
+
+.prop-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+.prop-color-container {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.prop-color-picker {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.prop-color-text {
+  flex: 1;
+}
+
+/* JSON Editor Styles */
+.json-editor {
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 0.85em;
+  min-height: 80px;
+  resize: vertical;
+  line-height: 1.4;
+  white-space: pre;
+}
+
+.json-editor.error {
+  border-color: #dc3545;
+  background-color: #fff5f5;
+}
+
+.json-editor.error:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.1);
+}
+
+.unsupported-type {
+  font-size: 0.8em;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.editor-message {
+  padding: 16px;
+  color: #666;
+  text-align: center;
+  font-size: 0.9em;
+}
+
+/* Schema Inputs */
+.prop-select {
+  cursor: pointer;
+  background-color: white;
+}
+
+.prop-number-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.prop-number-container.has-range .prop-number {
+  width: 60px;
+  flex-shrink: 0;
+}
+
+.prop-range {
+  flex: 1;
+  cursor: pointer;
+}
+
+.prop-input.drag-over {
+  border-color: #3296ff;
+  background-color: rgba(50, 150, 255, 0.1);
+  box-shadow: 0 0 0 2px rgba(50, 150, 255, 0.2);
+}
+
+/* Nested Schema Styles */
+.prop-object-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border-left: 2px solid #e0e0e0;
+  margin-left: 4px;
+}
+
+.prop-array-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prop-array-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px;
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 4px;
+}
+
+.prop-array-item-content {
+  flex: 1;
+}
+
+.prop-array-controls {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+}
+
+.prop-array-control-btn {
+  padding: 4px 8px;
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+}
+
+.prop-array-control-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.prop-array-control-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.prop-array-remove {
+  padding: 4px 8px;
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8em;
+  white-space: nowrap;
+}
+
+.prop-array-remove:hover {
+  background-color: #ffcdd2;
+}
+
+.prop-array-remove:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.prop-array-add {
+  align-self: flex-start;
+  padding: 6px 12px;
+  background-color: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #bbdefb;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  margin-top: 4px;
+}
+
+.prop-array-add:hover {
+  background-color: #bbdefb;
+}
+
+/* Props Toolbar */
+.props-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.props-toolbar-btn {
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8em;
+  color: #333;
+}
+
+.props-toolbar-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.props-toolbar-btn.danger {
+  color: #c62828;
+  border-color: #ffcdd2;
+  background-color: #ffebee;
+}
+
+.props-toolbar-btn.danger:hover {
+  background-color: #ffcdd2;
+}
+
+/* Prop Groups */
+.prop-group {
+  border: 1px solid #eee;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.prop-group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  background-color: #f5f5f5;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.9em;
+  font-weight: bold;
+  color: #333;
+}
+
+.prop-group-header:hover {
+  background-color: #eeeeee;
+}
+
+.prop-group-arrow {
+  display: inline-block;
+  font-size: 0.8em;
+  transition: transform 0.2s ease;
+  transform: rotate(0deg);
+}
+
+.prop-group-arrow.collapsed {
+  transform: rotate(-90deg);
+}
+
+.prop-group-content {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: #fff;
+  border-top: 1px solid #eee;
+}

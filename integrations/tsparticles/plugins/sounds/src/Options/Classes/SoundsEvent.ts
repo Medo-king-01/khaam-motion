@@ -1,0 +1,87 @@
+import {
+  type IOptionLoader,
+  type RecursivePartial,
+  type SingleOrMultiple,
+  isArray,
+  isFunction,
+  isNull,
+  isString,
+  loadProperty,
+} from "@tsparticles/engine";
+import type { FilterFunction } from "../../FilterFunctionTypes.js";
+import type { ISoundsEvent } from "../Interfaces/ISoundsEvent.js";
+import { SoundsAudio } from "./SoundsAudio.js";
+import { SoundsMelody } from "./SoundsMelody.js";
+import { SoundsNote } from "./SoundsNote.js";
+
+export class SoundsEvent implements ISoundsEvent, IOptionLoader<ISoundsEvent> {
+  /** The sounds event audio */
+  audio?: SingleOrMultiple<SoundsAudio>;
+
+  /** The sounds event name */
+  event: SingleOrMultiple<string> = [];
+  /** The sounds event filter */
+  filter?: FilterFunction;
+
+  /** The sounds event melodies */
+  melodies?: SoundsMelody[];
+
+  /** The sounds event notes */
+  notes?: SoundsNote[] = [];
+
+  load(data?: RecursivePartial<ISoundsEvent>): void {
+    if (isNull(data)) {
+      return;
+    }
+
+    loadProperty(this, "event", data.event);
+
+    if (data.audio !== undefined) {
+      if (isArray(data.audio)) {
+        this.audio = data.audio.map(s => {
+          const tmp = new SoundsAudio();
+
+          tmp.load(s);
+
+          return tmp;
+        });
+      } else {
+        this.audio = new SoundsAudio();
+
+        this.audio.load(data.audio);
+      }
+    }
+
+    if (data.notes !== undefined) {
+      this.notes = data.notes.map(t => {
+        const tmp = new SoundsNote();
+
+        tmp.load(t);
+
+        return tmp;
+      });
+    }
+
+    if (data.melodies !== undefined) {
+      this.melodies = data.melodies.map(t => {
+        const tmp = new SoundsMelody();
+
+        tmp.load(t);
+
+        return tmp;
+      });
+    }
+
+    if (data.filter) {
+      if (isString(data.filter)) {
+        const filterFunc = (globalThis as Record<string, unknown>)[data.filter];
+
+        if (isFunction(filterFunc)) {
+          this.filter = filterFunc as FilterFunction;
+        }
+      } else {
+        this.filter = data.filter;
+      }
+    }
+  }
+}

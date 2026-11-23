@@ -1,0 +1,34 @@
+import { type IOptionLoader, PixelMode, type RecursivePartial, isNull, loadProperty } from "@tsparticles/engine";
+import type { IEmitterSize } from "../Interfaces/IEmitterSize.js";
+
+/**
+ * The emitter size options
+ */
+export class EmitterSize implements IEmitterSize, IOptionLoader<IEmitterSize> {
+  /**
+   * The emitter area height
+   */
+  height = 0;
+  /**
+   * The emitter size mode (percent or precise)
+   */
+  mode: PixelMode | keyof typeof PixelMode = PixelMode.percent;
+  /**
+   * The emitter area width
+   */
+  width = 0;
+
+  /**
+   * Loads the emitter size options from the given data
+   * @param data - the data to load from
+   */
+  load(data?: RecursivePartial<IEmitterSize>): void {
+    if (isNull(data)) {
+      return;
+    }
+
+    loadProperty(this, "mode", data.mode);
+    loadProperty(this, "height", data.height);
+    loadProperty(this, "width", data.width);
+  }
+}

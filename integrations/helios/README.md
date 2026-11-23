@@ -1,0 +1,693 @@
+<!-- AGENT_SKIP_START: This section is for human readers only. Planning agents should skip to the next section. -->
+<details>
+<summary>About the development model behind Helios</summary>
+
+> **Status:** 🚀 **Beta**
+
+Helios is developed with AI-assisted tooling. A fleet of specialized agents handles planning, implementation, testing, and documentation — orchestrated through a structured planning-execution cycle. Human oversight directs architecture and reviews all changes before merge.
+
+The agent prompts that drive this workflow are available in [`docs/prompts/`](./docs/prompts/) for transparency.
+
+For project governance and roadmap, see [`docs/AGENTS.md`](./docs/AGENTS.md).
+</details>
+<!-- AGENT_SKIP_END -->
+
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/lockup-horizontal-bone.svg">
+  <img src="assets/brand/lockup-horizontal.svg" alt="Helios" width="360">
+</picture>
+
+### Video is light over time.
+
+[![License](https://img.shields.io/badge/license-ELv2-blue.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-beta-yellow.svg)](#project-status)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+[![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+[![npm](https://img.shields.io/badge/npm-workspace-red.svg)](https://www.npmjs.com/)
+[![GitHub](https://img.shields.io/badge/GitHub-BintzGavin%2Fhelios-black.svg)](https://github.com/BintzGavin/helios)
+[![Made with](https://img.shields.io/badge/made%20with-AI%20Agents-purple.svg)](./docs/prompts/)
+
+**A programmatic video engine that runs on web standards.**  
+Stop reinventing animation in JavaScript. Use the platform.
+
+[The Thesis](#the-thesis) • [Quick Start](#quick-start) • [Why Helios?](#why-helios) • [Documentation](#architecture) • [Roadmap](#roadmap--governance)
+
+</div>
+
+
+
+
+---
+
+## ⚡️ Recommended Quickstart: Helios Skills
+
+**The fastest way to get started.** We offer guided skills so that with one prompt into Claude Code, Cursor, or Opencode, Openclaw, Pi, Hermes, etc. you can generate one of six professional video types:
+
+**1 prompt →**
+• Launch announcement
+• Promo
+• Explainer
+• Product demo
+• Testimonial
+• Social cut
+
+Run this in an existing repo (preferably your marketing site):
+
+```bash
+npx skills add BintzGavin/helios
+```
+
+Then tell your agent something like:
+
+```bash
+generate a product demo video using the guided helios skill.
+```
+
+## Quick Start
+
+### Installation
+
+```bash
+npm install @helios-project/core @helios-project/player
+```
+
+### Create a Composition
+
+```typescript
+import { Helios } from '@helios-project/core';
+
+// Create a 10-second video at 30fps
+const helios = new Helios({
+  duration: 10,
+  fps: 30,
+  autoSyncAnimations: true
+});
+
+// Subscribe to frame updates
+helios.subscribe(({ currentFrame, duration, fps }) => {
+  const progress = currentFrame / (duration * fps);
+  // Use progress (0-1) to drive your animations
+  document.querySelector('.my-element').style.opacity = progress;
+});
+
+// Let the renderer (and the player) drive it
+window.helios = helios;
+
+// Control playback
+helios.play();
+helios.pause();
+helios.seek(150); // Jump to frame 150
+```
+
+### Use Standard CSS Animations
+
+```css
+/* Your existing CSS animations just work */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.my-element {
+  animation: fadeIn 1s ease-out;
+}
+```
+
+### Preview with the Player
+
+```html
+<!-- Drop-in Web Component works anywhere -->
+<helios-player src="./composition.html" width="1920" height="1080"></helios-player>
+<script type="module" src="@helios-project/player"></script>
+```
+
+### Render to Video
+
+```bash
+npx @helios-project/cli render ./composition.html -o output.mp4
+```
+
+The duration, frame rate and size come from the composition. Any page that draws its own frames renders too, with no Helios import. The renderer calls `window.renderAt(t)` once per frame, with `t` in seconds:
+
+```html
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+  const ctx = document.getElementById('c').getContext('2d');
+  window.renderAt = (t) => {
+    ctx.fillStyle = '#111'; ctx.fillRect(0, 0, 1920, 1080);
+    ctx.fillStyle = '#f5b700'; ctx.fillRect(200 + 300 * t, 480, 120, 120);
+  };
+</script>
+```
+
+```bash
+npx @helios-project/cli render ./page.html -o output.mp4 --duration 5 --audio song.mp3
+```
+
+---
+
+## The Thesis
+
+### Native Always Wins
+
+The history of software teaches a consistent lesson: **betting on native platform capabilities almost always beats simulation.**
+
+- CSS animations replaced jQuery `.animate()` and JS-driven motion
+- Native `<video>` and `<audio>` killed Flash
+- IntersectionObserver replaced expensive scroll-listener hacks
+- CSS Scroll Snap is displacing JavaScript carousel libraries
+
+When the platform catches up, the abstractions built to work around it become legacy debt.
+
+### The Remotion Era: Simulating What the Browser Already Does
+
+[Remotion](https://www.remotion.dev/) solved programmatic video by treating the browser as a **static image generator**. Stop time. Inject a frame number. Render. Screenshot. Repeat 30 times per second.
+
+```typescript
+// Remotion: The browser is a screenshot machine
+function MyComponent() {
+  const frame = useCurrentFrame();  // Frame number injected from outside
+  const opacity = interpolate(frame, [0, 30], [0, 1]);  // YOU calculate every value
+  return <div style={{ opacity }}>Hello</div>;
+}
+```
+
+This works. It's deterministic. Remotion is brilliant engineering, battle-tested, and has earned its place as the market leader.
+
+But look at what this architecture requires: **reimplementing animation in JavaScript.** The browser has a world-class animation engine—CSS `@keyframes`, hardware-accelerated compositing, the Web Animations API—but the frame-based model says: *"Ignore all of that. We'll simulate it ourselves."*
+
+Your CSS animations? Broken—the system clock drifts during render.  
+Your GSAP timelines? Need custom integration.  
+The browser's C++ compositor? Bypassed entirely.
+
+This is a **simulation-based architecture**. It works *despite* the browser, not *with* it.
+
+### The Helios Bet: Drive the Browser, Don't Simulate It
+
+Helios takes a different bet: **what if we drove the browser's native animation engine instead of replacing it?**
+
+The approach varies by context:
+
+**For Production Rendering:** Helios uses the Chrome DevTools Protocol (CDP) to virtualize time at the environment level. The `Emulation.setVirtualTimePolicy` command detaches the browser's internal clock from wall-clock time, allowing the renderer to advance time frame-by-frame as fast as the CPU allows. The browser's native animation engine calculates all interpolated values—we just tell it what time it is.
+
+**For Preview/Development:** Helios uses the Web Animations API to seek individual animations. Every `Animation` object has a writable `.currentTime` property:
+
+```typescript
+// Seek all animations to 1.5 seconds
+document.getAnimations().forEach(anim => {
+  anim.currentTime = 1500;
+  anim.pause();
+});
+```
+
+When you set `animation.currentTime`, the browser's C++ rendering engine recalculates all interpolated values. Hardware-accelerated. Using the same optimized code that powers every CSS animation on the web.
+
+**The result for developers:**
+
+```css
+/* Your existing CSS. No changes. */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.my-element {
+  animation: fadeIn 1s ease-out forwards;
+}
+```
+
+```typescript
+// Helios drives the browser's animation engine
+const helios = new Helios({ duration: 10, fps: 30, autoSyncAnimations: true });
+helios.seek(45); // All CSS/WAAPI animations instantly update to frame 45
+```
+
+**That's it.** Your CSS animations, your GSAP timelines, your Framer Motion springs—they work because the browser is doing the animation, not JavaScript.
+
+### The Honest Trade-off
+
+This is a **native-aligned architecture**, but it's not without constraints:
+
+- **Browser-specific:** CDP is Chromium-only. Helios renders in headless Chrome.
+- **Non-standard time control:** The W3C spec marks `document.timeline.currentTime` as read-only. We work around this via protocol-level control, not by violating the spec.
+- **A bet, not a certainty:** We're betting that platform capabilities will mature and this approach will become standard. If we're wrong, simulation-based architectures like Remotion will continue to dominate.
+
+But if history is any guide—native mobile vs PhoneGap, CSS Grid vs JavaScript layouts, `fetch()` vs jQuery—native-aligned architectures eventually win.
+
+We named this engine after the sun because video is, fundamentally, *light over time*.
+
+---
+
+## Why Helios?
+
+### Use What You Know
+
+No proprietary APIs to learn. Your existing CSS animations, GSAP timelines, and Motion/Framer Motion animations work out of the box.
+
+| Helios | Remotion |
+|--------|----------|
+| `@keyframes fadeIn { ... }` | `interpolate(frame, [0, 30], [0, 1])` |
+| Standard CSS, WAAPI | Custom hooks on every frame |
+| Any animation library | Must use their helpers |
+
+### Any Framework (or None)
+
+```typescript
+// React
+const { currentFrame } = useVideoFrame();
+
+// Vue
+const { currentFrame } = useVideoFrame();
+
+// Svelte
+$: currentFrame = $videoFrame.currentFrame;
+
+// Vanilla JS
+helios.subscribe(state => console.log(state.currentFrame));
+```
+
+### Free for Commercial Use
+
+Build and sell products with Helios. No per-seat fees, no render limits.
+
+| | Helios | Remotion |
+|---|--------|----------|
+| **Solo developer** | Free | Free |
+| **4-person team** | Free | $100/mo |
+| **10-person team** | Free | $250/mo |
+| **100 renders/mo** | Free | +$10/mo |
+
+---
+
+## Core Principles
+
+<!-- AGENT_VISION_START: These principles guide all architectural decisions -->
+
+The development of Helios is guided by foundational principles that inform every architectural decision:
+
+### Agent Experience First
+As AI agents become primary users of developer tools, Helios prioritizes **Agent Experience (AX)**—the holistic experience AI agents have when using our APIs and platform. Great AX means:
+- **Predictable APIs** - Consistent patterns, no magic
+- **Clear error messages** - Machine-readable, actionable errors
+- **Machine-readable documentation** - Structured for LLM consumption
+- **Composable primitives** - Work well with LLM-driven workflows
+
+DX and AX are deeply aligned—what works for agents works for humans too.
+
+### Prototype Fast, Scale Later
+Start with a simple composition, preview instantly in your browser, and only worry about rendering infrastructure when you're ready to ship.
+
+### Use What You Know
+Pure TypeScript with zero framework dependencies. Use React, Vue, Svelte, or vanilla JS—whatever you're already comfortable with.
+
+### Leverage Web Standards
+Native browser APIs over custom implementations. CSS animations, Web Animations API (WAAPI), and standard DOM APIs. Your existing web development skills transfer directly.
+
+### Performance When It Matters
+Hardware-accelerated rendering, in-memory data piping, and WebCodecs support for canvas-heavy work. Performance is there when you need it.
+
+<!-- AGENT_VISION_END -->
+
+---
+
+## AI & Agent Integration
+
+Helios is designed from the ground up for AI-assisted development. Whether you're using Claude, Cursor, GitHub Copilot, or autonomous agent systems, Helios provides first-class support.
+
+### For AI Coding Assistants
+
+**AI-Ready Documentation:**
+- **llms.txt** - Machine-readable project overview at [`/llms.txt`](./llms.txt)
+- **Markdown URLs** - Add `.md` to any doc URL for raw markdown (planned)
+- **Structured errors** - All errors are machine-parseable with actionable guidance
+
+### For Autonomous Agent Systems
+
+Helios uses a **Black Hole Architecture** where AI agents continuously pull the codebase toward this documented vision. If you're building similar systems:
+
+- **Vision Document**: This README serves as the authoritative vision. Planning agents scan it to identify gaps.
+- **Status Files**: `docs/status/[ROLE].md` tracks each domain's progress
+- **Progress Log**: `docs/PROGRESS.md` records completed work
+- **Backlog**: `docs/BACKLOG.md` tracks planned features
+- **Context Files**: `.sys/llmdocs/context-*.md` provides architectural summaries
+
+See [`docs/prompts/`](./docs/prompts/) for the complete agent orchestration system.
+
+### Diagnostics for AI Environments
+
+```typescript
+// Check environment capabilities (useful for AI debugging)
+const report = await Helios.diagnose();
+console.log(report);
+// {
+//   waapi: true,           // Web Animations API
+//   webCodecs: true,       // VideoEncoder support
+//   offscreenCanvas: true,
+//   userAgent: "..."
+// }
+```
+
+---
+
+## Helios vs Remotion
+
+Both Helios and [Remotion](https://www.remotion.dev/) enable programmatic video creation. Here's an honest comparison:
+
+### Philosophical Difference
+
+| | Helios | Remotion |
+|---|--------|----------|
+| **Architecture** | Native-aligned (drive the browser's engine) | Simulation-based (treat browser as screenshot machine) |
+| **Animation Calculation** | Browser's C++ compositor | JavaScript on every frame |
+| **Time Control** | CDP virtual time (production) / WAAPI seeking (preview) | React state propagation |
+| **CSS `@keyframes`** | ✅ Work natively | ❌ Clock drifts during render |
+| **Browser Dependency** | Chromium (CDP required) | Any browser (pure JS) |
+| **Historical Analog** | Native apps, CSS Grid, `fetch()` | PhoneGap, layout.js, jQuery AJAX |
+| **Bet** | Platform capabilities will mature | Abstraction layer will remain necessary |
+
+### Feature Comparison
+
+| Feature | Helios | Remotion |
+|---------|--------|----------|
+| **Framework** | Any (React, Vue, Svelte, vanilla) | React only |
+| **Animation** | CSS, WAAPI, any library | `interpolate()`, `spring()` hooks |
+| **Learning curve** | Use what you know | Learn Remotion APIs |
+| **Maturity** | 🟡 Beta | 🟢 Production-ready |
+| **Pricing** | Free (ELv2) | Free ≤3 devs, then $100+/mo |
+| **Studio IDE** | 🟢 Beta | 🟢 Available |
+| **Distributed rendering** | 🟡 Beta (Local Orchestrator) | 🟢 Lambda, Cloud Run |
+| **Captions/subtitles** | 🟡 Standard (SRT) | 🟢 Built-in |
+| **Audio mixing** | 🟢 Client-side (WebCodecs) | 🟢 Advanced |
+| **MCP Server** | 🟢 `helios mcp`: preview in the conversation, verify, render, analyse audio | 🟢 Available |
+| **Agent Skills** | 🟢 `npx skills add`, Claude Code and Codex plugin | 🟢 `npx skills add` |
+| **Transitions library** | 🟢 Available | 🟢 `@remotion/transitions` |
+| **Sequence/Series** | 🔴 Not yet | 🟢 Built-in components |
+
+### Where Helios Wins
+
+- **Framework freedom** - Use React, Vue, Svelte, or vanilla JS
+- **Zero learning curve** - Standard web animations work out of the box
+- **Free commercial use** - No per-seat or per-render fees
+- **Canvas/WebGL performance** - WebCodecs path for Three.js, Pixi.js
+- **Agent-first design** - Built for AI-assisted workflows
+
+### Where Remotion Wins
+
+- **Production maturity** - Years of battle-testing
+- **Distributed rendering** - Lambda and Cloud Run today
+- **Rich ecosystem** - Transitions, captions, templates
+- **Studio IDE** - Full development environment
+- **Documentation depth** - Extensive guides and examples
+
+### Choose Helios If
+
+- You want familiar web APIs, not proprietary hooks
+- You're using Vue, Svelte, or vanilla JS
+- You need canvas/WebGL performance (Three.js, Pixi.js)
+- You want free commercial use without licensing complexity
+- You're comfortable with alpha software
+
+### Choose Remotion If
+
+- You need production stability today
+- You're all-in on React
+- You need distributed rendering now
+- You want extensive documentation and community
+
+---
+
+## Architecture
+
+<!-- AGENT_ARCHITECTURE_START: Detailed architecture for planning agents -->
+
+Helios is designed with a modular architecture that separates logic from presentation.
+
+### 1. The Composition Layer
+
+#### Headless Logic Engine
+The core is an instantiable JavaScript class that manages all state (`currentFrame`, `duration`, `isPlaying`, `inputProps`), exposes methods (`play`, `pause`, `seek`), and provides subscription-based reactivity. This decouples logic from any UI framework.
+
+#### Framework Adapters
+Lightweight packages expose the headless engine idiomatically for each framework:
+- **React**: `useVideoFrame()` hook
+- **Vue**: Composition API composables  
+- **Svelte**: Readable stores with `$` syntax
+- **Vanilla**: Direct class instantiation
+
+#### Web Component Player
+The `<helios-player>` Web Component encapsulates the preview UI. It uses a sandboxed iframe internally for isolation, ensuring it works in any HTML page without conflicts.
+
+### 2. The Animation System
+
+Helios drives the browser's native animation engine rather than simulating animation in JavaScript. The mechanism varies by context:
+
+#### Production Rendering (Headless Chrome)
+Uses Chrome DevTools Protocol to virtualize time:
+```
+CDP: Emulation.setVirtualTimePolicy({ policy: 'advance', budget: 33.33 })
+→ Browser advances internal clock by exactly 33.33ms
+→ All CSS/WAAPI animations update to new time
+→ Layout and paint complete
+→ Frame captured
+```
+
+This is deterministic: the browser cannot advance until each frame is fully rendered, regardless of scene complexity.
+
+#### Preview Mode (Browser Tab)
+Uses WAAPI's writable `Animation.currentTime`:
+```typescript
+// Seek all animations to target time
+document.getAnimations().forEach(anim => {
+  anim.currentTime = targetTimeMs;
+  anim.pause();
+});
+```
+
+This is an O(N) operation over animations, but lets developers preview without running a headless browser.
+
+**Advantages:**
+- Performance: Animation interpolation happens in the browser's C++ compositor
+- Maintainability: Declarative CSS over imperative JavaScript
+- Familiarity: Standard CSS and WAAPI—skills transfer directly
+
+> **Canvas MVP Note**: For canvas compositions (Three.js, Pixi.js), Helios provides `currentTime` to the canvas's internal render loop rather than controlling WAAPI.
+
+### 3. The Rendering Pipeline
+
+Dual-path architecture selects the optimal strategy:
+
+#### Path 1: DOM-to-Video (Versatile)
+- Uses Playwright to render DOM, capture screenshots
+- Ideal for HTML, CSS, SVG compositions
+- Asset preloading prevents artifacts
+
+#### Path 2: Canvas-to-Video (High-Performance)
+- Uses WebCodecs API for direct frame encoding
+- Hardware-accelerated VideoEncoder
+- Bypasses DOM for significant speed gains
+- **This is the MVP priority path**
+
+#### GPU Acceleration
+GPU acceleration is mandatory for competitive performance. The library ships with optimized browser launch flags and includes `helios.diagnose()` to verify hardware acceleration.
+
+#### FFmpeg Integration
+- Direct `child_process.spawn` (no wrappers)
+- In-memory piping via `image2pipe` demuxer (no temp files)
+- Audio mixing via filter complex
+
+### 4. The In-Browser Player
+
+WYSIWYG preview using the same bundled composition code as the final render:
+- DOM compositions: `requestAnimationFrame` loop
+- Canvas compositions: WebCodecs real-time preview
+
+<!-- AGENT_ARCHITECTURE_END -->
+
+---
+
+## Technology Stack
+
+| Component | Choice | Rationale |
+|-----------|--------|-----------|
+| **Browser Automation** | Playwright | Auto-waiting, cross-browser support, superior debugging (Trace Viewer, Inspector) |
+| **Video Encoding** | FFmpeg (spawn) | Direct `child_process.spawn` for maximum control, stability, and performance |
+| **Language** | TypeScript | Type safety, improved DX, maintainable codebase |
+| **Bundling** | Vite/Rollup | Modern, fast, optimized for building libraries |
+
+---
+
+## Project Status
+
+**Beta**: Architecture stable, API maturing, suitable for early adopters.
+
+### Current Capabilities
+- ✅ Core `Helios` class with timeline control
+- ✅ Helios Studio (Beta)
+- ✅ Animation Helpers (`interpolate`, `spring`)
+- ✅ Captions Support (SRT parsing/rendering)
+- ✅ AI Integration (System Prompts)
+- ✅ Canvas-to-Video rendering path
+- ✅ `<helios-player>` Web Component
+- ✅ React, Vue examples
+- ✅ FFmpeg integration with piped frames
+- ✅ `helios.diagnose()` environment checks
+- ✅ Client-side export (WebCodecs) with Audio Mixing & Captions
+- ✅ Distributed Rendering (Local Orchestrator)
+- ✅ Lottie Integration (React, Vue)
+- ✅ Audio Visualization Examples
+- ✅ Audio Tracks API
+
+
+See [`docs/BACKLOG.md`](./docs/BACKLOG.md) for the full task list.
+
+---
+
+## Roadmap & Governance
+
+The authoritative roadmap and project direction are defined in [`AGENTS.md`](./AGENTS.md).
+
+This document serves as the single source of truth for:
+- V2 Platform Direction
+- Domain Posture (Core, Renderer, Studio, etc.)
+- Governance Laws
+
+Please refer to `AGENTS.md` to understand where Helios is going and how to contribute.
+
+---
+
+## Deployment Strategies
+
+A robust deployment strategy is essential for a server-side rendering tool. The architecture is designed to support both simple, single-machine deployments and highly scalable, distributed rendering on cloud infrastructure.
+
+### Containerized Rendering with Docker
+
+Docker is the ideal packaging and deployment mechanism for the rendering engine. It ensures a consistent, reproducible environment containing Node.js, a headless browser, FFmpeg, and all necessary dependencies for GPU acceleration. The container can be designed as a microservice, exposing an HTTP endpoint to accept render jobs.
+
+### Distributed Rendering: AWS Lambda vs. Google Cloud Run
+
+The architecture is designed to be container-native and platform-agnostic, giving users a choice of serverless platforms that fit their needs.
+
+- **AWS Lambda**: Ideal for users prioritizing hyper-parallelism and minimum render time. Lambda is optimized for massive, fine-grained parallelism, which is perfect for splitting a video render across hundreds or thousands of concurrent function executions. This requires a chunking architecture and a final stitching step.
+- **Google Cloud Run**: Ideal for users prioritizing simplicity and long-running jobs. Cloud Run can run standard Docker containers for extended periods (up to 24 hours), allowing a single container invocation to render an entire video from start to finish without the complexity of chunking and stitching.
+
+### Distributed Rendering Workflow and Concatenation
+
+The success of a distributed rendering architecture hinges on the video concatenation strategy. Merging video chunks must be done without a costly re-encode. FFmpeg offers several methods, but only one is suitable:
+
+| Method | How it Works | Supported Formats | Use Case for This Project |
+|---|---|---|---|
+| **Concat Demuxer** | Operates at the file level from a text file list. Can stream copy if codecs match. | All formats, including MP4. | **Recommended**. The only method for losslessly stitching MP4 chunks. |
+| Concat Protocol | Operates at the bitstream level. | Simple stream formats (e.g., MPEG-2 PS). Not compatible with MP4. | Unsuitable. Will fail or corrupt MP4 files. |
+| Concat Filter | A complex filter that decodes and re-encodes frames. | All formats. | Unsuitable. Re-encoding is slow and causes quality loss. |
+
+The distributed workflow is as follows:
+1. **Orchestration**: A coordinator function (e.g., AWS Step Function) divides the video into `N` logical chunks (e.g., frames 0-299, 300-599, etc.).
+2. **Parallel Execution**: The orchestrator invokes `N` parallel workers (e.g., Lambda functions), assigning each a frame range.
+3. **Chunk Rendering**: Each worker renders its video and audio segments as separate files (e.g., `chunk_1.mp4`, `chunk_1.aac`) and uploads them to a shared location like S3.
+4. **Final Stitching**: A final assembly job uses FFmpeg's `concat` demuxer to perform a fast, lossless merge of the video and audio chunks into the final output file.
+
+---
+
+## Development
+
+### Local Setup
+
+```bash
+git clone https://github.com/gavinbintz/helios.git
+cd helios
+npm install
+npm run dev
+```
+
+### Testing
+
+```bash
+npm test                           # All tests
+npm test -w packages/core          # Core package only
+npm run render:canvas-example      # Test render pipeline
+```
+
+### Development Workflow & Debugging
+
+A seamless local development workflow is crucial for productivity. We recommend a hot-reloading environment for developers working on the library itself or on compositions using it.
+
+- **Hot Reloading**: A recommended setup involves using `npm link` or `yarn link` to link your local library source code to a sample project (e.g., a Vite + React app). Running the library's bundler in "watch" mode alongside the sample project's dev server provides a near-instant feedback loop.
+- **Debugging**: Debugging issues inside a headless browser can be challenging. We provide several tools to make it easier:
+  - **Headed Mode**: Run the render process in a visible browser window using a `--headed` flag. Often, simply watching the automation unfold is the fastest way to spot an issue.
+  - **Remote Debugging**: A `--debug` flag can launch the browser with a remote debugging port open. This allows you to connect the familiar Chrome DevTools to the headless instance to inspect the DOM, view console logs, and debug JavaScript live.
+  - **Playwright Trace Viewer**: For post-mortem analysis, you can enable Playwright's Trace Viewer. It captures a complete trace of a render, including a video screencast, live DOM snapshots, console logs, and network requests, which is invaluable for diagnosing failed renders.
+
+---
+
+## License
+
+Helios Engine is licensed under the **Elastic License 2.0 (ELv2)**. This license is designed to encourage widespread adoption while protecting our ability to build a SaaS platform.
+
+The agent skills in [`skills/`](./skills/) and the agent plugin in [`plugins/helios/`](./plugins/helios/) (its manifests, assets and the `make-video` skill) are licensed under the **Apache License 2.0**; each folder has its own LICENSE file. The rest of this repository is under ELv2 unless a file or folder says otherwise.
+
+### What This Means
+
+**You Can:**
+- ✅ **Build commercial products** - Use Helios Engine in any commercial application or product
+- ✅ **Embed in applications** - Include Helios Engine in your software, whether open source or proprietary
+- ✅ **Modify and distribute** - Fork, modify, and distribute Helios Engine
+- ✅ **Create video platforms** - Build video creation tools, editors, or platforms using Helios Engine
+- ✅ **Use internally** - Use Helios Engine for internal business purposes without restrictions
+- ✅ **Sell products** - Sell products that use or include Helios Engine
+- ✅ **Contribute** - Contribute improvements back to the open source project
+
+**You Cannot:**
+- ❌ **Offer Helios as a managed service** - You cannot provide Helios Engine as a hosted/managed service (SaaS) to third parties
+- ❌ **Resell Helios infrastructure** - You cannot offer Helios Engine rendering infrastructure as a service
+
+**What This Means in Practice:**
+
+This license is **perfect for founders building video platforms**. You can:
+- Build a video editing SaaS platform using Helios Engine ✅
+- Create a video generation tool for your customers ✅
+- Build a white-label video creation platform ✅
+- Embed Helios Engine in your application ✅
+- Sell products that use Helios Engine ✅
+
+You just can't offer Helios Engine itself as a managed/hosted service to others.
+
+### Why Elastic License 2.0?
+
+We chose Elastic License 2.0 because:
+- **Encourages adoption** - Developers can build commercial products without restrictions
+- **Protects SaaS opportunity** - Prevents competitors from offering Helios as a managed service
+- **Well-established** - Used by Elasticsearch, Kibana, and other successful projects
+- **Clear boundaries** - Simple rule: build products ✅, offer managed services ❌
+- **Founder-friendly** - Perfect for founders building video platforms (our target customers!)
+
+This license allows us to build a SaaS platform around Helios while enabling a thriving ecosystem of products built on top of it.
+
+### Commercial Licensing
+
+If you need to offer Helios Engine as a managed service or have questions about commercial licensing, please [contact us](mailto:me@gavinbintz.com).
+
+See [LICENSE](LICENSE) for full text.
+
+---
+
+## Contributing
+
+We welcome contributions! This project is primarily developed by an autonomous AI agent fleet, but human contributions are valued.
+
+- **Bug reports**: Open an issue
+- **Feature requests**: Open an issue or PR
+- **Code contributions**: Fork, branch, PR
+
+---
+
+<div align="center">
+
+**☀️ Video is light over time.**
+
+[Documentation](./docs/) • [Examples](./examples/) • [Backlog](./docs/BACKLOG.md) • [Progress](./docs/PROGRESS.md)
+
+*Built with AI agents by [Gavin Bintz](https://github.com/BintzGavin)*
+
+</div>

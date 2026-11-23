@@ -1,0 +1,96 @@
+{
+  "name": "Helios Engine",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "favicon": "/favicon.png",
+  "colors": {
+    "primary": "#7F5900",
+    "light": "#F5B400",
+    "dark": "#0E0D0B"
+  },
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "getting-started/quickstart",
+        "getting-started/installation",
+        "getting-started/first-steps"
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        "guides/using-studio",
+        "guides/ai-assistants",
+        "guides/creating-compositions",
+        "guides/rendering-videos",
+        "guides/using-the-player",
+        "guides/audio-tracks",
+        "guides/music-sync",
+        "guides/captions"
+      ]
+    },
+    {
+      "group": "Examples",
+      "pages": [
+        "examples/react-example",
+        "examples/vue-example",
+        "examples/solid-examples",
+        "examples/svelte-examples",
+        "examples/canvas-example",
+        "examples/threejs-example",
+        "examples/animation-libraries",
+        "examples/captions",
+        "examples/vue-transitions",
+        "examples/react-transitions",
+        "examples/react-three-fiber",
+        "examples/d3-animation",
+        "examples/styling",
+        "examples/advanced",
+        "examples/map-animation",
+        "examples/solid-dom-animation",
+        "examples/podcast-visualizer",
+        "examples/client-export",
+        "examples/web-component",
+        "examples/vanilla-typescript",
+        "examples/lottie-animation",
+        "examples/svelte-audio-visualization",
+        "examples/vue-audio-visualization",
+        "examples/pixi-animation",
+        "examples/shaders",
+        "examples/beat-clock",
+        "examples/cursor",
+        "examples/solid-audio-visualization",
+        "examples/react-components"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api/core",
+        "api/player",
+        "api/renderer",
+        "api/cli"
+      ]
+    },
+    {
+      "group": "Architecture",
+      "pages": [
+        "architecture/overview"
+      ]
+    },
+    {
+      "group": "Changelog",
+      "pages": [
+        "changelog/core",
+        "changelog/renderer",
+        "changelog/player",
+        "changelog/demo",
+        "changelog/studio",
+        "changelog/cli"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+import { type IOptionLoader, type RecursivePartial, ValueWithRandom, isNull, loadProperty } from "@tsparticles/engine";
+import type { ILifeDelay } from "../Interfaces/ILifeDelay.js";
+
+/** Life delay options class */
+export class LifeDelay extends ValueWithRandom implements ILifeDelay, IOptionLoader<ILifeDelay> {
+  /** Enables the life delay sync */
+  sync = false;
+  /**
+   * Loads the life delay from data
+   * @param data - The data to handle
+   */
+  override load(data?: RecursivePartial<ILifeDelay>): void {
+    if (isNull(data)) {
+      return;
+    }
+
+    super.load(data);
+
+    loadProperty(this, "sync", data.sync);
+  }
+}
