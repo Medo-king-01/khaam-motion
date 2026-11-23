@@ -1,0 +1,168 @@
+import {
+  type IDelta,
+  type IParticleUpdater,
+  type PluginManager,
+  type RecursivePartial,
+  defaultOpacity,
+  doublePI,
+  getRangeValue,
+  half,
+  loadOptionProperty,
+  rangeColorToHsl,
+} from "@tsparticles/engine";
+import type { IOrbitParticlesOptions, OrbitContainer, OrbitParticle, OrbitParticlesOptions } from "./Types.js";
+import { Orbit } from "./Options/Classes/Orbit.js";
+import { OrbitType } from "./Enums.js";
+import { drawEllipse } from "./Utils.js";
+
+const defaultOrbitSpeed = 0,
+  halfPI = Math.PI * half,
+  piAndAHalf = Math.PI + halfPI,
+  startAngle = 0,
+  defaultWidth = 1,
+  defaultRotation = 0;
+
+/** Orbit updater plugin */
+export class OrbitUpdater implements IParticleUpdater {
+  /** The particles container */
+  readonly #container;
+  /** The plugin manager */
+  readonly #pluginManager;
+
+  /**
+   * OrbitUpdater constructor
+   * @param pluginManager - The plugin manager
+   * @param container - The container to handle
+   */
+  constructor(pluginManager: PluginManager, container: OrbitContainer) {
+    this.#pluginManager = pluginManager;
+    this.#container = container;
+  }
+
+  /**
+   * Draws the orbit after particle rendering
+   * @param particle - The particle to process
+   */
+  afterDraw(particle: OrbitParticle): void {
+    const orbitOptions = particle.options.orbit;
+
+    if (orbitOptions?.enable) {
+      this.drawOrbit(particle, OrbitType.front);
+    }
+  }
+
+  /**
+   * Draws the orbit before particle rendering
+   * @param particle - The particle to process
+   */
+  beforeDraw(particle: OrbitParticle): void {
+    const orbitOptions = particle.options.orbit;
+
+    if (orbitOptions?.enable) {
+      this.drawOrbit(particle, OrbitType.back);
+    }
+  }
+
+  /**
+   * Draws the orbit ellipse
+   * @param particle - The particle to process
+   * @param type - The type
+   */
+  drawOrbit(particle: OrbitParticle, type: OrbitType): void {
+    const container = this.#container;
+
+    let start: number, end: number;
+
+    switch (type) {
+      case OrbitType.back:
+        start = halfPI;
+        end = piAndAHalf;
+        break;
+      case OrbitType.front:
+        start = piAndAHalf;
+        end = halfPI;
+        break;
+      default:
+        start = startAngle;
+        end = doublePI;
+    }
+
+    container.canvas.render.draw(ctx => {
+      drawEllipse(
+        container,
+        ctx,
+        particle,
+        particle.orbitColor ?? particle.getFillColor(),
+        particle.retina.orbitRadius ?? container.retina.orbitRadius ?? particle.getRadius(),
+        particle.orbitOpacity ?? defaultOpacity,
+        particle.orbitWidth ?? defaultWidth,
+        (particle.orbitRotation ?? defaultRotation) * container.retina.pixelRatio,
+        start,
+        end,
+      );
+    });
+  }
+
+  /**
+   * Initializes the particle orbit
+   * @param particle - The particle to process
+   */
+  init(particle: OrbitParticle): void {
+    /* orbit */
+    const container = this.#container,
+      particlesOptions = particle.options,
+      orbitOptions = particlesOptions.orbit;
+
+    if (!orbitOptions?.enable) {
+      return;
+    }
+
+    particle.orbitRotation = getRangeValue(orbitOptions.rotation.value);
+    particle.orbitColor = rangeColorToHsl(this.#pluginManager, orbitOptions.color);
+    particle.retina.orbitRadius =
+      orbitOptions.radius !== undefined ? getRangeValue(orbitOptions.radius) * container.retina.pixelRatio : undefined;
+    container.retina.orbitRadius = particle.retina.orbitRadius;
+    particle.orbitAnimationSpeed = orbitOptions.animation.enable
+      ? getRangeValue(orbitOptions.animation.speed)
+      : defaultOrbitSpeed;
+    particle.orbitWidth = getRangeValue(orbitOptions.width);
+    particle.orbitOpacity = getRangeValue(orbitOptions.opacity);
+  }
+
+  /**
+   * Checks if orbit is enabled for the particle
+   * @param particle - The particle to process
+   * @returns The boolean value
+   */
+  isEnabled(particle: OrbitParticle): boolean {
+    const orbitAnimations = particle.options.orbit?.animation;
+
+    return !particle.destroyed && !particle.spawning && !!orbitAnimations?.enable;
+  }
+
+  /**
+   * Loads the orbit options
+   * @param options - The options to handle
+   * @param sources - The sources
+   */
+  loadOptions(
+    options: OrbitParticlesOptions,
+    ...sources: (RecursivePartial<IOrbitParticlesOptions> | undefined)[]
+  ): void {
+    loadOptionProperty(options, "orbit", Orbit, ...sources);
+  }
+
+  /**
+   * Updates the particle orbit rotation
+   * @param particle - The particle to process
+   * @param delta - The delta time
+   */
+  update(particle: OrbitParticle, delta: IDelta): void {
+    if (!this.isEnabled(particle)) {
+      return;
+    }
+
+    particle.orbitRotation ??= defaultRotation;
+    particle.orbitRotation += (particle.orbitAnimationSpeed ?? defaultOrbitSpeed / doublePI) * delta.factor;
+  }
+}

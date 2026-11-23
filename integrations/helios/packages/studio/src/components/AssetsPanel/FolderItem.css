@@ -1,0 +1,76 @@
+.folder-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+  margin: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  background-color: #2a2a2a;
+  border: 1px solid transparent;
+  position: relative;
+}
+
+.folder-item:hover {
+  background-color: #333;
+}
+
+.folder-item.drag-over {
+  background-color: #3a3a3a;
+  border-color: #007bff;
+}
+
+.folder-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.folder-name {
+  font-size: 12px;
+  color: #ccc;
+  text-align: center;
+  word-break: break-word;
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.folder-item .delete-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff4444;
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.folder-item .rename-btn {
+  position: absolute;
+  top: 4px;
+  right: 28px;
+  width: 20px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 10;
+}

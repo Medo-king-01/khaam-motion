@@ -1,0 +1,56 @@
+{
+  "name": "@tsparticles/cli-nx-plugin",
+  "version": "4.6.0",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tsparticles/tsparticles.git",
+    "directory": "cli/packages/nx-plugin"
+  },
+  "prettier": "@tsparticles/prettier-config",
+  "publishConfig": {
+    "access": "public",
+    "tagVersionPrefix": "v"
+  },
+  "scripts": {
+    "prettify:ci:src": "prettier --check ./src/*",
+    "prettify:ci:readme": "prettier --check ./README.md",
+    "prettify:src": "prettier --write ./src/*",
+    "prettify:readme": "prettier --write ./README.md",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --cache --cache-location .cache/eslint/.eslintcache --cache-strategy metadata --fix",
+    "lint:ci": "eslint src --ext .js,.jsx,.ts,.tsx --cache --cache-location .cache/eslint/.eslintcache --cache-strategy metadata",
+    "build": "pnpm run prettify:src && pnpm run lint && pnpm run test && pnpm run prettify:readme",
+    "build:ci": "pnpm run prettify:ci:src && pnpm run lint:ci && pnpm run test:ci && pnpm run prettify:ci:readme",
+    "clear:dist": "rimraf ./dist",
+    "test": "vitest run",
+    "test:ci": "vitest run",
+    "prepack": "pnpm run build"
+  },
+  "peerDependencies": {
+    "nx": "^24"
+  },
+  "dependencies": {
+    "@nx/devkit": "^24.0.6",
+    "@tsparticles/eslint-config": "workspace:*",
+    "@tsparticles/prettier-config": "workspace:*",
+    "@tsparticles/tsconfig": "workspace:*",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.7",
+    "eslint-plugin-tsdoc": "^0.5.4",
+    "prettier": "^3.10.1",
+    "prettier-plugin-multiline-arrays": "^4.1.11",
+    "rimraf": "^6.1.4",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2",
+    "vitest": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "nx": "^24.0.6"
+  },
+  "description": "tsParticles Nx plugin",
+  "main": "src/index.ts",
+  "author": "Matteo Bruni <matteo.bruni@me.com>"
+}

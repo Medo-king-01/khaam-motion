@@ -1,0 +1,260 @@
+import {
+  AnimationStatus,
+  type Container,
+  GradientType,
+  type IDelta,
+  type IParticleColorStyle,
+  type IParticleUpdater,
+  type PluginManager,
+  type RecursivePartial,
+  RotateDirection,
+  StartValueType,
+  doublePI,
+  executeOnSingleOrMultiple,
+  getHslAnimationFromHsl,
+  getRandom,
+  getRangeMax,
+  getRangeMin,
+  getRangeValue,
+  getStyleFromHsl,
+  half,
+  itemFromSingleOrMultiple,
+  millisecondsToSeconds,
+  minRadius,
+  originPoint,
+  percentDenominator,
+  randomInRangeValue,
+  rangeColorToHsl,
+} from "@tsparticles/engine";
+import type { GradientParticle, GradientParticlesOptions, IGradientParticlesOptions } from "./Types.js";
+import { AnimatableGradient } from "./Options/Classes/AnimatableGradient.js";
+import { updateGradient } from "./Utils.js";
+
+/** Gradient updater plugin */
+export class GradientUpdater implements IParticleUpdater {
+  /** The particles container */
+  readonly #container;
+  /** The plugin manager */
+  readonly #pluginManager;
+
+  /**
+   * GradientUpdater constructor
+   * @param pluginManager - The plugin manager
+   * @param container - The container to handle
+   */
+  constructor(pluginManager: PluginManager, container: Container) {
+    this.#pluginManager = pluginManager;
+    this.#container = container;
+  }
+
+  /**
+   * Gets the color styles for the gradient
+   * @param particle - The particle to process
+   * @param context - The rendering context
+   * @param radius - The radius
+   * @param opacity - The opacity value
+   * @returns The color styles for the gradient
+   */
+  getColorStyles(
+    particle: GradientParticle,
+    context: OffscreenCanvasRenderingContext2D,
+    radius: number,
+    opacity: number,
+  ): IParticleColorStyle {
+    const gradient = particle.gradient;
+
+    if (!gradient) {
+      return {};
+    }
+
+    const container = this.#container,
+      gradientAngle = gradient.angle.value,
+      fillGradient =
+        gradient.type === GradientType.radial
+          ? context.createRadialGradient(originPoint.x, originPoint.y, minRadius, originPoint.x, originPoint.y, radius)
+          : context.createLinearGradient(
+              Math.cos(gradientAngle) * -radius,
+              Math.sin(gradientAngle) * -radius,
+              Math.cos(gradientAngle) * radius,
+              Math.sin(gradientAngle) * radius,
+            );
+
+    for (const { stop, value, opacity: cOpacity } of gradient.colors) {
+      const hsl = {
+        h: value.h.value,
+        s: value.s.value,
+        l: value.l.value,
+      };
+
+      fillGradient.addColorStop(
+        stop,
+        getStyleFromHsl(hsl, container.hdr, cOpacity?.value ?? opacity, container.peakNits, container.hdrMode),
+      );
+    }
+
+    return { fill: fillGradient };
+  }
+
+  /**
+   * Initializes the particle gradient
+   * @param particle - The particle to process
+   */
+  init(particle: GradientParticle): void {
+    const gradient = itemFromSingleOrMultiple(particle.options.gradient);
+
+    if (!gradient) {
+      return;
+    }
+
+    const container = this.#container,
+      { angle } = gradient,
+      speedFactor = 360,
+      delayOffset = 1;
+
+    particle.gradient = {
+      angle: {
+        value: getRangeValue(angle.value),
+        enable: angle.animation.enable,
+        velocity: (getRangeValue(angle.animation.speed) / speedFactor) * container.retina.reduceFactor,
+        decay: delayOffset - getRangeValue(angle.animation.decay),
+        delayTime: getRangeValue(angle.animation.delay) * millisecondsToSeconds,
+        max: doublePI,
+        min: 0,
+        time: 0,
+      },
+      type: gradient.type,
+      colors: [],
+    };
+
+    let rotateDirection = gradient.angle.direction;
+
+    if (rotateDirection === RotateDirection.random) {
+      rotateDirection = getRandom() > half ? RotateDirection.counterClockwise : RotateDirection.clockwise;
+    }
+
+    switch (rotateDirection) {
+      case RotateDirection.counterClockwise:
+      case "counterClockwise":
+        particle.gradient.angle.status = AnimationStatus.decreasing;
+        break;
+      case RotateDirection.clockwise:
+        particle.gradient.angle.status = AnimationStatus.increasing;
+        break;
+      default:
+        // no-op
+        break;
+    }
+
+    const reduceDuplicates = particle.options.reduceDuplicates;
+
+    for (const grColor of gradient.colors) {
+      const grHslColor = rangeColorToHsl(this.#pluginManager, grColor.value, particle.id, reduceDuplicates);
+
+      if (!grHslColor) {
+        continue;
+      }
+
+      const grHslAnimation = getHslAnimationFromHsl(grHslColor, grColor.value.animation, container.retina.reduceFactor),
+        addColor = {
+          stop: grColor.stop,
+          value: grHslAnimation,
+          opacity: grColor.opacity
+            ? {
+                enable: grColor.opacity.animation.enable,
+                max: getRangeMax(grColor.opacity.value),
+                min: getRangeMin(grColor.opacity.value),
+                status: AnimationStatus.increasing,
+                value: getRangeValue(grColor.opacity.value),
+                velocity:
+                  (getRangeValue(grColor.opacity.animation.speed) / percentDenominator) * container.retina.reduceFactor,
+                decay: delayOffset - getRangeValue(grColor.opacity.animation.decay),
+                delayTime: getRangeValue(grColor.opacity.animation.delay) * millisecondsToSeconds,
+                time: 0,
+              }
+            : undefined,
+        },
+        { opacity: addOpacity } = addColor;
+
+      if (grColor.opacity && addOpacity) {
+        const opacityRange = grColor.opacity.value;
+
+        addOpacity.min = getRangeMin(opacityRange);
+        addOpacity.max = getRangeMax(opacityRange);
+
+        const opacityAnimation = grColor.opacity.animation;
+
+        switch (opacityAnimation.startValue) {
+          case StartValueType.min:
+            addOpacity.value = addOpacity.min;
+            addOpacity.status = AnimationStatus.increasing;
+
+            break;
+
+          case StartValueType.max:
+            addOpacity.value = addOpacity.max;
+            addOpacity.status = AnimationStatus.decreasing;
+
+            break;
+
+          case StartValueType.random:
+          default:
+            addOpacity.value = randomInRangeValue(addOpacity);
+            addOpacity.status = getRandom() >= half ? AnimationStatus.increasing : AnimationStatus.decreasing;
+
+            break;
+        }
+      }
+
+      particle.gradient.colors.push(addColor);
+    }
+  }
+
+  /**
+   * Checks if gradient animation is enabled
+   * @param particle - The particle to process
+   * @returns The boolean value
+   */
+  isEnabled(particle: GradientParticle): boolean {
+    return (
+      !particle.destroyed &&
+      !particle.spawning &&
+      (!!particle.gradient?.angle.enable ||
+        (particle.gradient?.colors.some(c => c.value.h.enable || c.value.s.enable || c.value.l.enable) ?? false))
+    );
+  }
+
+  /**
+   * Loads the gradient options
+   * @param options - The options to handle
+   * @param sources - The sources
+   */
+  loadOptions(
+    options: GradientParticlesOptions,
+    ...sources: (RecursivePartial<IGradientParticlesOptions> | undefined)[]
+  ): void {
+    for (const source of sources) {
+      if (!source?.gradient) {
+        continue;
+      }
+
+      const gradientToLoad = source.gradient;
+
+      options.gradient = executeOnSingleOrMultiple(gradientToLoad, gradient => {
+        const tmp = new AnimatableGradient();
+
+        tmp.load(gradient);
+
+        return tmp;
+      });
+    }
+  }
+
+  /**
+   * Updates particle gradient animation
+   * @param particle - The particle to process
+   * @param delta - The delta time
+   */
+  update(particle: GradientParticle, delta: IDelta): void {
+    updateGradient(particle, delta, this.#container.hdr);
+  }
+}

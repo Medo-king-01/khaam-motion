@@ -1,0 +1,186 @@
+import {
+  type Container,
+  type IDelta,
+  OutMode,
+  OutModeDirection,
+  type Particle,
+  ParticleOutType,
+  Vector,
+  calculateBounds,
+  getRandom,
+  minDistance,
+  minVelocity,
+  originPoint,
+  randomInRangeValue,
+} from "@tsparticles/engine";
+import type { IOutModeManager } from "./IOutModeManager.js";
+
+const updateVector = Vector.origin;
+
+export class OutOutMode implements IOutModeManager {
+  modes: (OutMode | keyof typeof OutMode)[];
+  readonly #container: Container;
+
+  constructor(container: Container) {
+    this.#container = container;
+    this.modes = [OutMode.out];
+  }
+
+  update(
+    particle: Particle,
+    direction: OutModeDirection,
+    _delta: IDelta,
+    outMode: OutMode | keyof typeof OutMode,
+  ): void {
+    if (!this.modes.includes(outMode)) {
+      return;
+    }
+
+    const container = this.#container;
+
+    if (particle.outType === ParticleOutType.inside) {
+      this.#applyOutModeInside(particle, container);
+    } else {
+      if (particle.isInsideCanvasForOutMode(outMode, direction)) {
+        return;
+      }
+
+      if (particle.outType === ParticleOutType.outside) {
+        this.#applyParticleModeOutside(particle);
+      } else {
+        // normal
+        this.#applyOutModeNormal(particle, container, direction);
+      }
+    }
+  }
+
+  #applyOutModeInside(particle: Particle, container: Container): void {
+    const { x: vx, y: vy } = particle.velocity;
+
+    updateVector.setTo(originPoint);
+
+    updateVector.length = particle.moveCenter.radius;
+    updateVector.angle = particle.velocity.angle + Math.PI;
+
+    updateVector.addTo(particle.moveCenter);
+
+    const dx = particle.position.x - updateVector.x,
+      dy = particle.position.y - updateVector.y;
+
+    if (
+      (vx <= minVelocity && dx >= minDistance) ||
+      (vy <= minVelocity && dy >= minDistance) ||
+      (vx >= minVelocity && dx <= minDistance) ||
+      (vy >= minVelocity && dy <= minDistance)
+    ) {
+      return;
+    }
+
+    particle.position.x = Math.floor(
+      randomInRangeValue({
+        min: 0,
+        max: container.canvas.size.width,
+      }),
+    );
+
+    particle.position.y = Math.floor(
+      randomInRangeValue({
+        min: 0,
+        max: container.canvas.size.height,
+      }),
+    );
+
+    const newDx = particle.position.x - particle.moveCenter.x,
+      newDy = particle.position.y - particle.moveCenter.y;
+
+    particle.direction = Math.atan2(-newDy, -newDx);
+    particle.velocity.angle = particle.direction;
+
+    particle.justWarped = true;
+  }
+
+  #applyOutModeNormal(particle: Particle, container: Container, direction: OutModeDirection): void {
+    const warp = particle.options.move.warp,
+      canvasSize = container.canvas.size,
+      sizeValue = particle.getRadius(),
+      newPos = {
+        bottom: canvasSize.height + sizeValue + particle.offset.y,
+        left: -sizeValue - particle.offset.x,
+        right: canvasSize.width + sizeValue + particle.offset.x,
+        top: -sizeValue - particle.offset.y,
+      },
+      nextBounds = calculateBounds(particle.position, sizeValue);
+
+    if (direction === OutModeDirection.right && nextBounds.left > canvasSize.width + particle.offset.x) {
+      particle.position.x = newPos.left;
+      particle.initialPosition.x = particle.position.x;
+
+      if (!warp) {
+        particle.position.y = getRandom() * canvasSize.height;
+        particle.initialPosition.y = particle.position.y;
+      }
+
+      particle.justWarped = true;
+    } else if (direction === OutModeDirection.left && nextBounds.right < -particle.offset.x) {
+      particle.position.x = newPos.right;
+      particle.initialPosition.x = particle.position.x;
+
+      if (!warp) {
+        particle.position.y = getRandom() * canvasSize.height;
+        particle.initialPosition.y = particle.position.y;
+      }
+
+      particle.justWarped = true;
+    }
+
+    if (direction === OutModeDirection.bottom && nextBounds.top > canvasSize.height + particle.offset.y) {
+      if (!warp) {
+        particle.position.x = getRandom() * canvasSize.width;
+        particle.initialPosition.x = particle.position.x;
+      }
+
+      particle.position.y = newPos.top;
+      particle.initialPosition.y = particle.position.y;
+
+      particle.justWarped = true;
+    } else if (direction === OutModeDirection.top && nextBounds.bottom < -particle.offset.y) {
+      if (!warp) {
+        particle.position.x = getRandom() * canvasSize.width;
+        particle.initialPosition.x = particle.position.x;
+      }
+
+      particle.position.y = newPos.bottom;
+      particle.initialPosition.y = particle.position.y;
+
+      particle.justWarped = true;
+    }
+  }
+
+  #applyParticleModeOutside(particle: Particle): void {
+    particle.position.x =
+      Math.floor(
+        randomInRangeValue({
+          min: -particle.moveCenter.radius,
+          max: particle.moveCenter.radius,
+        }),
+      ) + particle.moveCenter.x;
+    particle.position.y =
+      Math.floor(
+        randomInRangeValue({
+          min: -particle.moveCenter.radius,
+          max: particle.moveCenter.radius,
+        }),
+      ) + particle.moveCenter.y;
+
+    const dx = particle.position.x - particle.moveCenter.x,
+      dy = particle.position.y - particle.moveCenter.y;
+
+    if (particle.moveCenter.radius) {
+      particle.direction = Math.atan2(dy, dx);
+
+      particle.velocity.angle = particle.direction;
+    }
+
+    particle.justWarped = true;
+  }
+}

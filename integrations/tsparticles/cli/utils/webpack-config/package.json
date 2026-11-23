@@ -1,0 +1,68 @@
+{
+  "name": "@tsparticles/webpack-plugin",
+  "version": "4.6.0",
+  "type": "module",
+  "main": "dist/webpack-tsparticles.js",
+  "types": "dist/webpack-tsparticles.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/webpack-tsparticles.d.ts",
+      "import": "./dist/webpack-tsparticles.js",
+      "default": "./dist/webpack-tsparticles.js"
+    }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tsparticles/tsparticles.git",
+    "directory": "cli/utils/webpack-config"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "prettify:ci:src": "prettier --check ./src/*",
+    "prettify:ci:readme": "prettier --check ./README.md",
+    "prettify:src": "prettier --write ./src/*",
+    "prettify:readme": "prettier --write ./README.md",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
+    "lint:ci": "eslint src --ext .js,.jsx,.ts,.tsx",
+    "compile": "pnpm run build:ts",
+    "compile:ci": "pnpm run build:ts",
+    "build:ts": "pnpm run build:ts:cjs",
+    "build:ts:cjs": "tsc",
+    "build": "pnpm run clear:dist && pnpm run prettify:src && pnpm run lint && pnpm run compile && pnpm run prettify:readme",
+    "build:ci": "pnpm run clear:dist && pnpm run prettify:ci:src && pnpm run lint:ci && pnpm run compile && pnpm run prettify:ci:readme",
+    "clear:dist": "rimraf ./dist",
+    "prepack": "pnpm run build"
+  },
+  "prettier": "@tsparticles/prettier-config",
+  "peerDependencies": {
+    "webpack": "^5"
+  },
+  "dependencies": {
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@swc/core": "^1.16.22",
+    "@tsparticles/eslint-config": "workspace:*",
+    "@tsparticles/prettier-config": "workspace:*",
+    "browserslist": "^4.29.5",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-tsdoc": "^0.5.4",
+    "prettier": "^3.10.1",
+    "prettier-plugin-multiline-arrays": "^4.1.11",
+    "swc-loader": "^0.2.7",
+    "terser-webpack-plugin": "^5.6.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2",
+    "webpack-bundle-analyzer": "^5.4.2",
+    "webpack-cli": "^7.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/webpack-bundle-analyzer": "^4.7.0",
+    "@types/webpack-env": "^1.18.8",
+    "rimraf": "^6.1.4",
+    "webpack": "^5.112.2"
+  }
+}

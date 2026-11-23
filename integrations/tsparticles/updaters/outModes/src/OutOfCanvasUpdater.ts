@@ -1,0 +1,101 @@
+import {
+  type Container,
+  type IDelta,
+  type IParticleUpdater,
+  OutMode,
+  OutModeDirection,
+  type OutModes,
+  type Particle,
+} from "@tsparticles/engine";
+import { BounceOutMode } from "./BounceOutMode.js";
+import { DestroyOutMode } from "./DestroyOutMode.js";
+import type { IOutModeManager } from "./IOutModeManager.js";
+import { NoneOutMode } from "./NoneOutMode.js";
+import { OutOutMode } from "./OutOutMode.js";
+
+const checkOutMode = (outModes: OutModes, outMode: OutMode | keyof typeof OutMode): boolean => {
+  return (
+    outModes.default === outMode ||
+    outModes.bottom === outMode ||
+    outModes.left === outMode ||
+    outModes.right === outMode ||
+    outModes.top === outMode
+  );
+};
+
+/** Out of canvas updater plugin */
+export class OutOfCanvasUpdater implements IParticleUpdater {
+  /** Out mode managers by out mode */
+  updaters: Map<OutMode, IOutModeManager>;
+
+  /** The particles container */
+  readonly #container;
+
+  /**
+   * OutOfCanvasUpdater constructor
+   * @param container - The container to handle
+   */
+  constructor(container: Container) {
+    this.#container = container;
+    this.updaters = new Map();
+  }
+
+  /**
+   * Initializes particle out mode handlers
+   * @param particle - The particle to process
+   */
+  init(particle: Particle): void {
+    this.#addUpdaterIfMissing(particle, OutMode.bounce, container => new BounceOutMode(container));
+    this.#addUpdaterIfMissing(particle, OutMode.out, container => new OutOutMode(container));
+    this.#addUpdaterIfMissing(particle, OutMode.destroy, container => new DestroyOutMode(container));
+    this.#addUpdaterIfMissing(particle, OutMode.none, container => new NoneOutMode(container));
+  }
+
+  /**
+   * Checks if out of canvas handling is enabled
+   * @param particle - The particle to process
+   * @returns The boolean value
+   */
+  isEnabled(particle: Particle): boolean {
+    return !particle.destroyed && !particle.spawning;
+  }
+
+  /**
+   * Updates particle out mode handling
+   * @param particle - The particle to process
+   * @param delta - The delta time
+   */
+  update(particle: Particle, delta: IDelta): void {
+    const outModes = particle.options.move.outModes;
+
+    particle.justWarped = false;
+
+    this.#updateOutMode(particle, delta, outModes.bottom ?? outModes.default, OutModeDirection.bottom);
+    this.#updateOutMode(particle, delta, outModes.left ?? outModes.default, OutModeDirection.left);
+    this.#updateOutMode(particle, delta, outModes.right ?? outModes.default, OutModeDirection.right);
+    this.#updateOutMode(particle, delta, outModes.top ?? outModes.default, OutModeDirection.top);
+  }
+
+  #addUpdaterIfMissing(
+    particle: Particle,
+    outMode: OutMode,
+    getUpdater: (container: Container) => IOutModeManager,
+  ): void {
+    const outModes = particle.options.move.outModes;
+
+    if (!this.updaters.has(outMode) && checkOutMode(outModes, outMode)) {
+      this.updaters.set(outMode, getUpdater(this.#container));
+    }
+  }
+
+  #updateOutMode(
+    particle: Particle,
+    delta: IDelta,
+    outMode: OutMode | keyof typeof OutMode,
+    direction: OutModeDirection,
+  ): void {
+    for (const updater of this.updaters.values()) {
+      updater.update(particle, direction, delta, outMode);
+    }
+  }
+}

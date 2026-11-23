@@ -1,0 +1,103 @@
+import {
+  type ICoordinates,
+  type IOptionLoader,
+  type RecursivePartial,
+  isNull,
+  loadProperty,
+} from "@tsparticles/engine";
+import { CanvasMaskOverride } from "./CanvasMaskOverride.js";
+import { CanvasMaskPixels } from "./CanvasMaskPixels.js";
+import type { ICanvasMask } from "../Interfaces/ICanvasMask.js";
+import { ImageMask } from "./ImageMask.js";
+import { TextMask } from "./TextMask.js";
+
+/**
+ * [[include:Options/Plugins/CanvasMask.md]]
+ */
+export class CanvasMask implements ICanvasMask, IOptionLoader<ICanvasMask> {
+  /**
+   * The canvas element to use as the mask source
+   */
+  element?: HTMLCanvasElement;
+  /**
+   * Enables the canvas mask
+   */
+  enable = false;
+  /**
+   * The image mask options
+   */
+  image?: ImageMask;
+  /**
+   * The canvas mask override options
+   */
+  override = new CanvasMaskOverride();
+  /**
+   * The canvas mask pixels options
+   */
+  pixels = new CanvasMaskPixels();
+  /**
+   * The canvas mask position, in percent values
+   */
+  position: ICoordinates;
+  /**
+   * The scale factor for the mask
+   */
+  scale = 1;
+  /**
+   * The CSS selector for the canvas element
+   */
+  selector?: string;
+  /**
+   * The text mask options
+   */
+  text?: TextMask;
+
+  constructor() {
+    this.position = {
+      x: 50,
+      y: 50,
+    };
+  }
+
+  /**
+   * Loads the canvas mask options from the given data
+   * @param data - the data to load from
+   */
+  load(data?: RecursivePartial<ICanvasMask>): void {
+    if (isNull(data)) {
+      return;
+    }
+
+    if (data.element !== undefined && data.element instanceof HTMLCanvasElement) {
+      this.element = data.element;
+    }
+
+    loadProperty(this, "enable", data.enable);
+
+    if (data.image) {
+      this.image ??= new ImageMask();
+
+      this.image.load(data.image);
+    }
+
+    this.pixels.load(data.pixels);
+
+    if (data.position) {
+      this.position = {
+        x: data.position.x ?? this.position.x,
+        y: data.position.y ?? this.position.y,
+      };
+    }
+
+    this.override.load(data.override);
+
+    loadProperty(this, "scale", data.scale);
+    loadProperty(this, "selector", data.selector);
+
+    if (data.text) {
+      this.text ??= new TextMask();
+
+      this.text.load(data.text);
+    }
+  }
+}

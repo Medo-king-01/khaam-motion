@@ -1,0 +1,205 @@
+import {
+  type Container,
+  type IShapeDrawData,
+  type IShapeDrawer,
+  defaultAlpha,
+  defaultRatio,
+  double,
+  getErrorMessage,
+} from "@tsparticles/engine";
+import { type IImage, type IParticleImage, type ImageParticle, replaceImageColor, shapeTypes } from "./Utils.js";
+import type { ImageContainer, ImageEngine } from "./types.js";
+import { ErrorCodes } from "./ErrorCodes.js";
+import type { IImageShape } from "./IImageShape.js";
+
+const sides = 12;
+
+/**
+ * Particles Image Drawer
+ */
+export class ImageDrawer implements IShapeDrawer<ImageParticle> {
+  readonly #container;
+  readonly #engine;
+
+  /**
+   * Image drawer constructor, initializing the image set collection
+   * @param engine - The engine to load the shape in
+   * @param container - The container to handle
+   */
+  constructor(engine: ImageEngine, container: ImageContainer) {
+    this.#engine = engine;
+    this.#container = container;
+  }
+
+  /**
+   * The draw image method
+   * @param data - the shape draw data
+   */
+  draw(data: IShapeDrawData<ImageParticle>): void {
+    const { context, radius, particle, opacity } = data,
+      image = particle.image,
+      element = image?.element;
+
+    if (!image) {
+      return;
+    }
+
+    context.globalAlpha = opacity;
+
+    if (element) {
+      const ratio = image.ratio,
+        pos = {
+          x: -radius,
+          y: -radius,
+        },
+        diameter = radius * double;
+
+      context.drawImage(element, pos.x, pos.y, diameter, diameter / ratio);
+    }
+
+    context.globalAlpha = defaultAlpha;
+  }
+
+  /**
+   * Returning the side count for the image, defaults to 12 for using the inner circle as rendering
+   * When using non-transparent images this can be an issue with shadows
+   * @returns the number of sides of the image shape
+   */
+  getSidesCount(): number {
+    return sides;
+  }
+
+  async init(container: ImageContainer): Promise<void> {
+    const options = container.actualOptions;
+
+    if (!options.preload || !this.#engine.loadImage) {
+      return;
+    }
+
+    const promises: Promise<void>[] = [];
+
+    for (const imageData of options.preload) {
+      promises.push(this.#engine.loadImage(container, imageData));
+    }
+
+    await Promise.all(promises);
+  }
+
+  loadShape(particle: ImageParticle): void {
+    const container = this.#container;
+
+    if (!particle.shape || !shapeTypes.includes(particle.shape)) {
+      return;
+    }
+
+    const imageData = particle.shapeData as IImageShape | undefined;
+
+    if (!imageData) {
+      return;
+    }
+
+    const images = this.#engine.getImages?.(container),
+      image = images?.find((t: IImage) => t.name === imageData.name || t.source === imageData.src);
+
+    if (image) {
+      return;
+    }
+
+    void this.#loadImageShape(container, imageData).then(() => {
+      this.loadShape(particle);
+    });
+  }
+
+  /**
+   * Loads the image shape to the given particle
+   * @param container - the particles container
+   * @param particle - the particle loading the image shape
+   */
+  particleInit(container: Container, particle: ImageParticle): void {
+    if (particle.shape !== "image" && particle.shape !== "images") {
+      return;
+    }
+
+    const images = this.#engine.getImages?.(container),
+      imageData = particle.shapeData as IImageShape | undefined;
+
+    if (!imageData) {
+      return;
+    }
+
+    const color = particle.getFillColor(),
+      image = images?.find((t: IImage) => t.name === imageData.name || t.source === imageData.src);
+
+    if (!image) {
+      return;
+    }
+
+    const replaceColor = imageData.replaceColor;
+
+    if (image.loading) {
+      setTimeout((): void => {
+        this.particleInit(container, particle);
+      });
+
+      return;
+    }
+
+    void (async (): Promise<void> => {
+      let imageRes: IParticleImage;
+
+      if (image.svgData && color) {
+        imageRes = await replaceImageColor(
+          image,
+          imageData,
+          color,
+          particle,
+          container.hdr,
+          container.peakNits,
+          container.hdrMode,
+        );
+      } else {
+        imageRes = {
+          color,
+          data: image,
+          element: image.element,
+          loaded: true,
+          ratio:
+            imageData.width && imageData.height ? imageData.width / imageData.height : (image.ratio ?? defaultRatio),
+          replaceColor: replaceColor,
+          source: imageData.src,
+        };
+      }
+
+      if (!imageRes.ratio) {
+        imageRes.ratio = 1;
+      }
+
+      const close = imageData.close ?? particle.shapeClose,
+        imageShape = {
+          image: imageRes,
+          close,
+        };
+
+      particle.image = imageShape.image;
+      particle.shapeClose = imageShape.close;
+    })();
+  }
+
+  /**
+   * Loads the image shape
+   * @param container - the particles container, used to load the image
+   * @param imageShape - the image shape to load
+   * @internal
+   */
+  readonly #loadImageShape = async (container: ImageContainer, imageShape: IImageShape): Promise<void> => {
+    if (!this.#engine.loadImage) {
+      throw new Error(getErrorMessage(ErrorCodes.imageShapeNotInitialized));
+    }
+
+    await this.#engine.loadImage(container, {
+      name: imageShape.name,
+      replaceColor: imageShape.replaceColor,
+      src: imageShape.src,
+    });
+  };
+}

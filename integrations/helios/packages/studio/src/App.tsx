@@ -1,0 +1,147 @@
+import { useEffect } from 'react'
+import '@helios-project/player'
+import { StudioLayout } from './components/Layout/StudioLayout'
+import { Panel } from './components/Layout/Panel'
+import { Timeline } from './components/Timeline'
+import { PropsEditor } from './components/PropsEditor'
+import { PlaybackControls } from './components/Controls/PlaybackControls'
+import { StudioProvider, useStudio } from './context/StudioContext'
+import { Omnibar } from './components/Omnibar'
+import { CreateCompositionModal } from './components/CreateCompositionModal'
+import { DuplicateCompositionModal } from './components/DuplicateCompositionModal'
+import { CompositionSettingsModal } from './components/CompositionSettingsModal'
+import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal'
+import { DiagnosticsModal } from './components/DiagnosticsModal'
+import { AssistantModal } from './components/AssistantModal'
+import { RenderPreviewModal } from './components/RenderPreviewModal'
+import { GlobalShortcuts } from './components/GlobalShortcuts'
+import { Stage } from './components/Stage/Stage'
+import { Sidebar } from './components/Sidebar/Sidebar'
+import { ToastProvider } from './context/ToastContext'
+import { ToastContainer } from './components/Toast/ToastContainer'
+import { HotReloadToast } from './components/Toast/HotReloadToast'
+
+function AppContent() {
+  const {
+    activeComposition,
+    setOmnibarOpen,
+    setCreateOpen,
+    controller,
+    setPlayerState,
+  } = useStudio();
+
+  const src = activeComposition?.url || '';
+
+  useEffect(() => {
+    if (!controller) return;
+
+    // Fetch schema separately since it's not in the high-frequency state stream
+    controller.getSchema().then((schema: any) => {
+      if (schema) {
+        setPlayerState((prev) => ({ ...prev, schema }));
+      }
+    });
+
+    // Subscribe to state updates
+    const unsubscribe = controller.subscribe((state: any) => {
+      setPlayerState(state);
+    });
+
+    // Initial state
+    const initialState = controller.getState();
+    if (initialState) {
+        setPlayerState(initialState);
+    }
+
+    return () => {
+        unsubscribe();
+    };
+  }, [controller, setPlayerState]);
+
+  return (
+    <>
+      <StudioLayout
+        header={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '0 16px', height: '100%' }}>
+            <div style={{ fontWeight: 'bold' }}>Helios Studio</div>
+            <button
+              onClick={() => setOmnibarOpen(true)}
+              style={{
+                background: '#333',
+                border: '1px solid #444',
+                color: '#fff',
+                padding: '6px 12px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                minWidth: '300px'
+              }}
+            >
+              <span>{activeComposition?.name || 'Select Composition...'}</span>
+              <span style={{ fontSize: '0.8em', color: '#888', marginLeft: 'auto' }}>⌘K</span>
+            </button>
+            <button
+              onClick={() => setCreateOpen(true)}
+              title="New Composition"
+              style={{
+                background: '#333',
+                border: '1px solid #444',
+                color: '#fff',
+                width: '32px',
+                height: '32px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px'
+              }}
+            >
+              +
+            </button>
+          </div>
+        }
+        sidebar={<Sidebar />}
+        stage={<Stage src={src} />}
+        inspector={
+          <Panel title="Properties">
+            <PropsEditor />
+          </Panel>
+        }
+        timeline={
+          <Panel title="Timeline">
+            <div style={{ display: 'flex', width: '100%', gap: '16px', paddingRight: '16px', height: '100%' }}>
+                <PlaybackControls />
+                <Timeline />
+            </div>
+          </Panel>
+        }
+      />
+      <Omnibar />
+      <CreateCompositionModal />
+      <DuplicateCompositionModal />
+      <CompositionSettingsModal />
+      <KeyboardShortcutsModal />
+      <DiagnosticsModal />
+      <AssistantModal />
+      <RenderPreviewModal />
+      <GlobalShortcuts />
+    </>
+  )
+}
+
+function App() {
+  return (
+    <ToastProvider>
+      <StudioProvider>
+        <AppContent />
+      </StudioProvider>
+      <ToastContainer />
+      <HotReloadToast />
+    </ToastProvider>
+  )
+}
+
+export default App

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "baseBranchPatterns": ["v4", "v5"],
+  "extends": [":preserveSemverRanges", ":dependencyDashboard"],
+  "enabledManagers": ["npm", "github-actions"],
+  "fetchChangeLogs": "off",
+  "ignorePaths": [
+    "**/.angular/**",
+    "**/.output/**",
+    "**/public/manifest.json",
+    "**/src/manifest.json"
+  ],
+  "extractHostRulesFromCache": true,
+  "toolSettings": {
+    "nodeMaxMemory": 2560
+  },
+  "env": {
+    "PNPM_MAX_WORKERS": "2"
+  }
+}

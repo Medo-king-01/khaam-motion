@@ -23,6 +23,8 @@
 - **نصوص عربية صح:** الحروف ما تتكسر، والاتجاه من اليمين، وخطوط عربية مجربة مع فهرس ورخص (`reference/arabic-typography.md`، `reference/arabic-fonts.md`).
 - **ستايلك أنت:** يبني لك ستايل من مراجعك ويحفظه. وفيه 9 أمثلة للإلهام (`styles/`).
 - **نظام فيديوهات الشرح:** هيكل السكربت، والكابشن، والانتقالات، وخاتمة «علّق الكلمة» أو «الرابط في البايو» (`reference/explainer-reel-system.md`).
+- **anything2explainer مدمج (استخدام خاص):** خط إنتاج topic→narrated explainer بـ Remotion (بحث، سرد، TTS timeline، storyboard، QC، render) في `integrations/anything2explainer/` مع مرجع `reference/anything2explainer.md` (ترخيص PolyForm NC).
+- **تكاملات Canvas/Motion/3D/Particles إضافية (استخدام خاص):** `motion-canvas`, `html-video`, `helios`, `awesome-canvas`, `mojs`, `gsap`, `particles.js`, `three.js`, `tsparticles` داخل `integrations/` مع مرجع `reference/canvas-motion-integrations.md` (انتبه: GSAP بترخيص Standard خاص).
 - **حكايات بصوت (جديد في 1.7):** أربع طرق سرد جاهزة: الحكاية القصيرة، و«ورقة وفكرة»، و«السلّم»، و«السلسلة»، بأمثلة من مجالات مختلفة (`reference/story-formats.md`)، وستايل «حكاية بالضوء».
 - **الصوت أول:** صوتك أنت (تسجّل، وClaude يطلّع وقت كل كلمة على جهازك، مجانًا)، أو صوت يتصمّم لك في ElevenLabs ويصير لك وحدك. وكل حدث في الفيديو ينربط بكلمة من الكلام: البرق على «تخاف»، والفجر على «الفرج».
 - **قطع نص وقصة جاهزة:** جملة تضوي كلمة كلمة وكلماتها المهمة بالذهبي، وبطاقة ثابتة للنص المنقول ومرجعه، وسلّم بـ«؟» فوق، وبطاقتين للمقارنة، وبداية بآخر لقطة ثم رجوع، وخاتمة هادية.
@@ -51,6 +53,7 @@
 | `styles/` | بناء ستايلك، وأمثلة للإلهام |
 | `scripts/` | أدوات: الفحص، والتثبيت في مجلدك، والمفتاح، والبلاغ، والخطوط، والأصوات، والمعاينة |
 | `templates/` | قالب HyperFrames العربي وقطع النص والقصة وطقم المشاهد، وقالب الرندر، وملفات الذاكرة، وملف الذوق، وخطة الحكاية، وقالب الكابشن، وقوالب Remotion الجاهزة (`overlay`, `code-hike`, `tiktok-captions`) |
+| `integrations/` | تكاملات منسوخة للاستخدام الخاص (`anything2explainer`, `motion-canvas`, `html-video`, `helios`, `awesome-canvas`, `mojs`, `gsap`, `particles.js`, `three.js`, `tsparticles`) مع إشعارات الترخيص |
 | `CHANGELOG.md` | الإصدارات |
 | `LICENSE.md` | الرخصة: مجانية للاستعمال، وممنوع إعادة النشر |
 

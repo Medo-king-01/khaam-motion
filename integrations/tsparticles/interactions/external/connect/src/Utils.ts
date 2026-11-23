@@ -1,0 +1,126 @@
+import type { ConnectContainer, LinkParticle } from "./Types.js";
+import {
+  type ICoordinates,
+  type Particle,
+  clamp,
+  colorMix,
+  getStyleFromHsl,
+  getStyleFromRgb,
+} from "@tsparticles/engine";
+import { drawLine } from "@tsparticles/canvas-utils";
+
+const gradientMin = 0,
+  gradientMax = 1,
+  defaultLinksWidth = 0;
+
+/**
+ * Creates a gradient using two particles colors and opacity.
+ * @param container - The particles container
+ * @param context - The canvas context to draw on.
+ * @param p1 - The first particle.
+ * @param p2 - The second particle.
+ * @param opacity - The opacity of the gradient.
+ * @returns The gradient.
+ */
+export function gradient(
+  container: ConnectContainer,
+  context: OffscreenCanvasRenderingContext2D,
+  p1: Particle,
+  p2: Particle,
+  opacity: number,
+): CanvasGradient | undefined {
+  const gradStop = Math.floor(p2.getRadius() / p1.getRadius()),
+    color1 = p1.getFillColor(),
+    color2 = p2.getFillColor();
+
+  if (!color1 || !color2) {
+    return;
+  }
+
+  const sourcePos = p1.getPosition(),
+    destPos = p2.getPosition(),
+    midRgb = colorMix(color1, color2, p1.getRadius(), p2.getRadius(), container.hdr),
+    grad = context.createLinearGradient(sourcePos.x, sourcePos.y, destPos.x, destPos.y);
+
+  grad.addColorStop(
+    gradientMin,
+    getStyleFromHsl(color1, container.hdr, opacity, container.peakNits, container.hdrMode),
+  );
+  grad.addColorStop(
+    clamp(gradStop, gradientMin, gradientMax),
+    getStyleFromRgb(midRgb, container.hdr, opacity, container.peakNits, container.hdrMode),
+  );
+  grad.addColorStop(
+    gradientMax,
+    getStyleFromHsl(color2, container.hdr, opacity, container.peakNits, container.hdrMode),
+  );
+
+  return grad;
+}
+
+/**
+ * Draw a connect line between two points
+ * @param context - The rendering context
+ * @param width - The width
+ * @param lineStyle - The lineStyle
+ * @param begin - The begin
+ * @param end - The end value
+ */
+export function drawConnectLine(
+  context: OffscreenCanvasRenderingContext2D,
+  width: number,
+  lineStyle: CanvasGradient,
+  begin: ICoordinates,
+  end: ICoordinates,
+): void {
+  drawLine(context, begin, end);
+
+  context.lineWidth = width;
+  context.strokeStyle = lineStyle;
+  context.stroke();
+}
+
+/**
+ * Get the line style for a connection
+ * @param container - The container to handle
+ * @param ctx - The rendering context
+ * @param p1 - The first point
+ * @param p2 - The second point
+ * @returns The canvas gradient for the connection
+ */
+export function lineStyle(
+  container: ConnectContainer,
+  ctx: OffscreenCanvasRenderingContext2D,
+  p1: Particle,
+  p2: Particle,
+): CanvasGradient | undefined {
+  const options = container.actualOptions,
+    connectOptions = options.interactivity?.modes.connect;
+
+  if (!connectOptions) {
+    return;
+  }
+
+  return gradient(container, ctx, p1, p2, connectOptions.links.opacity);
+}
+
+/**
+ * Draw a connection between two particles
+ * @param container - The container to handle
+ * @param p1 - The first point
+ * @param p2 - The second point
+ */
+export function drawConnection(container: ConnectContainer, p1: LinkParticle, p2: LinkParticle): void {
+  container.canvas.render.draw(ctx => {
+    const ls = lineStyle(container, ctx, p1, p2);
+
+    if (!ls) {
+      return;
+    }
+
+    const pos1 = p1.getPosition(),
+      pos2 = p2.getPosition();
+
+    drawConnectLine(ctx, p1.retina.linksWidth ?? defaultLinksWidth, ls, pos1, pos2);
+  });
+}

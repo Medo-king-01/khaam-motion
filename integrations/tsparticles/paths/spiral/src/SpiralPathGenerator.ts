@@ -1,0 +1,112 @@
+import {
+  type Container,
+  type IDelta,
+  type RangeValue,
+  Vector,
+  deepExtend,
+  doublePI,
+  getRandom,
+  getRangeValue,
+  minRadius,
+} from "@tsparticles/engine";
+import type { IMovePathGenerator } from "@tsparticles/plugin-move";
+import type { ISpiralOptions } from "./ISpiralOptions.js";
+import { SpiralDirection } from "./SpiralDirection.js";
+import type { SpiralParticle } from "./SpiralParticle.js";
+
+const speedFactor = 0.01,
+  defaultOptions: ISpiralOptions = {
+    maxRadius: { min: 10, max: 50 },
+    angularSpeed: { min: 0.01, max: 0.04 },
+    radialSpeed: { min: 0.1, max: 0.3 },
+  };
+
+/** Spiral path generator plugin */
+export class SpiralPathGenerator implements IMovePathGenerator {
+  /** Spiral path options */
+  readonly options;
+  /** The particles container */
+  readonly #container;
+  /** The result vector */
+  readonly #res: Vector;
+
+  /**
+   * SpiralPathGenerator constructor
+   * @param container - The container to handle
+   */
+  constructor(container: Container) {
+    this.#container = container;
+    this.#res = Vector.origin;
+    this.options = deepExtend({}, defaultOptions) as ISpiralOptions;
+  }
+
+  /**
+   * Generates the next movement vector with spiral oscillation
+   * @param particle - The particle to process
+   * @param delta - The delta time
+   * @returns The result
+   */
+  generate(particle: SpiralParticle, delta: IDelta): Vector {
+    const options = this.options;
+
+    particle.spiral ??= {
+      angle: getRandom() * doublePI,
+      radius: minRadius,
+      direction: SpiralDirection.positive,
+      maxRadius: getRangeValue(options.maxRadius),
+      angularSpeed: getRangeValue(options.angularSpeed) * speedFactor,
+      radialSpeed: getRangeValue(options.radialSpeed) * speedFactor,
+    };
+
+    const spiral = particle.spiral;
+
+    // advance rotation
+    spiral.angle += spiral.angularSpeed * delta.factor;
+
+    // advance radial oscillation
+    spiral.radius += spiral.radialSpeed * spiral.direction * delta.factor;
+
+    if (spiral.radius > spiral.maxRadius && spiral.direction === SpiralDirection.positive) {
+      spiral.radius = spiral.maxRadius;
+      spiral.direction = SpiralDirection.negative;
+    } else if (spiral.radius < minRadius && spiral.direction === SpiralDirection.negative) {
+      spiral.radius = minRadius;
+      spiral.direction = SpiralDirection.positive;
+    }
+
+    // compute spiral offset relative to velocity direction
+    const offsetX = Math.cos(spiral.angle) * spiral.radius,
+      offsetY = Math.sin(spiral.angle) * spiral.radius;
+
+    // apply offset orthogonally around natural motion
+    particle.position.x += offsetX;
+    particle.position.y += offsetY;
+
+    this.#res.x = 0;
+    this.#res.y = 0;
+
+    return this.#res;
+  }
+
+  /** Initializes the path generator options */
+  init(): void {
+    const sourceOptions = this.#container.actualOptions.particles.move.path.options;
+
+    this.options.maxRadius = (sourceOptions["maxRadius"] as RangeValue | undefined) ?? this.options.maxRadius;
+    this.options.angularSpeed = (sourceOptions["angularSpeed"] as RangeValue | undefined) ?? this.options.angularSpeed;
+    this.options.radialSpeed = (sourceOptions["radialSpeed"] as RangeValue | undefined) ?? this.options.radialSpeed;
+  }
+
+  /**
+   * Resets the particle spiral state
+   * @param particle - The particle to process
+   */
+  reset(particle: SpiralParticle): void {
+    delete particle.spiral;
+  }
+
+  /** Updates the path generator (no-op) */
+  update(): void {
+    // no-op
+  }
+}

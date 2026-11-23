@@ -1,0 +1,70 @@
+# Dependencies
+**/node_modules
+
+# Build artifacts
+dist/
+build/
+*.tsbuildinfo
+output/
+
+# Test outputs
+**/output-*/
+**/temp/
+**/tests/*.mp4
+**/tests/*.wav
+**/tests/*.webm
+**/scripts/*.mp4
+**/scripts/*.wav
+**/scripts/*.webm
+packages/renderer/output/
+packages/renderer/output-*/
+packages/renderer/temp/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+test-results/
+
+.env
+climate-central-clip
+
+# Agent scratch files (root-level one-offs)
+completed.txt
+patch.txt
+plan.md
+reproduction.js
+fix-jules.js
+fix_status.js
+append_backlog.js
+verify_*.py
+verify_*.ts
+/patch*.py
+/patch_*.py
+/test-*.js
+/test_*.js
+/test_*.py
+/*.patch
+dom-animation.mp4
+lickstep_videos/coverage/
+
+# Generated coverage reports and disposable render/verification outputs
+coverage/
+/coverage.json
+/*.mp4
+verification*.png
+packages/*/*_pid.txt
+packages/*/test_output.txt
+
+# Agent video scoreboard (tests/agent-eval): generated audio and run results
+tests/agent-eval/assets/track.mp3
+tests/agent-eval/assets/track.truth.json
+tests/agent-eval/results/

@@ -1,0 +1,25 @@
+import type { IParticlesBounce, RangeValue } from "@tsparticles/engine";
+import type { CollisionMode } from "../../CollisionMode.js";
+import type { ICollisionsAbsorb } from "./ICollisionsAbsorb.js";
+import type { ICollisionsFluid } from "./ICollisionsFluid.js";
+import type { ICollisionsOverlap } from "./ICollisionsOverlap.js";
+
+/**
+ * [[include:Options/Particles/Collisions.md]]
+ */
+export interface ICollisions {
+  /** The collisions absorb options */
+  absorb: ICollisionsAbsorb;
+  /** The collisions bounce options */
+  bounce: IParticlesBounce;
+  /** Enables collisions */
+  enable: boolean;
+  /** The collisions fluid options, used by the `fluid` collision mode */
+  fluid: ICollisionsFluid;
+  /** The maximum collision speed */
+  maxSpeed: RangeValue;
+  /** The collision mode */
+  mode: CollisionMode | keyof typeof CollisionMode;
+  /** The collision overlap options */
+  overlap: ICollisionsOverlap;
+}

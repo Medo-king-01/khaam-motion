@@ -1,0 +1,62 @@
+{
+  "name": "@helios-project/player",
+  "version": "0.78.1",
+  "description": "Web Component player for Helios compositions.",
+  "author": "Gavin Bintz <me@gavinbintz.com>",
+  "license": "ELv2",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BintzGavin/helios.git"
+  },
+  "bugs": {
+    "url": "https://github.com/BintzGavin/helios/issues"
+  },
+  "homepage": "https://github.com/BintzGavin/helios#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/helios-player.bundle.mjs",
+  "module": "dist/helios-player.bundle.mjs",
+  "unpkg": "dist/helios-player.global.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/helios-player.bundle.mjs",
+      "require": "./dist/helios-player.global.js",
+      "default": "./dist/helios-player.bundle.mjs"
+    },
+    "./bridge": "./dist/bridge.js",
+    "./controllers": "./dist/controllers.js",
+    "./features/exporter": "./dist/features/exporter.js",
+    "./bundle": "./dist/helios-player.bundle.mjs",
+    "./global": "./dist/helios-player.global.js"
+  },
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "tsc -w",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "video",
+    "animation",
+    "programmatic-video",
+    "video-player",
+    "web-component",
+    "custom-element",
+    "helios"
+  ],
+  "dependencies": {
+    "@helios-project/core": "5.13.2",
+    "mediabunny": "^1.32.2"
+  },
+  "devDependencies": {
+    "jsdom": "^27.4.0",
+    "typescript": "^5.0.0",
+    "vitest": "^4.0.17"
+  }
+}

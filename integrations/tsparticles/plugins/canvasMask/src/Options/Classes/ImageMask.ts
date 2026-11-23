@@ -1,0 +1,14 @@
+import { type IOptionLoader, type RecursivePartial, isNull, loadProperty } from "@tsparticles/engine";
+import type { IImageMask } from "../Interfaces/IImageMask.js";
+
+export class ImageMask implements IImageMask, IOptionLoader<IImageMask> {
+  src = "";
+
+  load(data?: RecursivePartial<IImageMask>): void {
+    if (isNull(data)) {
+      return;
+    }
+
+    loadProperty(this, "src", data.src);
+  }
+}

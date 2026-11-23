@@ -1,0 +1,49 @@
+import {
+  type Container,
+  type IContainerPlugin,
+  type ICoordinates,
+  getDistanceSq,
+  getErrorMessage,
+} from "@tsparticles/engine";
+import type { CollisionParticle } from "./Types.js";
+import { ErrorCodes } from "./ErrorCodes.js";
+
+const minRetries = 0;
+
+export class OverlapPluginInstance implements IContainerPlugin {
+  readonly #container: Container;
+
+  constructor(container: Container) {
+    this.#container = container;
+  }
+
+  checkParticlePosition(particle: CollisionParticle, position: ICoordinates, tryCount: number): boolean {
+    return !this.#hasOverlaps(particle, position, tryCount);
+  }
+
+  #hasOverlaps(particle: CollisionParticle, pos: ICoordinates, tryCount: number): boolean {
+    const collisionsOptions = particle.options.collisions;
+
+    if (!collisionsOptions?.enable) {
+      return false;
+    }
+
+    const overlapOptions = collisionsOptions.overlap;
+
+    if (overlapOptions.enable) {
+      return false;
+    }
+
+    const retries = overlapOptions.retries;
+
+    if (retries >= minRetries && tryCount > retries) {
+      throw new Error(getErrorMessage(ErrorCodes.overlapNotPlaced));
+    }
+
+    return !!this.#container.particles.find(p => {
+      const radius = particle.getRadius() + p.getRadius();
+
+      return radius > 0 && getDistanceSq(pos, p.position) < radius * radius;
+    });
+  }
+}

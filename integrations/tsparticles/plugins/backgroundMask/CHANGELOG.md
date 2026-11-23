@@ -1,0 +1,287 @@
+# Change Log
+
+All notable changes to this project will be documented in this file.
+See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+
+# [4.6.0](https://github.com/tsparticles/tsparticles/compare/v4.5.4...v4.6.0) (2026-11-13)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+## [4.5.4](https://github.com/tsparticles/tsparticles/compare/v4.5.3...v4.5.4) (2026-11-11)
+
+### Bug Fixes
+
+* fixes after AI reviews ([57ed0c0](https://github.com/tsparticles/tsparticles/commit/57ed0c04ced4fec33896639441bb3a0e68366e1b))
+
+## [4.5.3](https://github.com/tsparticles/tsparticles/compare/v4.5.2...v4.5.3) (2026-11-06)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+## [4.5.2](https://github.com/tsparticles/tsparticles/compare/v4.5.1...v4.5.2) (2026-11-05)
+
+### Bug Fixes
+
+* fixed after AI reviews ([b6a043a](https://github.com/tsparticles/tsparticles/commit/b6a043a63713bb74412ec408bf8c6de35f40fb08))
+* fixes after AI reviews ([8b9678b](https://github.com/tsparticles/tsparticles/commit/8b9678b02e7c85b59a4472b043f26ff0e8659161))
+* fixes after AI reviews ([81be838](https://github.com/tsparticles/tsparticles/commit/81be83892964d7d540d575d8278faa74cb10d8a8))
+* fixes after AI reviews ([f1d51b3](https://github.com/tsparticles/tsparticles/commit/f1d51b3ca3a42441c528403db7cf055c3a35d022))
+
+## [4.5.1](https://github.com/tsparticles/tsparticles/compare/v4.5.0...v4.5.1) (2026-11-02)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.5.0](https://github.com/tsparticles/tsparticles/compare/v4.4.0...v4.5.0) (2026-10-25)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.4.0](https://github.com/tsparticles/tsparticles/compare/v4.3.3...v4.4.0) (2026-08-30)
+
+### Bug Fixes
+
+- various fixes for 4.4.0 ([475d06d](https://github.com/tsparticles/tsparticles/commit/475d06da27e1497bb097c0822fcfcb72d7142456))
+
+## [4.3.3](https://github.com/tsparticles/tsparticles/compare/v4.3.2...v4.3.3) (2026-07-23)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+## [4.3.2](https://github.com/tsparticles/tsparticles/compare/v4.3.1...v4.3.2) (2026-07-10)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+## [4.3.1](https://github.com/tsparticles/tsparticles/compare/v4.3.0...v4.3.1) (2026-07-01)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.3.0](https://github.com/tsparticles/tsparticles/compare/v4.2.1...v4.3.0) (2026-06-27)
+
+### Features
+
+- added new draw layer system ([5442bbb](https://github.com/tsparticles/tsparticles/commit/5442bbb848fde8aa7d622c5c751c7c32570d78a9))
+- added support for canvas background mask and custom draw callbacks ([74582bc](https://github.com/tsparticles/tsparticles/commit/74582bc064f174523fa8b22697b83523cccb9a19))
+
+## [4.2.1](https://github.com/tsparticles/tsparticles/compare/v4.2.0...v4.2.1) (2026-06-19)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.2.0](https://github.com/tsparticles/tsparticles/compare/v4.1.3...v4.2.0) (2026-06-17)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+## [4.1.3](https://github.com/tsparticles/tsparticles/compare/v4.1.2...v4.1.3) (2026-06-03)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+## [4.1.2](https://github.com/tsparticles/tsparticles/compare/v4.1.1...v4.1.2) (2026-06-01)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+## [4.1.1](https://github.com/tsparticles/tsparticles/compare/v4.1.0...v4.1.1) (2026-05-31)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.1.0](https://github.com/tsparticles/tsparticles/compare/v4.0.5...v4.1.0) (2026-05-29)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+## [4.0.5](https://github.com/tsparticles/tsparticles/compare/v4.0.4...v4.0.5) (2026-05-19)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+## [4.0.4](https://github.com/tsparticles/tsparticles/compare/v4.0.3...v4.0.4) (2026-05-19)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+## [4.0.3](https://github.com/tsparticles/tsparticles/compare/v4.0.2...v4.0.3) (2026-05-18)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+## [4.0.2](https://github.com/tsparticles/tsparticles/compare/v4.0.1...v4.0.2) (2026-05-16)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+## [4.0.1](https://github.com/tsparticles/tsparticles/compare/v4.0.0...v4.0.1) (2026-05-15)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.17...v4.0.0) (2026-05-15)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-beta.17](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.16...v4.0.0-beta.17) (2026-05-15)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-beta.16](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.15...v4.0.0-beta.16) (2026-05-09)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-beta.15](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.14...v4.0.0-beta.15) (2026-05-09)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-beta.12](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.11...v4.0.0-beta.12) (2026-04-15)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-beta.11](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.10...v4.0.0-beta.11) (2026-04-08)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-beta.10](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.9...v4.0.0-beta.10) (2026-04-08)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-beta.9](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.8...v4.0.0-beta.9) (2026-04-08)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-beta.8](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.7...v4.0.0-beta.8) (2026-04-07)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-beta.7](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.6...v4.0.0-beta.7) (2026-04-07)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-beta.6](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.5...v4.0.0-beta.6) (2026-04-02)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-beta.5](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.4...v4.0.0-beta.5) (2026-04-02)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-beta.4](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.3...v4.0.0-beta.4) (2026-04-02)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-beta.3](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.2...v4.0.0-beta.3) (2026-04-02)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-beta.2](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.1...v4.0.0-beta.2) (2026-04-02)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-beta.1](https://github.com/tsparticles/tsparticles/compare/v4.0.0-beta.0...v4.0.0-beta.1) (2026-03-31)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-beta.0](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.28...v4.0.0-beta.0) (2026-03-19)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.28](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.27...v4.0.0-alpha.28) (2026-03-15)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.27](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.26...v4.0.0-alpha.27) (2026-03-09)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.26](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.25...v4.0.0-alpha.26) (2026-02-26)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.25](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.24...v4.0.0-alpha.25) (2026-02-21)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.24](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.23...v4.0.0-alpha.24) (2026-02-12)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.23](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.22...v4.0.0-alpha.23) (2026-02-11)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.22](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.21...v4.0.0-alpha.22) (2026-02-05)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.21](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.20...v4.0.0-alpha.21) (2026-02-04)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.20](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.19...v4.0.0-alpha.20) (2026-02-04)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.19](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.18...v4.0.0-alpha.19) (2026-02-04)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.18](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.17...v4.0.0-alpha.18) (2026-02-04)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.17](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.16...v4.0.0-alpha.17) (2026-02-04)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.16](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.15...v4.0.0-alpha.16) (2026-02-03)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.15](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.14...v4.0.0-alpha.15) (2026-02-03)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.14](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.13...v4.0.0-alpha.14) (2026-02-02)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.10](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.9...v4.0.0-alpha.10) (2026-02-02)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.9](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.8...v4.0.0-alpha.9) (2026-02-02)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.8](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.7...v4.0.0-alpha.8) (2026-01-22)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.7](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.6...v4.0.0-alpha.7) (2026-01-22)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.6](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.5...v4.0.0-alpha.6) (2026-01-22)
+
+### Bug Fixes
+
+- format fix ([dd42a71](https://github.com/tsparticles/tsparticles/commit/dd42a71857b5e1a95758186bd00b5aa92c9686a9))
+
+# [4.0.0-alpha.5](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.4...v4.0.0-alpha.5) (2026-01-21)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.4](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.3...v4.0.0-alpha.4) (2026-01-21)
+
+### Bug Fixes
+
+- fixed load options in some plugins ([4e1cd4b](https://github.com/tsparticles/tsparticles/commit/4e1cd4b6ad2570d23d38484ba0a053521c6e4d95))
+
+### Features
+
+- add manual particles plugin with configuration and usage examples ([8d73e42](https://github.com/tsparticles/tsparticles/commit/8d73e42320f8f3845545a2bef0f8d92979f1e2ee))
+
+# [4.0.0-alpha.3](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.2...v4.0.0-alpha.3) (2026-01-10)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.2](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.1...v4.0.0-alpha.2) (2026-01-08)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.1](https://github.com/tsparticles/tsparticles/compare/v4.0.0-alpha.0...v4.0.0-alpha.1) (2026-01-08)
+
+**Note:** Version bump only for package @tsparticles/plugin-background-mask
+
+# [4.0.0-alpha.0](https://github.com/tsparticles/tsparticles/compare/v3.9.1...v4.0.0-alpha.0) (2026-01-07)
+
+### Features
+
+- added hdr feature full implementation, colors are now hdr ready ([aee509f](https://github.com/tsparticles/tsparticles/commit/aee509fec97eed1a84c6809f73ce6a42ad19da6a))
+- improved hdr management, improved also big particles config ([92af429](https://github.com/tsparticles/tsparticles/commit/92af429a2c18976267579cc732492dbb7cb3f67a))

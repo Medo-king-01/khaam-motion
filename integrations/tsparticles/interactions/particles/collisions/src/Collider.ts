@@ -1,0 +1,120 @@
+import type { CollisionParticle, IParticlesCollisionOptions, ParticlesCollisionOptions } from "./Types.js";
+import {
+  type Container,
+  type IDelta,
+  type RecursivePartial,
+  double,
+  getDistanceSq,
+  getRangeValue,
+  loadOptionProperty,
+} from "@tsparticles/engine";
+import { type IInteractivityData, ParticlesInteractorBase } from "@tsparticles/plugin-interactivity";
+import { CollisionMode } from "./CollisionMode.js";
+import { Collisions } from "./Options/Classes/Collisions.js";
+import { FluidSolver } from "./Fluid.js";
+import { resolveCollision } from "./ResolveCollision.js";
+
+/**
+ * Particle collision interactor
+ * Handles collision detection and resolution between particles
+ */
+export class Collider extends ParticlesInteractorBase<Container, CollisionParticle> {
+  readonly #fluidSolver: FluidSolver;
+  #maxDistance;
+
+  constructor(container: Container) {
+    super(container);
+
+    this.#fluidSolver = new FluidSolver();
+    this.#maxDistance = 0;
+  }
+
+  get maxDistance(): number {
+    return this.#maxDistance;
+  }
+
+  clear(): void {
+    // do nothing
+  }
+
+  init(): void {
+    // do nothing
+  }
+
+  interact(p1: CollisionParticle, _interactivityData: IInteractivityData, delta: IDelta): void {
+    if (p1.destroyed || p1.spawning) {
+      return;
+    }
+
+    const collisions = p1.options.collisions;
+
+    if (!collisions?.enable) {
+      return;
+    }
+
+    /* the fluid mode is a neighborhood solver, it's mutually exclusive with the pair modes */
+    if (collisions.mode === CollisionMode.fluid) {
+      const fluidRadius = getRangeValue(collisions.fluid.radius);
+
+      if (fluidRadius > this.#maxDistance) {
+        this.#maxDistance = fluidRadius;
+      }
+
+      this.#fluidSolver.solve(this.container, p1);
+
+      return;
+    }
+
+    const container = this.container,
+      pos1 = p1.getPosition(),
+      radius1 = p1.getRadius(),
+      query = container.particles.grid.queryCircle(pos1, radius1 * double) as CollisionParticle[];
+
+    for (const p2 of query) {
+      if (
+        p1 === p2 ||
+        !p2.options.collisions?.enable ||
+        collisions.mode !== p2.options.collisions.mode ||
+        p2.destroyed ||
+        p2.spawning
+      ) {
+        continue;
+      }
+
+      const pos2 = p2.getPosition(),
+        radius2 = p2.getRadius();
+
+      /* Resolve from the larger particle so its broad-phase query covers the full pair radius. */
+      if (radius1 < radius2 || (radius1 === radius2 && p1.id > p2.id)) {
+        continue;
+      }
+
+      const contactDistance = radius1 + radius2;
+
+      if (contactDistance < 0 || Math.abs(Math.round(pos1.z) - Math.round(pos2.z)) > contactDistance) {
+        continue;
+      }
+
+      if (getDistanceSq(pos1, pos2) > contactDistance * contactDistance) {
+        continue;
+      }
+
+      resolveCollision(p1, p2, delta, container.retina.pixelRatio);
+    }
+  }
+
+  isEnabled(particle: CollisionParticle): boolean {
+    return !!particle.options.collisions?.enable;
+  }
+
+  loadParticlesOptions(
+    options: ParticlesCollisionOptions,
+    ...sources: (RecursivePartial<IParticlesCollisionOptions> | undefined)[]
+  ): void {
+    loadOptionProperty(options, "collisions", Collisions, ...sources);
+  }
+
+  reset(_interactivityData: IInteractivityData, _particle: CollisionParticle): void {
+    /* nothing to reset: the fluid solver is stateless, it reads the current positions only */
+  }
+}

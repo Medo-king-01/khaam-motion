@@ -1,0 +1,71 @@
+{
+  "name": "@tsparticles/cli-create-utils",
+  "version": "4.6.0",
+  "license": "MIT",
+  "type": "module",
+  "publishConfig": {
+    "access": "public",
+    "tagVersionPrefix": "v"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tsparticles/tsparticles.git",
+    "directory": "cli/commands/create-utils"
+  },
+  "prettier": "@tsparticles/prettier-config",
+  "scripts": {
+    "prettify:ci:src": "prettier --check ./src/*",
+    "prettify:ci:readme": "prettier --check ./README.md",
+    "prettify:src": "prettier --write ./src/*",
+    "prettify:readme": "prettier --write ./README.md",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --cache --cache-location .cache/eslint/.eslintcache --cache-strategy metadata --fix",
+    "lint:ci": "eslint src --ext .js,.jsx,.ts,.tsx --cache --cache-location .cache/eslint/.eslintcache --cache-strategy metadata",
+    "circular-deps": "depcruise src --include-only '^src' --validate --output-type err-long",
+    "compile": "pnpm run build:ts",
+    "compile:ci": "pnpm run build:ts",
+    "build:ts": "pnpm run build:ts:cjs",
+    "build:ts:cjs": "tsc -p src",
+    "test": "vitest run",
+    "build": "pnpm run clear:dist && pnpm run prettify:src && pnpm run lint && pnpm run compile && pnpm run circular-deps && pnpm run prettify:readme",
+    "build:ci": "pnpm run clear:dist && pnpm run prettify:ci:src && pnpm run lint:ci && pnpm run compile:ci && pnpm run prettify:ci:readme",
+    "clear:dist": "rimraf ./dist",
+    "version": "node scripts/update-empty-project-versions.js && git add files/empty-project/package.json files/empty-project/package.dist.json",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@tsparticles/depcruise-config": "workspace:*",
+    "@tsparticles/engine": "workspace:*",
+    "@tsparticles/eslint-config": "workspace:*",
+    "@tsparticles/prettier-config": "workspace:*",
+    "@tsparticles/tsconfig": "workspace:*",
+    "commander": "^15.0.0",
+    "dependency-cruiser": "^18.7.0",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.7",
+    "eslint-plugin-tsdoc": "^0.5.4",
+    "klaw": "^4.1.0",
+    "lookpath": "^1.2.3",
+    "path-scurry": "^3.0.0",
+    "prettier": "^3.10.1",
+    "prettier-plugin-multiline-arrays": "^4.1.11",
+    "prompts": "^2.4.2",
+    "rimraf": "^6.1.4",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2"
+  },
+  "devDependencies": {
+    "@types/estree": "^1.0.10",
+    "@types/klaw": "^3.0.8",
+    "@types/node": "^26.6.6",
+    "@types/prompts": "^2.4.9",
+    "browserslist": "^4.29.5",
+    "copyfiles": "^2.4.1",
+    "cross-env": "^10.1.0",
+    "ts-node": "^10.9.2",
+    "vitest": "^5.1.0"
+  },
+  "description": "tsParticles CLI Utils",
+  "main": "dist/index.js",
+  "author": "Matteo Bruni <matteo.bruni@me.com>"
+}

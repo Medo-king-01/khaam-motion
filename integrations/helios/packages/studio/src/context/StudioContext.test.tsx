@@ -1,0 +1,682 @@
+import React, { useEffect } from 'react';
+import { render, act, waitFor, renderHook } from '@testing-library/react';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { StudioProvider, useStudio } from './StudioContext';
+import { ClientSideExporter } from '@helios-project/player';
+
+vi.mock('@helios-project/player', () => ({
+  ClientSideExporter: vi.fn().mockImplementation(() => ({
+    export: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
+
+
+// Mock ToastContext
+const mockAddToast = vi.fn();
+vi.mock('./ToastContext', () => ({
+  useToast: () => ({ addToast: mockAddToast }),
+  ToastProvider: ({ children }: any) => <div>{children}</div>
+}));
+
+// Mock Component to consume context and trigger snapshot
+const TestComponent = ({ onReady }: { onReady: (context: any) => void }) => {
+  const context = useStudio();
+  useEffect(() => {
+    onReady(context);
+  }, [context, onReady]);
+  return null;
+};
+
+describe('StudioContext', () => {
+  let mockController: any;
+  let mockFetch: any;
+
+  beforeEach(() => {
+    // Mock Fetch
+    mockFetch = vi.fn(() => Promise.resolve({
+        json: () => Promise.resolve([]),
+        ok: true
+    }));
+    global.fetch = mockFetch;
+
+    // Mock Controller
+    mockController = {
+      captureFrame: vi.fn(),
+      seek: vi.fn(),
+      play: vi.fn(),
+      setLoop: vi.fn(),
+      setPlaybackRange: vi.fn(),
+      clearPlaybackRange: vi.fn(),
+    };
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('takeSnapshot calls controller.captureFrame and downloads image', async () => {
+    let context: any;
+
+    // Mock Canvas and Context
+    const mockContext2D = {
+      drawImage: vi.fn(),
+    };
+    const mockCanvas = {
+      width: 0,
+      height: 0,
+      getContext: vi.fn(() => mockContext2D),
+      toDataURL: vi.fn(() => 'data:image/png;base64,fake'),
+    };
+
+    // Mock Anchor
+    const mockAnchor = {
+      href: '',
+      download: '',
+      click: vi.fn(),
+    };
+
+    // Mock document.createElement
+    const originalCreateElement = document.createElement;
+    document.createElement = vi.fn((tagName: string) => {
+        if (tagName === 'canvas') return mockCanvas as any;
+        if (tagName === 'a') return mockAnchor as any;
+        return originalCreateElement.call(document, tagName);
+    });
+
+    // Mock VideoFrame
+    const mockVideoFrame = {
+        displayWidth: 1920,
+        displayHeight: 1080,
+        close: vi.fn(),
+    };
+
+    mockController.captureFrame.mockResolvedValue({ frame: mockVideoFrame });
+
+    render(
+      <StudioProvider>
+        <TestComponent onReady={(ctx) => { context = ctx; }} />
+      </StudioProvider>
+    );
+
+    // Wait for context to settle
+    await waitFor(() => expect(context).toBeDefined());
+
+    // Set controller
+    act(() => {
+      context.setController(mockController);
+      context.setPlayerState((prev: any) => ({ ...prev, currentFrame: 42 }));
+    });
+
+    // Trigger snapshot
+    await act(async () => {
+      await context.takeSnapshot();
+    });
+
+    // Verify captureFrame called
+    expect(mockController.captureFrame).toHaveBeenCalledWith(42, expect.objectContaining({ mode: 'canvas' }));
+
+    // Verify canvas operations
+    expect(mockCanvas.width).toBe(1920);
+    expect(mockCanvas.height).toBe(1080);
+    expect(mockContext2D.drawImage).toHaveBeenCalledWith(mockVideoFrame, 0, 0);
+    expect(mockCanvas.toDataURL).toHaveBeenCalledWith('image/png');
+
+    // Verify download
+    expect(mockAnchor.href).toBe('data:image/png;base64,fake');
+    expect(mockAnchor.download).toMatch(/snapshot-.*-42\.png/);
+    expect(mockAnchor.click).toHaveBeenCalled();
+
+    // Verify cleanup
+    expect(mockVideoFrame.close).toHaveBeenCalled();
+
+    // Restore createElement
+    document.createElement = originalCreateElement;
+  });
+
+  describe('Loop Logic', () => {
+    it('syncs loop state to controller', async () => {
+      let context: any;
+
+      render(
+        <StudioProvider>
+          <TestComponent onReady={(ctx) => { context = ctx; }} />
+        </StudioProvider>
+      );
+
+      await waitFor(() => expect(context).toBeDefined());
+
+      act(() => {
+        context.setController(mockController);
+      });
+
+      // Enable loop
+      act(() => {
+        if (!context.loop) context.toggleLoop();
+      });
+
+      expect(mockController.setLoop).toHaveBeenCalledWith(true);
+
+      // Disable loop
+      act(() => {
+        if (context.loop) context.toggleLoop();
+      });
+
+      expect(mockController.setLoop).toHaveBeenCalledWith(false);
+    });
+
+    it('syncs playback range to controller', async () => {
+      let context: any;
+
+      render(
+        <StudioProvider>
+          <TestComponent onReady={(ctx) => { context = ctx; }} />
+        </StudioProvider>
+      );
+
+      await waitFor(() => expect(context).toBeDefined());
+
+      act(() => {
+        context.setController(mockController);
+        context.setPlayerState((prev: any) => ({
+          ...prev,
+          duration: 10,
+          fps: 30
+        }));
+      });
+
+      // Set range
+      act(() => {
+        context.setInPoint(10);
+        context.setOutPoint(50);
+      });
+
+      expect(mockController.setPlaybackRange).toHaveBeenCalledWith(10, 50);
+
+      // Clear range (full duration)
+      act(() => {
+        context.setInPoint(0);
+        context.setOutPoint(0);
+      });
+
+      expect(mockController.clearPlaybackRange).toHaveBeenCalled();
+    });
+  });
+
+  describe('Timeline Persistence', () => {
+    let getItemSpy: any;
+    let setItemSpy: any;
+
+    beforeEach(() => {
+      getItemSpy = vi.spyOn(Storage.prototype, 'getItem');
+      setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('saves timeline state when inPoint/outPoint/loop changes', async () => {
+      let context: any;
+
+      render(
+        <StudioProvider>
+          <TestComponent onReady={(ctx) => { context = ctx; }} />
+        </StudioProvider>
+      );
+
+      await waitFor(() => expect(context).toBeDefined());
+
+      // Simulate active composition
+      act(() => {
+        context.setActiveComposition({ id: 'comp-1', name: 'Test', url: '' });
+      });
+
+      // Change inPoint
+      act(() => {
+        context.setInPoint(10);
+      });
+
+      expect(setItemSpy).toHaveBeenCalledWith(
+        'helios-studio:timeline:comp-1',
+        expect.stringContaining('"inPoint":10')
+      );
+    });
+
+    it('restores timeline state when composition loads', async () => {
+      // Mock saved state
+      getItemSpy.mockReturnValue(JSON.stringify({
+        inPoint: 20,
+        outPoint: 100,
+        loop: true,
+        frame: 50
+      }));
+
+      let context: any;
+
+      render(
+        <StudioProvider>
+          <TestComponent onReady={(ctx) => { context = ctx; }} />
+        </StudioProvider>
+      );
+
+      await waitFor(() => expect(context).toBeDefined());
+
+      // Simulate setting active composition, which triggers loadTimelineState
+      act(() => {
+        context.setActiveComposition({ id: 'comp-2', name: 'Test 2', url: '' });
+      });
+
+      // Verify state restored
+      await waitFor(() => {
+        expect(context.inPoint).toBe(20);
+        expect(context.outPoint).toBe(100);
+        expect(context.loop).toBe(true);
+      });
+
+      // Verify pending seek handled when controller becomes available
+      act(() => {
+        context.setController(mockController);
+      });
+
+      await waitFor(() => {
+        expect(mockController.seek).toHaveBeenCalledWith(50);
+      });
+    });
+  });
+
+  describe('Editor Integration', () => {
+    it('openInEditor calls fetch with mapped url', async () => {
+      let context: any;
+
+      render(
+        <StudioProvider>
+          <TestComponent onReady={(ctx) => { context = ctx; }} />
+        </StudioProvider>
+      );
+
+      await waitFor(() => expect(context).toBeDefined());
+
+      act(() => {
+        context.openInEditor('/@fs/my/file/path.ts');
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith('/__open-in-editor?file=%2Fmy%2Ffile%2Fpath.ts');
+    });
+
+    it('openInEditor handles fetch error gracefully', async () => {
+      let context: any;
+
+      // Override the specific call in openInEditor to reject
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      mockFetch.mockImplementation((url: string) => {
+        if (url.startsWith('/__open-in-editor')) {
+            return Promise.reject(new Error('Network error'));
+        }
+        return Promise.resolve({
+            json: () => Promise.resolve([]),
+            ok: true
+        });
+      });
+
+      render(
+        <StudioProvider>
+          <TestComponent onReady={(ctx) => { context = ctx; }} />
+        </StudioProvider>
+      );
+
+      await waitFor(() => expect(context).toBeDefined());
+
+      act(() => {
+        context.openInEditor('/my/file/path.ts');
+      });
+
+      await waitFor(() => {
+        expect(errorSpy).toHaveBeenCalledWith('Failed to open in editor', expect.any(Error));
+      });
+
+      errorSpy.mockRestore();
+    });
+  });
+
+  describe('useStudio hook', () => {
+    it('throws error when used outside of StudioProvider', () => {
+      // Suppress the expected error from React boundaries in test output
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      expect(() => {
+        renderHook(() => useStudio());
+      }).toThrow('useStudio must be used within a StudioProvider');
+
+      errorSpy.mockRestore();
+    });
+  });
+
+  describe('Render Config Persistence', () => {
+    let getItemSpy: any;
+    let setItemSpy: any;
+
+    beforeEach(() => {
+      getItemSpy = vi.spyOn(Storage.prototype, 'getItem');
+      setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('loads config from localStorage on init', async () => {
+      getItemSpy.mockReturnValue(JSON.stringify({ mode: 'dom', videoBitrate: '2000k' }));
+
+      let context: any;
+
+      render(
+        <StudioProvider>
+          <TestComponent onReady={(ctx) => { context = ctx; }} />
+        </StudioProvider>
+      );
+
+      await waitFor(() => expect(context).toBeDefined());
+
+      expect(context.renderConfig).toEqual(expect.objectContaining({
+        mode: 'dom',
+        videoBitrate: '2000k'
+      }));
+    });
+
+    it('saves config to localStorage on change', async () => {
+      let context: any;
+
+      render(
+        <StudioProvider>
+          <TestComponent onReady={(ctx) => { context = ctx; }} />
+        </StudioProvider>
+      );
+
+      await waitFor(() => expect(context).toBeDefined());
+
+      act(() => {
+        context.setRenderConfig({ mode: 'canvas', videoCodec: 'vp9' });
+      });
+
+      expect(setItemSpy).toHaveBeenCalledWith(
+        'helios-studio:render-config',
+        JSON.stringify({ mode: 'canvas', videoCodec: 'vp9' })
+      );
+    });
+
+    it('uses default config if localStorage is empty', async () => {
+      getItemSpy.mockReturnValue(null);
+
+      let context: any;
+
+      render(
+        <StudioProvider>
+          <TestComponent onReady={(ctx) => { context = ctx; }} />
+        </StudioProvider>
+      );
+
+      await waitFor(() => expect(context).toBeDefined());
+
+      expect(context.renderConfig).toEqual({ mode: 'canvas' });
+    });
+  });
+
+  describe('export functions', () => {
+    it('exports video correctly', async () => {
+      let ctx: any;
+      const TestComponent = () => {
+        ctx = useStudio();
+        return null;
+      };
+
+      render(
+        <StudioProvider>
+          <TestComponent />
+        </StudioProvider>
+      );
+
+      await act(async () => {
+        ctx.setController({ captureFrame: vi.fn(), seek: vi.fn(), play: vi.fn(), setLoop: vi.fn(), setPlaybackRange: vi.fn(), clearPlaybackRange: vi.fn() });
+        ctx.setRenderConfig({ mode: 'dom', videoBitrate: '2k', scale: 2 });
+        ctx.setCanvasSize({ width: 100, height: 100 });
+      });
+
+      const mockExport = vi.fn().mockResolvedValue(undefined);
+      (ClientSideExporter as any).mockImplementationOnce(function() { return {
+        export: mockExport
+      }; });
+
+      await act(async () => {
+        await ctx.exportVideo('mp4');
+      });
+
+      expect(mockExport).toHaveBeenCalledWith(expect.objectContaining({
+        format: 'mp4',
+        mode: 'dom',
+        bitrate: 2000,
+        width: 200,
+        height: 200
+      }));
+
+      // test mb
+      await act(async () => {
+        ctx.setRenderConfig({ mode: 'dom', videoBitrate: '2m' });
+      });
+
+      (ClientSideExporter as any).mockImplementationOnce(function() { return {
+        export: mockExport
+      }; });
+      await act(async () => {
+        await ctx.exportVideo('mp4');
+      });
+      expect(mockExport).toHaveBeenCalledWith(expect.objectContaining({ bitrate: 2000000 }));
+
+      // test exact
+      await act(async () => {
+        ctx.setRenderConfig({ mode: 'dom', videoBitrate: '20000' });
+      });
+
+      (ClientSideExporter as any).mockImplementationOnce(function() { return {
+        export: mockExport
+      }; });
+      await act(async () => {
+        await ctx.exportVideo('mp4');
+      });
+      expect(mockExport).toHaveBeenCalledWith(expect.objectContaining({ bitrate: 20000 }));
+
+      // on progress
+      const calls = mockExport.mock.calls;
+      if (calls.length > 0) {
+         const onProgress = calls[0][0].onProgress;
+         act(() => { onProgress(50); });
+      }
+    });
+
+    it('handles export video failure', async () => {
+      let ctx: any;
+      const TestComponent = () => {
+        ctx = useStudio();
+        return null;
+      };
+
+      render(
+        <StudioProvider>
+          <TestComponent />
+        </StudioProvider>
+      );
+
+      await act(async () => {
+        ctx.setController({ captureFrame: vi.fn(), seek: vi.fn(), play: vi.fn(), setLoop: vi.fn(), setPlaybackRange: vi.fn(), clearPlaybackRange: vi.fn() });
+      });
+
+      const mockExport = vi.fn().mockRejectedValue(new Error('Mock export failed'));
+      (ClientSideExporter as any).mockImplementationOnce(function() { return {
+        export: mockExport
+      }; });
+
+      await act(async () => {
+        try { await ctx.exportVideo('mp4'); } catch (e) {}
+      });
+      expect(mockAddToast).toHaveBeenCalledWith('Mock export failed', 'error');
+
+      const mockExport2 = vi.fn().mockRejectedValue(new Error('Export aborted'));
+      (ClientSideExporter as any).mockImplementationOnce(function() { return {
+        export: mockExport2
+      }; });
+
+      mockAddToast.mockClear();
+      await act(async () => {
+        try { await ctx.exportVideo('mp4'); } catch (e) {}
+      });
+      expect(mockAddToast).not.toHaveBeenCalled();
+    });
+
+    it('cancels export if controller exists', async () => {
+      let ctx: any;
+      const TestComponent = () => {
+        ctx = useStudio();
+        return null;
+      };
+
+      render(
+        <StudioProvider>
+          <TestComponent />
+        </StudioProvider>
+      );
+
+      await act(async () => {
+        ctx.setController({ captureFrame: vi.fn(), seek: vi.fn(), play: vi.fn(), setLoop: vi.fn(), setPlaybackRange: vi.fn(), clearPlaybackRange: vi.fn() });
+      });
+
+      let abortSignal: AbortSignal | undefined;
+      const mockExport = vi.fn().mockImplementation(async (opts) => {
+        abortSignal = opts.signal;
+        return new Promise(() => {}); // never resolves
+      });
+
+      (ClientSideExporter as any).mockImplementationOnce(function() { return {
+        export: mockExport
+      }; });
+
+      act(() => {
+        ctx.exportVideo('mp4');
+      });
+
+      await act(async () => {
+        ctx.cancelExport();
+      });
+
+      expect(abortSignal?.aborted).toBe(true);
+    });
+
+    it('exports job spec successfully', async () => {
+      let ctx: any;
+      const TestComponent = () => {
+        ctx = useStudio();
+        return null;
+      };
+
+      render(
+
+          <StudioProvider>
+            <TestComponent />
+          </StudioProvider>
+
+      );
+
+      // Set active composition
+      await act(async () => {
+        ctx.setActiveComposition({ url: 'http://test.com/comp', id: '1', name: 'Test' });
+        ctx.setPlayerState({ fps: 30, duration: 100, inputProps: {} });
+        ctx.setRenderConfig({ mode: 'dom', scale: 2 });
+        ctx.setCanvasSize({ width: 100, height: 100 });
+      });
+
+      act(() => ctx.setInPoint(10));
+      act(() => ctx.setOutPoint(20));
+
+      // Mock URL functions
+      const mockCreateObjectURL = vi.fn().mockReturnValue('blob:test');
+      const mockRevokeObjectURL = vi.fn();
+      global.URL.createObjectURL = mockCreateObjectURL;
+      global.URL.revokeObjectURL = mockRevokeObjectURL;
+
+      // Spy on HTMLAnchorElement click instead of mocking the whole element
+      const clickSpy = vi.spyOn(window.HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+      // Mock fetch for job spec
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        blob: () => Promise.resolve(new Blob(['{}']))
+      });
+
+      await act(async () => {
+        await ctx.exportJobSpec();
+      });
+
+      let postBody = '';
+      const calls = mockFetch.mock.calls;
+      if (calls.length > 0) {
+         const req = calls[calls.length - 1];
+         if (req && req[1]) {
+            postBody = req[1].body;
+         }
+      }
+
+      // verify fetch was called correctly
+      expect(mockFetch).toHaveBeenCalledWith('/api/render/job-spec', expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"compositionUrl":"http://test.com/comp"'),
+      }));
+      expect(postBody).toContain('"width":200');
+      expect(postBody).toContain('"inPoint":10');
+
+      expect(mockCreateObjectURL).toHaveBeenCalled();
+      expect(clickSpy).toHaveBeenCalled();
+      expect(mockRevokeObjectURL).toHaveBeenCalled();
+
+      vi.restoreAllMocks();
+    });
+
+    it('handles export job spec failure', async () => {
+      let ctx: any;
+      const TestComponent = () => {
+        ctx = useStudio();
+        return null;
+      };
+
+      render(
+
+          <StudioProvider>
+            <TestComponent />
+          </StudioProvider>
+
+      );
+
+      await act(async () => {
+        ctx.setActiveComposition(null);
+        await ctx.exportJobSpec(); // should early return
+      });
+
+      await act(async () => {
+        ctx.setActiveComposition({ url: 'http://test.com/comp', id: '1', name: 'Test' });
+      });
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'Server error' })
+      });
+
+      await act(async () => {
+        try { await ctx.exportJobSpec(); } catch (e) {}
+      });
+      expect(mockAddToast).toHaveBeenCalledWith('Server error', 'error');
+
+      // Test fetch failure catch block
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+      await act(async () => {
+        try { await ctx.exportJobSpec(); } catch (e) {}
+      });
+    });
+  });
+});

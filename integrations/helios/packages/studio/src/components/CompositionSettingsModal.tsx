@@ -1,0 +1,189 @@
+import React, { useState, useEffect } from 'react';
+import { useStudio } from '../context/StudioContext';
+import './CompositionSettingsModal.css';
+
+export const CompositionSettingsModal: React.FC = () => {
+  const { isSettingsOpen, setSettingsOpen, updateCompositionMetadata, updateThumbnail, activeComposition, setDuplicateOpen } = useStudio();
+  const [name, setName] = useState('');
+  const [width, setWidth] = useState(1920);
+  const [height, setHeight] = useState(1080);
+  const [fps, setFps] = useState(30);
+  const [duration, setDuration] = useState(5);
+
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [updatingThumbnail, setUpdatingThumbnail] = useState(false);
+
+  useEffect(() => {
+    if (isSettingsOpen && activeComposition) {
+      setName(activeComposition.name);
+      if (activeComposition.metadata) {
+        setWidth(activeComposition.metadata.width);
+        setHeight(activeComposition.metadata.height);
+        setFps(activeComposition.metadata.fps);
+        setDuration(activeComposition.metadata.duration);
+      }
+      setError(null);
+      setLoading(false);
+    }
+  }, [isSettingsOpen, activeComposition]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeComposition) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await updateCompositionMetadata(activeComposition.id, { width, height, fps, duration }, name);
+      setSettingsOpen(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update settings');
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateThumbnail = async () => {
+    if (!activeComposition) return;
+    setUpdatingThumbnail(true);
+    try {
+      await updateThumbnail(activeComposition.id);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setUpdatingThumbnail(false);
+    }
+  };
+
+  if (!isSettingsOpen || !activeComposition) return null;
+
+  return (
+    <div className="settings-modal-overlay" onClick={() => setSettingsOpen(false)}>
+      <div className="settings-modal-content" onClick={e => e.stopPropagation()}>
+        <div className="settings-modal-header">Composition Settings</div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="settings-modal-row">
+            <div className="settings-modal-input-group" style={{ flex: 1 }}>
+              <label>Thumbnail</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '8px', marginBottom: '16px' }}>
+                {activeComposition.thumbnailUrl ? (
+                  <img
+                    src={activeComposition.thumbnailUrl}
+                    alt="Thumbnail"
+                    style={{ width: '120px', height: '67.5px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #333' }}
+                  />
+                ) : (
+                  <div style={{ width: '120px', height: '67.5px', background: '#333', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', fontSize: '12px' }}>
+                    No Thumbnail
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className="settings-modal-button"
+                  onClick={handleUpdateThumbnail}
+                  disabled={loading || updatingThumbnail}
+                  style={{ background: '#444', width: 'auto', padding: '0 12px' }}
+                >
+                  {updatingThumbnail ? 'Updating...' : 'Set from Current Frame'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="settings-modal-row">
+            <div className="settings-modal-input-group" style={{ flex: 1 }}>
+              <label>Name</label>
+              <input
+                type="text"
+                className="settings-modal-input"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          <div className="settings-modal-row">
+            <div className="settings-modal-input-group">
+              <label>Width</label>
+              <input
+                type="number"
+                className="settings-modal-input"
+                value={width}
+                onChange={e => setWidth(Number(e.target.value))}
+                disabled={loading}
+              />
+            </div>
+            <div className="settings-modal-input-group">
+              <label>Height</label>
+              <input
+                type="number"
+                className="settings-modal-input"
+                value={height}
+                onChange={e => setHeight(Number(e.target.value))}
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          <div className="settings-modal-row">
+            <div className="settings-modal-input-group">
+              <label>FPS</label>
+              <input
+                type="number"
+                className="settings-modal-input"
+                value={fps}
+                onChange={e => setFps(Number(e.target.value))}
+                disabled={loading}
+              />
+            </div>
+            <div className="settings-modal-input-group">
+              <label>Duration (sec)</label>
+              <input
+                type="number"
+                className="settings-modal-input"
+                value={duration}
+                onChange={e => setDuration(Number(e.target.value))}
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          {error && <div className="settings-modal-error">{error}</div>}
+
+          <div className="settings-modal-actions">
+            <button
+              type="button"
+              className="settings-modal-button cancel"
+              onClick={() => {
+                setSettingsOpen(false);
+                setDuplicateOpen(true);
+              }}
+              disabled={loading}
+              style={{ marginRight: 'auto' }}
+            >
+              Duplicate
+            </button>
+            <button
+              type="button"
+              className="settings-modal-button cancel"
+              onClick={() => setSettingsOpen(false)}
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="settings-modal-button save"
+              disabled={loading}
+            >
+              {loading ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};

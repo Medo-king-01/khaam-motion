@@ -1,0 +1,71 @@
+# Change Log
+
+All notable changes to this project will be documented in this file.
+See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+
+# [4.6.0](https://github.com/tsparticles/tsparticles/compare/v4.5.4...v4.6.0) (2026-11-13)
+
+**Note:** Version bump only for package @tsparticles/cli-command-create-app
+
+## [4.5.4](https://github.com/tsparticles/tsparticles/compare/v4.5.3...v4.5.4) (2026-11-11)
+
+**Note:** Version bump only for package @tsparticles/cli-command-create-app
+
+## [4.5.3](https://github.com/tsparticles/tsparticles/compare/v4.5.2...v4.5.3) (2026-11-06)
+
+**Note:** Version bump only for package @tsparticles/cli-command-create-app
+
+## [4.5.2](https://github.com/tsparticles/tsparticles/compare/v4.5.1...v4.5.2) (2026-11-05)
+
+**Note:** Version bump only for package @tsparticles/cli-command-create-app
+
+## [4.5.1](https://github.com/tsparticles/tsparticles/compare/v4.5.0...v4.5.1) (2026-11-02)
+
+**Note:** Version bump only for package @tsparticles/cli-command-create-app
+
+# [4.5.0](https://github.com/tsparticles/tsparticles/compare/v4.4.0...v4.5.0) (2026-10-25)
+
+### Bug Fixes
+
+- fixed some issues in mcp server and some coderabbit reports ([4700d3e](https://github.com/tsparticles/tsparticles/commit/4700d3e953f3a3a1930db064a6b6b21d61233cdf))
+
+# [4.4.0](https://github.com/tsparticles/tsparticles/compare/v4.3.3...v4.4.0) (2026-08-30)
+
+### Bug Fixes
+
+- various fixes for 4.4.0 ([475d06d](https://github.com/tsparticles/tsparticles/commit/475d06da27e1497bb097c0822fcfcb72d7142456))
+
+## [4.3.3](https://github.com/tsparticles/tsparticles/compare/v4.3.2...v4.3.3) (2026-07-23)
+
+**Note:** Version bump only for package @tsparticles/cli-command-create-app
+
+## [4.3.2](https://github.com/tsparticles/tsparticles/compare/v4.3.1...v4.3.2) (2026-07-10)
+
+**Note:** Version bump only for package @tsparticles/cli-command-create-app
+
+## [4.3.1](https://github.com/tsparticles/tsparticles/compare/v4.3.0...v4.3.1) (2026-07-01)
+
+**Note:** Version bump only for package @tsparticles/cli-command-create-app
+
+# [4.3.0](https://github.com/tsparticles/tsparticles/compare/v4.2.1...v4.3.0) (2026-06-27)
+
+### Bug Fixes
+
+- fixed angular confetti ([6f25a4a](https://github.com/tsparticles/tsparticles/commit/6f25a4a1eaa69c47f2668316e7b396fe55195f84))
+
+## [4.2.1](https://github.com/tsparticles/tsparticles/compare/v4.2.0...v4.2.1) (2026-06-19)
+
+### Bug Fixes
+
+- fixed some various issues ([8534979](https://github.com/tsparticles/tsparticles/commit/85349791a4978f80f98f141a94a403a7e15785c0))
+
+# [4.2.0](https://github.com/tsparticles/tsparticles/compare/v4.1.3...v4.2.0) (2026-06-17)
+
+### Bug Fixes
+
+- fixed some eslint configs and circular deps ([93d7b8b](https://github.com/tsparticles/tsparticles/commit/93d7b8b766e2d13a4e2c8c18c6ac66f5b460e71b))
+
+### Features
+
+- adding templates to cli create ([bc118ef](https://github.com/tsparticles/tsparticles/commit/bc118efa3f40497f9fa84186ac6102411a19fda7))
+- completed adding templates plan ([bce1a7e](https://github.com/tsparticles/tsparticles/commit/bce1a7ee481e2146b04be234923571e6cf16c717))

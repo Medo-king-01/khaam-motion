@@ -1,0 +1,258 @@
+import { Command } from 'commander';
+import fs from 'fs';
+import path from 'path';
+import { JobSpec } from '../types/job.js';
+import type { WorkerAdapter } from '@helios-project/infrastructure';
+
+// The cloud adapters carry the AWS, Google Cloud and Kubernetes clients. They are an optional
+// peer dependency, loaded only when a job runs, so other commands never install or load them.
+async function loadInfrastructure(): Promise<typeof import('@helios-project/infrastructure')> {
+  try {
+    return await import('@helios-project/infrastructure');
+  } catch (err: any) {
+    if (err?.code !== 'ERR_MODULE_NOT_FOUND' || !String(err.message).includes('@helios-project/infrastructure')) throw err;
+    const cli = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
+    const pin = `@helios-project/infrastructure@${cli.peerDependencies['@helios-project/infrastructure']}`;
+    throw new Error(`helios job needs ${pin}. Install it beside the CLI (npm install ${pin}), or run: npx -p @helios-project/cli@${cli.version} -p ${pin} helios job run <file>`);
+  }
+}
+
+export async function loadJobSpec(file: string): Promise<{ jobSpec: JobSpec, jobDir: string }> {
+  if (file.startsWith('http://') || file.startsWith('https://')) {
+    const res = await fetch(file);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch job: ${res.statusText} (${res.status})`);
+    }
+    const jobSpec = (await res.json()) as JobSpec;
+    return { jobSpec, jobDir: process.cwd() };
+  } else {
+    const jobPath = path.resolve(process.cwd(), file);
+    if (!fs.existsSync(jobPath)) {
+      throw new Error(`Job file not found: ${jobPath}`);
+    }
+    const jobSpec = JSON.parse(fs.readFileSync(jobPath, 'utf-8')) as JobSpec;
+    return { jobSpec, jobDir: path.dirname(jobPath) };
+  }
+}
+
+export function registerJobCommand(program: Command) {
+  const jobCommand = program
+    .command('job')
+    .description('Manage distributed rendering jobs');
+
+  jobCommand
+    .command('run <file>')
+    .description('Execute a distributed render job from a JSON spec')
+    .option('--chunk <id>', 'Execute only the chunk with the specified ID')
+    .option('--concurrency <number>', 'Number of concurrent chunks to run locally', '1')
+    .option('--no-merge', 'Skip the final merge step')
+    .option('--adapter <type>', 'Adapter to use (local, aws, gcp, cloudflare, cloudflare-sandbox, azure, fly, kubernetes, docker, deno, vercel, modal, hetzner)', 'local')
+    .option('--fly-api-token <token>', 'Fly.io API token')
+    .option('--fly-app-name <name>', 'Fly.io app name')
+    .option('--fly-image-ref <ref>', 'Fly.io image ref')
+    .option('--fly-region <region>', 'Fly.io region')
+    .option('--k8s-kubeconfig-path <path>', 'Kubernetes kubeconfig path')
+    .option('--k8s-namespace <namespace>', 'Kubernetes namespace', 'default')
+    .option('--k8s-job-image <image>', 'Kubernetes job image')
+    .option('--k8s-job-name-prefix <prefix>', 'Kubernetes job name prefix')
+    .option('--k8s-service-account-name <name>', 'Kubernetes service account name')
+    .option('--docker-image <image>', 'Docker image to use')
+    .option('--docker-args <args>', 'Comma-separated additional arguments for docker run')
+    .option('--aws-region <region>', 'AWS Region for Lambda adapter')
+    .option('--aws-function-name <name>', 'AWS Lambda function name')
+    .option('--aws-job-def-url <url>', 'URL of the job definition for AWS Lambda')
+    .option('--gcp-service-url <url>', 'GCP Cloud Run service URL')
+    .option('--gcp-job-def-url <url>', 'URL of the job definition for GCP Cloud Run')
+    .option('--cloudflare-service-url <url>', 'Cloudflare Workers service URL')
+    .option('--cloudflare-auth-token <token>', 'Cloudflare Workers bearer token')
+    .option('--cloudflare-job-def-url <url>', 'URL of the job definition for Cloudflare Workers')
+    .option('--cloudflare-sandbox-account-id <id>', 'Cloudflare Account ID for Sandbox adapter')
+    .option('--cloudflare-sandbox-api-token <token>', 'Cloudflare API Token for Sandbox adapter')
+    .option('--cloudflare-sandbox-namespace <namespace>', 'Sandbox namespace for Sandbox adapter')
+    .option('--azure-service-url <url>', 'Azure Functions service URL')
+    .option('--azure-function-key <key>', 'Azure Functions function key')
+    .option('--azure-job-def-url <url>', 'URL of the job definition for Azure Functions')
+    .option('--deno-service-url <url>', 'Deno Deploy service URL')
+    .option('--deno-auth-token <token>', 'Deno Deploy authorization token')
+    .option('--vercel-service-url <url>', 'Vercel Serverless Function service URL')
+    .option('--vercel-auth-token <token>', 'Vercel authorization token')
+    .option('--vercel-job-def-url <url>', 'Static job definition URL for Vercel')
+    .option('--modal-endpoint-url <url>', 'Modal endpoint URL')
+    .option('--modal-auth-token <token>', 'Modal authorization token')
+    .option('--hetzner-api-token <token>', 'Hetzner Cloud API token')
+    .option('--hetzner-server-type <type>', 'Hetzner Cloud server type')
+    .option('--hetzner-image <image>', 'Hetzner Cloud server image')
+    .option('--hetzner-ssh-key-id <id>', 'Hetzner Cloud SSH Key ID')
+    .option('--hetzner-location <loc>', 'Hetzner Cloud location')
+    .action(async (file, options) => {
+      try {
+        const { jobSpec, jobDir } = await loadJobSpec(file);
+        const chunkId = options.chunk ? parseInt(options.chunk, 10) : undefined;
+
+        if (chunkId !== undefined && isNaN(chunkId)) {
+          throw new Error('Chunk ID must be a valid number');
+        }
+
+        const concurrency = parseInt(options.concurrency, 10);
+        if (isNaN(concurrency) || concurrency < 1) {
+          throw new Error('Concurrency must be a positive number');
+        }
+
+        let completedChunkIds: number[] | undefined;
+
+        if (chunkId !== undefined) {
+          const chunkExists = jobSpec.chunks.some(c => c.id === chunkId);
+          if (!chunkExists) {
+            throw new Error(`Chunk ${chunkId} not found in job spec`);
+          }
+          completedChunkIds = jobSpec.chunks
+            .map(c => c.id)
+            .filter(id => id !== chunkId);
+        }
+
+        const shouldMerge = options.merge && chunkId === undefined;
+
+        const {
+          JobExecutor, LocalWorkerAdapter, AwsLambdaAdapter, CloudRunAdapter, CloudflareWorkersAdapter, AzureFunctionsAdapter,
+          FlyMachinesAdapter, KubernetesAdapter, DockerAdapter, DenoDeployAdapter, VercelAdapter, ModalAdapter,
+          HetznerCloudAdapter, CloudflareSandboxAdapter,
+        } = await loadInfrastructure();
+
+        let adapter: WorkerAdapter;
+
+        if (options.adapter === 'aws') {
+          if (!options.awsFunctionName) {
+            throw new Error('AWS adapter requires --aws-function-name');
+          }
+          adapter = new AwsLambdaAdapter({
+            region: options.awsRegion,
+            functionName: options.awsFunctionName,
+            jobDefUrl: options.awsJobDefUrl || file
+          });
+        } else if (options.adapter === 'gcp') {
+          if (!options.gcpServiceUrl) {
+            throw new Error('GCP adapter requires --gcp-service-url');
+          }
+          adapter = new CloudRunAdapter({
+            serviceUrl: options.gcpServiceUrl,
+            jobDefUrl: options.gcpJobDefUrl || file
+          });
+        } else if (options.adapter === 'cloudflare') {
+          if (!options.cloudflareServiceUrl) {
+            throw new Error('Cloudflare adapter requires --cloudflare-service-url');
+          }
+          adapter = new CloudflareWorkersAdapter({
+            serviceUrl: options.cloudflareServiceUrl,
+            authToken: options.cloudflareAuthToken,
+            jobDefUrl: options.cloudflareJobDefUrl || file
+          });
+        } else if (options.adapter === 'cloudflare-sandbox') {
+          if (!options.cloudflareSandboxAccountId || !options.cloudflareSandboxApiToken || !options.cloudflareSandboxNamespace) {
+            throw new Error('Cloudflare Sandbox adapter requires --cloudflare-sandbox-account-id, --cloudflare-sandbox-api-token, and --cloudflare-sandbox-namespace');
+          }
+          adapter = new CloudflareSandboxAdapter({
+            accountId: options.cloudflareSandboxAccountId,
+            apiToken: options.cloudflareSandboxApiToken,
+            namespace: options.cloudflareSandboxNamespace,
+          });
+        } else if (options.adapter === 'azure') {
+          if (!options.azureServiceUrl) {
+            throw new Error('Azure adapter requires --azure-service-url');
+          }
+          adapter = new AzureFunctionsAdapter({
+            serviceUrl: options.azureServiceUrl,
+            functionKey: options.azureFunctionKey,
+            jobDefUrl: options.azureJobDefUrl || file
+          });
+        } else if (options.adapter === 'fly') {
+          if (!options.flyApiToken || !options.flyAppName || !options.flyImageRef) {
+            throw new Error('Fly adapter requires --fly-api-token, --fly-app-name, and --fly-image-ref');
+          }
+          adapter = new FlyMachinesAdapter({
+            apiToken: options.flyApiToken,
+            appName: options.flyAppName,
+            imageRef: options.flyImageRef,
+            region: options.flyRegion
+          });
+        } else if (options.adapter === 'kubernetes') {
+          if (!options.k8sJobImage) {
+            throw new Error('Kubernetes adapter requires --k8s-job-image');
+          }
+          adapter = new KubernetesAdapter({
+            kubeconfigPath: options.k8sKubeconfigPath,
+            namespace: options.k8sNamespace,
+            image: options.k8sJobImage,
+            jobNamePrefix: options.k8sJobNamePrefix,
+            serviceAccountName: options.k8sServiceAccountName
+          });
+        } else if (options.adapter === 'docker') {
+          if (!options.dockerImage) {
+            throw new Error('Docker adapter requires --docker-image');
+          }
+          adapter = new DockerAdapter({
+            image: options.dockerImage,
+            dockerArgs: options.dockerArgs ? options.dockerArgs.split(',') : undefined
+          });
+        } else if (options.adapter === 'deno') {
+          if (!options.denoServiceUrl) {
+            throw new Error('Deno adapter requires --deno-service-url');
+          }
+          adapter = new DenoDeployAdapter({
+            serviceUrl: options.denoServiceUrl,
+            authToken: options.denoAuthToken
+          });
+        } else if (options.adapter === 'vercel') {
+          if (!options.vercelServiceUrl) {
+            throw new Error('Vercel adapter requires --vercel-service-url');
+          }
+          adapter = new VercelAdapter({
+            serviceUrl: options.vercelServiceUrl,
+            authToken: options.vercelAuthToken,
+            jobDefUrl: options.vercelJobDefUrl || file
+          });
+        } else if (options.adapter === 'modal') {
+          if (!options.modalEndpointUrl) {
+            throw new Error('Modal adapter requires --modal-endpoint-url');
+          }
+          adapter = new ModalAdapter({
+            endpointUrl: options.modalEndpointUrl,
+            authToken: options.modalAuthToken
+          });
+        } else if (options.adapter === 'hetzner') {
+          if (!options.hetznerApiToken || !options.hetznerServerType || !options.hetznerImage) {
+            throw new Error('Hetzner adapter requires --hetzner-api-token, --hetzner-server-type, and --hetzner-image');
+          }
+          adapter = new HetznerCloudAdapter({
+            apiToken: options.hetznerApiToken,
+            serverType: options.hetznerServerType,
+            image: options.hetznerImage,
+            sshKeyId: options.hetznerSshKeyId ? parseInt(options.hetznerSshKeyId, 10) : undefined,
+            location: options.hetznerLocation
+          });
+        } else {
+          adapter = new LocalWorkerAdapter();
+        }
+
+        const executor = new JobExecutor(adapter);
+
+        // Ensure jobSpec has an id to satisfy infrastructure JobSpec interface
+        const infrastructureJobSpec = {
+          ...jobSpec,
+          id: (jobSpec as any).id || `job-${Date.now()}`
+        };
+
+        await executor.execute(infrastructureJobSpec as any, {
+          concurrency,
+          jobDir,
+          merge: shouldMerge,
+          completedChunkIds,
+          onChunkStdout: (id: number, data: string) => process.stdout.write(data),
+          onChunkStderr: (id: number, data: string) => process.stderr.write(data)
+        });
+
+      } catch (err: any) {
+        console.error('Job execution failed:', err.message);
+        process.exit(1);
+      }
+    });
+}

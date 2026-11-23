@@ -1,0 +1,157 @@
+import {
+  type Container,
+  type ICoordinates,
+  type IDimension,
+  getErrorMessage,
+  half,
+  percentDenominator,
+  safeDocument,
+} from "@tsparticles/engine";
+import { EmitterShapeBase, type IRandomPositionData } from "@tsparticles/plugin-emitters";
+import { generateRandomPointOnPathPerimeter, generateRandomPointWithinPath } from "./utils.js";
+import type { EmittersPathShapeOptions } from "./Options/Classes/EmittersPathShapeOptions.js";
+import { ErrorCodes } from "./ErrorCodes.js";
+
+export class EmittersPathShape extends EmitterShapeBase<EmittersPathShapeOptions> {
+  checkContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+  path: Path2D;
+  points: ICoordinates[];
+
+  constructor(
+    container: Container,
+    position: ICoordinates,
+    size: IDimension,
+    fill: boolean,
+    options: EmittersPathShapeOptions,
+  ) {
+    super(position, size, fill, options);
+
+    const ctx = safeDocument().createElement("canvas").getContext("2d", container.canvas.render.settings);
+
+    if (!ctx) {
+      throw new Error(getErrorMessage(ErrorCodes.emittersPathNo2dContext));
+    }
+
+    this.checkContext = ctx;
+
+    this.points = options.points;
+
+    const pathData = this.points,
+      path = new Path2D(),
+      offset = {
+        x: position.x - size.width * half,
+        y: position.y - size.height * half,
+      };
+
+    for (const [index, point] of pathData.entries()) {
+      const coords = {
+        x: offset.x + (point.x * size.width) / percentDenominator,
+        y: offset.y + (point.y * size.height) / percentDenominator,
+      };
+
+      if (!index) {
+        path.moveTo(coords.x, coords.y);
+      } else {
+        path.lineTo(coords.x, coords.y);
+      }
+    }
+
+    const firstIndex = 0,
+      firstPathData = pathData.length ? pathData[firstIndex] : null;
+
+    if (!firstPathData) {
+      throw new Error(getErrorMessage(ErrorCodes.emittersPathNoPathData));
+    }
+
+    const coords = {
+      x: offset.x + (firstPathData.x * size.width) / percentDenominator,
+      y: offset.y + (firstPathData.y * size.height) / percentDenominator,
+    };
+
+    path.lineTo(coords.x, coords.y);
+
+    this.path = path;
+  }
+
+  override draw(context: OffscreenCanvasRenderingContext2D): void {
+    const position = this.position,
+      size = this.size,
+      pathData = this.points,
+      offset = {
+        x: position.x - size.width * half,
+        y: position.y - size.height * half,
+      };
+
+    for (const [index, point] of pathData.entries()) {
+      const coords = {
+        x: offset.x + (point.x * size.width) / percentDenominator,
+        y: offset.y + (point.y * size.height) / percentDenominator,
+      };
+
+      if (!index) {
+        context.moveTo(coords.x, coords.y);
+      } else {
+        context.lineTo(coords.x, coords.y);
+      }
+    }
+
+    context.closePath();
+  }
+
+  async init(): Promise<void> {
+    // nothing to do
+  }
+
+  randomPosition(): IRandomPositionData | null {
+    const ctx = this.checkContext,
+      position = this.position,
+      size = this.size,
+      fill = this.fill,
+      path = this.path,
+      res = fill
+        ? generateRandomPointWithinPath(ctx, path, position, size)
+        : generateRandomPointOnPathPerimeter(ctx, path, position, size);
+
+    return res ? { position: res } : null;
+  }
+
+  override resize(position: ICoordinates, size: IDimension): void {
+    super.resize(position, size);
+
+    const pathData = this.points,
+      path = new Path2D(),
+      offset = {
+        x: position.x - size.width * half,
+        y: position.y - size.height * half,
+      };
+
+    for (const [index, point] of pathData.entries()) {
+      const coords = {
+        x: offset.x + (point.x * size.width) / percentDenominator,
+        y: offset.y + (point.y * size.height) / percentDenominator,
+      };
+
+      if (!index) {
+        path.moveTo(coords.x, coords.y);
+      } else {
+        path.lineTo(coords.x, coords.y);
+      }
+    }
+
+    const firstIndex = 0,
+      firstPathData = pathData.length ? pathData[firstIndex] : null;
+
+    if (!firstPathData) {
+      throw new Error(getErrorMessage(ErrorCodes.emittersPathNoPathData));
+    }
+
+    const coords = {
+      x: offset.x + (firstPathData.x * size.width) / percentDenominator,
+      y: offset.y + (firstPathData.y * size.height) / percentDenominator,
+    };
+
+    path.lineTo(coords.x, coords.y);
+
+    this.path = path;
+  }
+}
