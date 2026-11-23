@@ -7,12 +7,7 @@ Lottie-related libraries and references for Khaam Motion. Lottie is useful for e
 | Repo | Integration dir | License | Upstream commit | Snapshot scope | Notes |
 |---|---|---|---|---|---|
 | [airbnb/lottie-web](https://github.com/airbnb/lottie-web) | `integrations/lottie-web/` | MIT | `bede03d25d232826e0c9dca1733d542d8a7754fb` | Selective: `build/player/`, `player/`, `docs/`, `tasks/`, `projects/`, root metadata | Omitted `demo/`, `test/`, `gifs/`, `build/extension/`, `build/old_parser/` for size/value. |
-
-## External reference (not vendored)
-
-| Repo | Why not vendored | How to use |
-|---|---|---|
-| [LottieFiles/awesome-lottie](https://github.com/LottieFiles/awesome-lottie) | No LICENSE file in repo at time of inspection (2026-11-23); API reported no license. | Use as an external discovery index for Lottie tools/resources; do not copy its content into the repo without clear license/permission. |
+| [LottieFiles/awesome-lottie](https://github.com/LottieFiles/awesome-lottie) | `integrations/awesome-lottie/` | **No clear license found** (no LICENSE file; GitHub API reported no license at 2026-11-23 inspection) | `bccdc5deeb1301950444a1f15b299c42958ff7ee` | Full repo snapshot (README-only list) | Vendored at owner's explicit request for private/personal use only; **do not redistribute** without clear permission/license. |
 
 ## How to use in Khaam
 
