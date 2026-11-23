@@ -1,0 +1,134 @@
+<script setup lang="ts">
+import { computed, onMounted } from 'vue';
+import { useMounted } from '@vueuse/core';
+import { useIconStyleContext } from '../../composables/useIconStyle';
+import RangeSlider from '../base/RangeSlider.vue';
+import InputField from '../base/InputField.vue';
+import ColorPicker from '../base/ColorPicker.vue';
+import ResetButton from '../base/ResetButton.vue';
+import Switch from '../base/Switch.vue';
+import Card from '../base/Card.vue';
+import useTrackStyleChanges from '../../composables/useTrackStyleChanges';
+import { track } from '../../utils/openpanel';
+
+const { color, strokeWidth, size, nonScalingStroke, isCustomized, resetStyle } =
+  useIconStyleContext();
+
+// The server always renders the default style. Keep the first client render identical,
+// otherwise the hydrated DOM keeps the stale `disabled` attribute on the reset button.
+const isMounted = useMounted();
+const showCustomized = computed(() => isMounted.value && isCustomized.value);
+
+onMounted(() => {
+  useTrackStyleChanges('icons_customizer_change', { color, strokeWidth, size, nonScalingStroke });
+});
+
+function onReset() {
+  track('icons_customizer_reset');
+  resetStyle();
+}
+</script>
+
+<template>
+  <Card
+    class="customizer-card"
+    :class="{ customized: showCustomized }"
+  >
+    <div class="card-header">
+      <h2 class="card-title">Customizer</h2>
+      <ResetButton
+        :disabled="!showCustomized"
+        @click="onReset"
+      />
+    </div>
+    <InputField
+      id="icon-color"
+      label="Color"
+    >
+      <ColorPicker
+        v-model="color"
+        id="icon-color-picker"
+        class="color-picker"
+      />
+    </InputField>
+
+    <InputField
+      id="stroke-width"
+      label="Stroke width"
+    >
+      <template #display>
+        <span class="customize-label">{{ strokeWidth }}px</span>
+      </template>
+      <RangeSlider
+        id="stroke-width-slider"
+        name="stroke-width"
+        v-model="strokeWidth"
+        :min="0.5"
+        :max="3"
+        :step="0.25"
+      />
+    </InputField>
+
+    <InputField
+      id="size"
+      label="Size"
+    >
+      <template #display>
+        <span class="customize-label">{{ size }}px</span>
+      </template>
+      <RangeSlider
+        id="size-slider"
+        name="size"
+        v-model="size"
+        :min="16"
+        :max="256"
+        :step="4"
+      />
+    </InputField>
+
+    <InputField
+      id="non-scaling-stroke"
+      label="Non-scaling stroke"
+      class="non-scaling-stroke-switch"
+    >
+      <Switch
+        id="non-scaling-stroke-switch"
+        name="non-scaling-stroke"
+        v-model="nonScalingStroke"
+      />
+    </InputField>
+  </Card>
+</template>
+
+<style scoped>
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.card-title {
+  font-weight: 700;
+  color: var(--vp-c-text-1);
+  line-height: 32px;
+  font-size: 16px;
+}
+
+.card.customizer-card {
+  padding: 12px 24px 24px;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 0;
+  transition: border-color 0.4s ease-in-out;
+  background: var(--vp-c-bg);
+}
+
+.customizer-card.customized {
+  border-color: var(--vp-c-brand);
+}
+
+.color-picker {
+  width: 100%;
+}
+</style>
