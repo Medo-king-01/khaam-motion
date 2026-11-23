@@ -253,6 +253,7 @@ Production rules behind the gates:
 | `reference/external-creative-tools.md` | Optional Lemo-Opuscar, Three.js, PixelFX, Blender MCP, Rapier, React Postprocessing and librosa: selection, licensing, safety and host limits |
 | `reference/shotcraft.md` | **Product/UI promos:** the 124 video-shotcraft shot recipes (cached local library, Apache-2.0) adapted to our engines; never auto-run its scripts |
 | `reference/mg-styles-15.md` | **Style direction:** fifteen code-drawn MG styles as direction vocabulary (cached local library, MIT) adapted to our Arabic world; never auto-run its scripts or soundtracks |
+| `reference/bang-motion.md` | **Openers/promos/explainers:** candidate concepts, a direction vocabulary and the mechanical anti-template checks (cached local library, MIT); never installed as a skill, never run its scripts |
 | `reference/review-jury.md` | **Hero pieces only:** an optional independent-jury review pass before delivery; internal checks (`check_mix.py`, `check_pace.py`) stay mandatory |
 | `reference/video-prompt-libraries.md` | Search the user's two video-prompt reference collections, copyright caveats and safe interpretation |
 | `reference/installation.md` | Claude app upload, Claude Code installation, model/effort, capability limits and acceptance tests |
