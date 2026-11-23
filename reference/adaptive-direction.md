@@ -6,7 +6,7 @@ Practical additions inspired by the user-provided Andrew Rayne Motion documents,
 
 - For each reference, note what was **actually inspected** (image, video, audio, page text or just a link). For video you can access and inspect, note useful time ranges and observations about staging, transitions, typography or sound. A still image cannot establish motion or sound. If a URL or playback is unavailable, say so; ask for the file or a description rather than inventing details.
 - Turn each observation into a reusable principle and a new choice for this specific brief. Separate confirmed user preferences from your proposals, and ask when it is unclear what they liked. References are for study, not a blanket permission to reuse other people's media, marks, prompts, typefaces or music.
-- If the current workspace includes `.khaam/styles/kodo-medo.md`, use it as an initial draft of the user's preferences, not a locked decision. Preserve the provided palette and logo as inputs; verify the font and design direction before treating them as approved.
+- If the current workspace includes a draft style (for example `.khaam/styles/*.md`), use it as an initial draft of the user's preferences, not a locked decision. Treat any provided palette, marks and references as inputs only; verify the font and design direction with the user before treating them as approved.
 
 ## 2. Make shots communicate
 

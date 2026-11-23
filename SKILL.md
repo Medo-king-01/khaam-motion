@@ -250,7 +250,8 @@ Production rules behind the gates:
 | `reference/story-formats.md` | **Told videos:** the ways of telling (the short story, «ورقة وفكرة», «السلّم», «السلسلة»), their beats and timings, worked examples, care for religious content |
 | `reference/remotion.md` | 3D, data-driven or templated videos (Remotion), licence and weight |
 | `reference/adaptive-direction.md` | Reference interpretation, causal storyboards, product motion, Arabic-safe typography and final review |
-| `reference/external-creative-tools.md` | Optional Lemo-Opuscar, Three.js, PixelFX, Blender MCP, Rapier, React Postprocessing, librosa and video-shotcraft: selection, licensing, safety and host limits |
+| `reference/external-creative-tools.md` | Optional Lemo-Opuscar, Three.js, PixelFX, Blender MCP, Rapier, React Postprocessing and librosa: selection, licensing, safety and host limits |
+| `reference/shotcraft.md` | **Product/UI promos:** the 124 video-shotcraft shot recipes (cached local library, Apache-2.0) adapted to our engines; never auto-run its scripts |
 | `reference/video-prompt-libraries.md` | Search the user's two video-prompt reference collections, copyright caveats and safe interpretation |
 | `reference/installation.md` | Claude app upload, Claude Code installation, model/effort, capability limits and acceptance tests |
 | `reference/arabic-typography.md` | **Any Arabic on screen**: rules, safe kinetic effects, layout, QA |
