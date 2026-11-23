@@ -25,6 +25,14 @@ SHOTCRAFT = CACHE / 'video-shotcraft'
 SHOTCRAFT_REVISION = '59f3e9b9e936ff2bce0e18446226d770a3f2f61f'
 SHOTCRAFT_SHA256 = '4f3f7027dcba2d34418797668237cdd80d03fa332d867acef10bd4f196c2c7a5'
 SHOTCRAFT_URL = 'https://codeload.github.com/Vincentwei1021/video-shotcraft/tar.gz/' + SHOTCRAFT_REVISION
+MGSTYLES = CACHE / 'mg-styles-15'
+MGSTYLES_REVISION = '46fd009ff0988be7ab1d9a64dfe14e501c6c2521'
+MGSTYLES_SHA256 = 'e980b4b289fb133dfece3112660b6d041a0559bfafadc9196ea9cd4e2eb037c9'
+MGSTYLES_URL = 'https://codeload.github.com/Vincentwei1021/mg-styles-15/tar.gz/' + MGSTYLES_REVISION
+BANG = CACHE / 'bang-motion'
+BANG_REVISION = 'c1aa65e921c970d858705fcb4a53a8294d1a4131'
+BANG_SHA256 = 'de5a744da80faf97b53ad0909f57cf21751ccf0124435b7f4e6fff7ecbcc39a9'
+BANG_URL = 'https://codeload.github.com/bangtutorial/bang-motion/tar.gz/' + BANG_REVISION
 
 
 def run(*args):
@@ -128,6 +136,92 @@ def install_shotcraft_source():
         staging.rename(SHOTCRAFT)
 
 
+def install_mg_styles_source():
+    marker = MGSTYLES / '.khaam-revision'
+    if MGSTYLES.exists():
+        if marker.is_file() and marker.read_text().strip() == MGSTYLES_REVISION:
+            return
+        raise SystemExit(f'{MGSTYLES} exists and is not the pinned installation; refusing to overwrite it.')
+    # Keep the reference library, not the distribution: the 441 MB of videos, the showcase
+    # site and its images, and mgaudio (which conflicts with our sound v2) never reach the cache.
+    skipped = {'.github', 'videos', 'site', 'docs', 'lib', 'assets', 'index.html', '.nojekyll'}
+    with tempfile.TemporaryDirectory(dir=CACHE, prefix='mg-styles-download-') as tmp:
+        tmp = Path(tmp)
+        archive = tmp / 'source.tar.gz'
+        print('Downloading mg-styles-15 source to a temporary local cache...', flush=True)
+        with urllib.request.urlopen(MGSTYLES_URL, timeout=600) as src, archive.open('wb') as dest:
+            shutil.copyfileobj(src, dest)
+        with archive.open('rb') as src:
+            if hashlib.file_digest(src, 'sha256').hexdigest() != MGSTYLES_SHA256:
+                raise SystemExit('mg-styles-15 source archive checksum mismatch; installation stopped.')
+        staging = tmp / 'library'
+        staging.mkdir()
+        with tarfile.open(archive, 'r:gz') as tar:
+            for member in tar:
+                parts = PurePosixPath(member.name).parts
+                if len(parts) < 2:
+                    continue
+                rel = PurePosixPath(*parts[1:])
+                if rel.is_absolute() or '..' in rel.parts:
+                    raise SystemExit('Unsafe archive path')
+                if rel.parts[0] in skipped:
+                    continue
+                dest = staging.joinpath(*rel.parts)
+                if member.isdir():
+                    dest.mkdir(parents=True, exist_ok=True)
+                elif member.isfile():
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    with tar.extractfile(member) as src, dest.open('wb') as out:
+                        shutil.copyfileobj(src, out)
+                else:
+                    raise SystemExit(f'Unexpected link or special archive member: {rel}')
+        (staging / '.khaam-revision').write_text(MGSTYLES_REVISION + '\n')
+        staging.rename(MGSTYLES)
+
+
+def install_bang_motion_source():
+    marker = BANG / '.khaam-revision'
+    if BANG.exists():
+        if marker.is_file() and marker.read_text().strip() == BANG_REVISION:
+            return
+        raise SystemExit(f'{BANG} exists and is not the pinned installation; refusing to overwrite it.')
+    # Keep the craft references and starters for study, not the promo screenshots or
+    # plugin metadata: this skill never registers itself as an agent plugin.
+    skipped = {'docs', '.claude-plugin', 'icon.png'}
+    with tempfile.TemporaryDirectory(dir=CACHE, prefix='bang-download-') as tmp:
+        tmp = Path(tmp)
+        archive = tmp / 'source.tar.gz'
+        print('Downloading bang-motion source to a temporary local cache...', flush=True)
+        with urllib.request.urlopen(BANG_URL, timeout=300) as src, archive.open('wb') as dest:
+            shutil.copyfileobj(src, dest)
+        with archive.open('rb') as src:
+            if hashlib.file_digest(src, 'sha256').hexdigest() != BANG_SHA256:
+                raise SystemExit('bang-motion source archive checksum mismatch; installation stopped.')
+        staging = tmp / 'library'
+        staging.mkdir()
+        with tarfile.open(archive, 'r:gz') as tar:
+            for member in tar:
+                parts = PurePosixPath(member.name).parts
+                if len(parts) < 2:
+                    continue
+                rel = PurePosixPath(*parts[1:])
+                if rel.is_absolute() or '..' in rel.parts:
+                    raise SystemExit('Unsafe archive path')
+                if rel.parts[0] in skipped:
+                    continue
+                dest = staging.joinpath(*rel.parts)
+                if member.isdir():
+                    dest.mkdir(parents=True, exist_ok=True)
+                elif member.isfile():
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    with tar.extractfile(member) as src, dest.open('wb') as out:
+                        shutil.copyfileobj(src, out)
+                else:
+                    raise SystemExit(f'Unexpected link or special archive member: {rel}')
+        (staging / '.khaam-revision').write_text(BANG_REVISION + '\n')
+        staging.rename(BANG)
+
+
 def main():
     if sys.version_info < (3, 11):
         raise SystemExit('Python 3.11+ is required.')
@@ -141,6 +235,8 @@ def main():
     run('npm', 'ci', '--prefix', HERE, '--ignore-scripts', '--no-audit', '--no-fund')
     install_lemo_source()
     install_shotcraft_source()
+    install_mg_styles_source()
+    install_bang_motion_source()
     run(sys.executable, HERE / 'reference_library.py', 'setup')
     run('npm', 'ci', '--prefix', LEMO, '--ignore-scripts', '--no-audit', '--no-fund')
     for env, lock in ((LEMO / '.venv', HERE / 'requirements-lemo.lock'),
