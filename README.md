@@ -55,7 +55,7 @@
 | `styles/` | بناء ستايلك، وأمثلة للإلهام |
 | `scripts/` | أدوات: الفحص، والتثبيت في مجلدك، والمفتاح، والبلاغ، والخطوط، والأصوات، والمعاينة |
 | `templates/` | قالب HyperFrames العربي وقطع النص والقصة وطقم المشاهد، وقالب الرندر، وملفات الذاكرة، وملف الذوق، وخطة الحكاية، وقالب الكابشن، وقوالب Remotion الجاهزة (`overlay`, `code-hike`, `tiktok-captions`) |
-| `integrations/` | تكاملات منسوخة للاستخدام الخاص (`anything2explainer`, `motion-canvas`, `html-video`, `helios`, `awesome-canvas`, `mojs`, `gsap`, `particles.js`, `three.js`, `tsparticles`, `simple-icons`, `lucide-icons`, `tabler-icons`, `lottie-web`) مع إشعارات الترخيص |
+| `integrations/` | تكاملات منسوخة للاستخدام الخاص (`anything2explainer`, `motion-canvas`, `html-video`, `helios`, `awesome-canvas`, `mojs`, `gsap`, `particles.js`, `three.js`, `tsparticles`, `simple-icons`, `lucide-icons`, `tabler-icons`, `lottie-web`, `awesome-lottie`) مع إشعارات الترخيص |
 | `CHANGELOG.md` | الإصدارات |
 | `LICENSE.md` | الرخصة: مجانية للاستعمال، وممنوع إعادة النشر |
 
@@ -70,7 +70,7 @@ What's in it:
 - **Engines by job.** HyperFrames is the default engine (a pinned Arabic starter); Remotion is used on demand for 3D. FFmpeg, yt-dlp for references, and ElevenLabs complete the toolset.
 - **Remotion starters (private use).** Vendored templates in `templates/remotion/` for overlay, code-hike, and TikTok-style captions, plus `scripts/use_remotion_template.py` and Remotion capability/reference docs; Remotion License applies.
 - **Icon/SVG asset libraries (private use).** Vendored snapshots of `simple-icons` (CC0 brand logos), `lucide` (ISC UI icons), and `tabler-icons` (MIT wide icon set) in `integrations/`, with `reference/icon-asset-integrations.md`; respect trademark/context rules for brand marks.
-- **Lottie playback (private use).** Vendored selective snapshot of `lottie-web` (MIT) in `integrations/lottie-web/` with `reference/lottie-integrations.md`; verify rights for embedded Lottie JSON assets. `awesome-lottie` was not vendored (no clear license at inspection time).
+- **Lottie playback/discovery (private use).** Vendored `lottie-web` (MIT, selective) and `awesome-lottie` (no clear upstream license; vendored at owner's explicit request, private-use only, do not redistribute) in `integrations/`, with `reference/lottie-integrations.md`; verify rights for embedded Lottie JSON assets.
 - **Narration first (1.7).** The user's own recording is turned into word timings on their computer, or a voice is designed for them with ElevenLabs Voice Design; library voices only when the user names one. Scene events are placed by naming the spoken word.
 - **Stories (1.7).** Four ways of telling, a word-lit text block, a still card for verified quoted text, a ladder with «؟», comparison cards, a rewind cold open, an end card, the «حكاية بالضوء» style, and a code-drawn scene and faceless figure kit.
 - **Sound.** A film-style mix by default (since 1.7.0's sound v2: real recordings of what is shown, 3–5 of them, a real bed of the place or none, no music unless asked, a mix check that also fails static and buzz); 33 CC0 recordings ship in `sounds/library/`, and a free 1,409-sound library is built locally.

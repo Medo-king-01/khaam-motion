@@ -277,7 +277,7 @@ Production rules behind the gates:
 | `reference/anything2explainer.md` | anything2explainer snapshot (private use): topic→narrated Remotion explainer pipeline, QC/motion scripts, template; PolyForm NC license |
 | `reference/canvas-motion-integrations.md` | motion-canvas, html-video, helios, awesome-canvas, mojs, gsap, particles.js, three.js, tsparticles snapshots (private use): capabilities, locations, licenses, cautions |
 | `reference/icon-asset-integrations.md` | simple-icons, lucide, tabler-icons SVG asset snapshots (private use): brand/UI icon selection, licenses, trademark cautions |
-| `reference/lottie-integrations.md` | lottie-web snapshot (private use) for AE/Lottie JSON playback; includes external awesome-lottie reference note (not vendored: no clear license) |
+| `reference/lottie-integrations.md` | lottie-web (MIT) and awesome-lottie (no clear upstream license; private-use-only, owner-requested) snapshots/references for Lottie playback and discovery |
 | `reference/portability.md` | First setup, path/config resolution, fresh machines and OS differences |
 | `reference/mac.md` | **A Mac (1.7.1):** the tools with no Homebrew and no password (`scripts/mac_tools.sh`), Apple's install window, the privacy window and the way back, a folder instead of a ZIP, the hidden folder |
 | `reference/setup-and-integrations.md` | Prerequisites, optional integrations, keys and browser/tool setup |
