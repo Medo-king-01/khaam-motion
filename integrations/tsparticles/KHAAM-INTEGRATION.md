@@ -14,8 +14,8 @@ tsParticles is a highly customizable particles/confetti/fireworks/background eff
 - Web component/framework integrations in upstream ecosystem.
 
 ## What this snapshot includes / omits
-- **Included:** `engine/`, `bundles/`, `utils/`, `interactions/`, `plugins/`, `shapes/`, `updaters/`, `effects/`, `paths/`, `presets/`, `cli/`, root config/docs files.
-- **Omitted for size/low benefit:** `demo/` (≈324M), `palettes/` (≈38M, large color-data set), `wrappers/`, `websites/`, `templates/`, `markdown/`, `scripts/`.
+- **Included:** `engine/`, `bundles/`, `utils/`, `interactions/`, `plugins/`, `shapes/`, `updaters/`, `effects/`, `paths/`, `presets/`, `cli/`, `palettes/` (3834 files, ~25M), root config/docs files.
+- **Omitted for size/low benefit:** `demo/` (≈324M), `wrappers/`, `websites/`, `templates/`, `markdown/`, `scripts/`.
 
 ## How to use in Khaam
 - Use for particle background/effect references or web prototypes.

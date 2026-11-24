@@ -1,0 +1,683 @@
+import * as React from 'react';
+import {
+  cloneElement,
+  createContext,
+  createElement,
+  isValidElement,
+  ReactElement,
+  ReactNode,
+  SVGProps,
+  useContext,
+  useMemo,
+} from 'react';
+import { clsx } from 'clsx';
+import {
+  isValidTextAnchor,
+  RenderableText,
+  resolveBackgroundPadding,
+  Text,
+  TextAnchor,
+  TextBackgroundProps,
+  TextHaloProps,
+  TextVerticalAnchor,
+} from './Text';
+import { isNullish, isNumber, isNumOrStr, mathSign } from '../util/DataUtils';
+import { polarToCartesian } from '../util/PolarUtils';
+import { CartesianViewBoxRequired, DataKey, PolarViewBoxRequired, TrapezoidViewBox, ViewBox } from '../util/types';
+import { useViewBox } from '../context/chartLayoutContext';
+import { useAppSelector } from '../state/hooks';
+import { selectPolarViewBox } from '../state/selectors/polarAxisSelectors';
+import { resolveDefaultProps } from '../util/resolveDefaultProps';
+import { svgPropertiesAndEvents } from '../util/svgPropertiesAndEvents';
+import { ZIndexable, ZIndexLayer } from '../zIndex/ZIndexLayer';
+import { DefaultZIndexes } from '../zIndex/DefaultZIndexes';
+import { getLabelBackgroundZIndex, LabelZIndexProvider, useLabelZIndex } from '../zIndex/labelBackgroundZIndex';
+
+import { CartesianLabelPosition, getCartesianPosition } from '../cartesian/getCartesianPosition';
+import { cartesianViewBoxToTrapezoid } from '../cartesian/cartesianViewBoxToTrapezoid';
+import { applyLabelTheme, useGlobalLabelTheme } from '../theme/labelTheme';
+
+/**
+ * @inline
+ * @public
+ */
+export type LabelContentType = ReactElement | ((props: Props) => RenderableText | ReactElement);
+
+type PolarLabelPosition = 'insideStart' | 'insideEnd' | 'end';
+
+/**
+ * @inline
+ * @public
+ */
+export type LabelPosition = CartesianLabelPosition | PolarLabelPosition;
+
+/**
+ * @inline
+ */
+export type LabelFormatter = (label: RenderableText) => RenderableText;
+
+interface LabelProps extends ZIndexable {
+  /**
+   * The box of viewing area. Used for positioning.
+   * If undefined, viewBox will be calculated based on surrounding context.
+   */
+  viewBox?: ViewBox;
+  parentViewBox?: ViewBox;
+  /**
+   * Function to customize how content is serialized before rendering.
+   *
+   * This should return a renderable text - something that the {@link Text} component can render.
+   * Typically, a string or number.
+   * Custom components are not supported here - use the `content` prop instead.
+   */
+  formatter?: LabelFormatter;
+  /**
+   * The value of label can be set as children or as the `value` prop
+   *
+   * @example <Label value="foo" />
+   */
+  value?: RenderableText;
+  /**
+   * The offset to the specified "position". Direction of the offset depends on the position.
+   *
+   * @defaultValue 5
+   */
+  offset?: number;
+  /**
+   * The position of label relative to the view box.
+   *
+   * @defaultValue middle
+   */
+  position?: LabelPosition;
+  /**
+   * The value of label can be set as children or as the `value` prop
+   *
+   * @example <Label>foo</Label>
+   */
+  children?: RenderableText;
+  className?: string;
+  /**
+   * If set a React element, the option is the custom React element of rendering label.
+   * Use an SVG element or component, such as `<text>` or `<g>`.
+   * HTML elements such as `<div>` are not valid inside the chart SVG and may trigger React DOM warnings.
+   * To render HTML, wrap it in an SVG `<foreignObject>` with a `width` and a `height`.
+   * The wrapper's `x` and `y` place its top-left corner. To center a 100-by-50 wrapper
+   * at `(x, y)`, place it at `(x - 50, y - 25)`.
+   *
+   * Pass `x` and `y` to `<Label>` to position a custom element, or return a wrapper
+   * from a `content` function to set its size and position directly.
+   * For a `<LabelList>` inside a `<Bar>`, the function receives the bar's `x` and `y` by default.
+   * Use `viewBox` to find a different position, such as the center of the bar.
+   *
+   * @example <Label content={CustomizedLabel} />
+   * @example
+   * const renderCustomLabel = (props) => <text {...props}>Custom Label</text>;
+   * <Label content={renderCustomLabel} />
+   */
+  content?: LabelContentType;
+  /**
+   * @defaultValue false
+   */
+  textBreakAll?: boolean;
+  /**
+   * Text rotation angle in degrees.
+   * Positive values rotate clockwise, negative values rotate counterclockwise.
+   *
+   * @defaultValue 0
+   */
+  angle?: number;
+  index?: number;
+  labelRef?: React.RefObject<SVGTextElement> | null;
+  /**
+   * Z-Index of this component and its children. The higher the value,
+   * the more on top it will be rendered.
+   * Components with higher zIndex will appear in front of components with lower zIndex.
+   * If undefined or 0, the content is rendered in the default layer without portals.
+   *
+   * @since 3.4
+   * @defaultValue 2000
+   * @see {@link https://recharts.github.io/en-US/guide/zIndex/ Z-Index and layers guide}
+   */
+  zIndex?: number;
+  /**
+   * Unique identifier of this component.
+   * Used as an HTML attribute `id`.
+   */
+  id?: string;
+  /**
+   * Draws a background behind the label, for example to keep it readable on top of a filled shape.
+   *
+   * - `true` draws the background with the styles from the theme's `label.background`.
+   *   If neither sets a `fill`, the fill is the `pageBackground` color from the theme, or white when no theme is set.
+   * - An object accepts SVG `<rect>` attributes such as `fill`, `stroke` and `rx`, and a `padding`.
+   *   It is merged over the theme styles key by key.
+   * - `false` draws no background, even if the theme turns backgrounds on.
+   * - `undefined` uses the theme's `label.background`, and draws no background without a theme.
+   *
+   * The background is sized from the rendered text and follows curved label paths.
+   * It is not drawn for custom `content`.
+   *
+   * In a chart, the rectangle renders in a zIndex layer below the label,
+   * so overlapping labels never cover each other's text.
+   *
+   * @since 3.11
+   * @example <Label position="inside" background />
+   * @example <Label position="inside" background={{ fill: '#fff', rx: 2, padding: 4 }} />
+   */
+  background?: boolean | TextBackgroundProps;
+  /**
+   * Draws an outline around the letters of the label, as a lighter alternative to `background`.
+   *
+   * - `true` draws the halo with default styles.
+   *   The stroke is the `pageBackground` color from the theme, or white when no theme is set.
+   * - An object accepts `stroke`, `strokeWidth`, `strokeOpacity` and `strokeLinejoin` to set them explicitly.
+   * - `false` or `undefined` draws no halo.
+   *
+   * Unlike `background`, a halo needs no measurement, works during server-side rendering, and works for
+   * labels that follow a curved path (`insideStart`, `insideEnd` and `end` in polar charts).
+   *
+   * @since 3.11
+   * @example <Label position="inside" halo />
+   * @example <Label position="inside" halo={{ stroke: '#fff', strokeWidth: 4 }} />
+   */
+  halo?: boolean | TextHaloProps;
+}
+
+/**
+ * @public
+ */
+export type Props = Omit<SVGProps<SVGTextElement>, 'viewBox'> & LabelProps;
+
+type PropsWithDefaults = Props & {
+  offset: number;
+};
+
+/**
+ * @public
+ */
+export type ImplicitLabelType =
+  | boolean
+  | string
+  | number
+  | ReactElement<SVGElement>
+  | ((props: any) => RenderableText | ReactElement)
+  // dataKey is only applicable when label is used implicitly from graphical element props
+  | (Props & { dataKey?: DataKey<any> });
+
+const CartesianLabelContext = createContext<TrapezoidViewBox | null>(null);
+
+export const CartesianLabelContextProvider = ({
+  x,
+  y,
+  upperWidth,
+  lowerWidth,
+  width,
+  height,
+  children,
+}: TrapezoidViewBox & {
+  children: ReactNode;
+}) => {
+  const viewBox: TrapezoidViewBox = useMemo(
+    () => ({
+      x,
+      y,
+      upperWidth,
+      lowerWidth,
+      width,
+      height,
+    }),
+    [x, y, upperWidth, lowerWidth, width, height],
+  );
+  return <CartesianLabelContext.Provider value={viewBox}>{children}</CartesianLabelContext.Provider>;
+};
+
+const useCartesianLabelContext = (): TrapezoidViewBox | undefined => {
+  const labelChildContext = useContext(CartesianLabelContext);
+  const chartContext = useViewBox();
+  return labelChildContext || (chartContext ? cartesianViewBoxToTrapezoid(chartContext) : undefined);
+};
+
+const PolarLabelContext = createContext<PolarViewBoxRequired | null>(null);
+
+export const PolarLabelContextProvider = ({
+  cx,
+  cy,
+  innerRadius,
+  outerRadius,
+  startAngle,
+  endAngle,
+  clockWise,
+  children,
+}: PolarViewBoxRequired & {
+  children: ReactNode;
+}) => {
+  const viewBox: PolarViewBoxRequired = useMemo(
+    () => ({
+      cx,
+      cy,
+      innerRadius,
+      outerRadius,
+      startAngle,
+      endAngle,
+      clockWise,
+    }),
+    [cx, cy, innerRadius, outerRadius, startAngle, endAngle, clockWise],
+  );
+  return <PolarLabelContext.Provider value={viewBox}>{children}</PolarLabelContext.Provider>;
+};
+
+export const usePolarLabelContext = (): PolarViewBoxRequired | undefined => {
+  const labelChildContext = useContext(PolarLabelContext);
+  const chartContext = useAppSelector(selectPolarViewBox);
+  return labelChildContext || chartContext;
+};
+
+const getLabel = (props: Props): RenderableText => {
+  const { value, formatter } = props;
+  const label: RenderableText = isNullish(props.children) ? value : props.children;
+
+  if (typeof formatter === 'function') {
+    return formatter(label);
+  }
+
+  return label;
+};
+
+export const isLabelContentAFunction = (content: unknown): content is (props: Props) => React.ReactNode => {
+  return content != null && typeof content === 'function';
+};
+
+const getDeltaAngle = (startAngle: number, endAngle: number) => {
+  const sign = mathSign(endAngle - startAngle);
+  const deltaAngle = Math.min(Math.abs(endAngle - startAngle), 360);
+
+  return sign * deltaAngle;
+};
+
+const renderRadialLabel = (
+  labelProps: PropsWithDefaults,
+  position: PolarLabelPosition,
+  label: RenderableText,
+  attrs: SVGProps<SVGTextElement>,
+  viewBox: PolarViewBoxRequired,
+  halo: Props['halo'],
+) => {
+  const { offset, className, background } = labelProps;
+  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, clockWise } = viewBox;
+  const radius = (innerRadius + outerRadius) / 2;
+  const deltaAngle = getDeltaAngle(startAngle, endAngle);
+  const sign = deltaAngle >= 0 ? 1 : -1;
+  let labelAngle, direction;
+
+  switch (position) {
+    case 'insideStart':
+      labelAngle = startAngle + sign * offset;
+      direction = clockWise;
+      break;
+    case 'insideEnd':
+      labelAngle = endAngle - sign * offset;
+      direction = !clockWise;
+      break;
+    case 'end':
+      labelAngle = endAngle + sign * offset;
+      direction = clockWise;
+      break;
+    default:
+      throw new Error(`Unsupported position ${position}`);
+  }
+
+  direction = deltaAngle <= 0 ? direction : !direction;
+
+  const hasBackground = background != null && background !== false;
+  const backgroundPadding = hasBackground
+    ? resolveBackgroundPadding(typeof background === 'object' ? background.padding : undefined).x
+    : 0;
+  const directionSign = direction ? 1 : -1;
+  const { textAnchor, startOffset: requestedStartOffset, ...textAttrs } = attrs;
+  const pathPadding = requestedStartOffset == null || isNumber(requestedStartOffset) ? backgroundPadding : 0;
+  const backgroundPaddingAngle = radius > 0 ? (pathPadding / radius) * (180 / Math.PI) : 0;
+  const pathStartAngle = labelAngle - directionSign * backgroundPaddingAngle;
+  const startPoint = polarToCartesian(cx, cy, radius, pathStartAngle);
+  const endPoint = polarToCartesian(cx, cy, radius, pathStartAngle + directionSign * 359);
+  const path = `M${startPoint.x},${startPoint.y}
+    A${radius},${radius},0,1,${direction ? 0 : 1},
+    ${endPoint.x},${endPoint.y}`;
+  const resolvedStartOffset = isNumber(requestedStartOffset)
+    ? requestedStartOffset + pathPadding
+    : (requestedStartOffset ?? (pathPadding || undefined));
+  return (
+    <Text
+      {...textAttrs}
+      dominantBaseline="central"
+      className={clsx('recharts-radial-bar-label', className)}
+      textAnchor={isValidTextAnchor(textAnchor) ? textAnchor : undefined}
+      textPath={path}
+      startOffset={resolvedStartOffset}
+      background={background}
+      halo={halo}
+    >
+      {label}
+    </Text>
+  );
+};
+
+const getAttrsOfPolarLabel = (
+  viewBox: PolarViewBoxRequired,
+  offset: number,
+  position: LabelPosition | undefined,
+): LabelPositionAttributes => {
+  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle } = viewBox;
+  const midAngle = (startAngle + endAngle) / 2;
+
+  if (position === 'outside') {
+    const { x, y } = polarToCartesian(cx, cy, outerRadius + offset, midAngle);
+
+    return {
+      x,
+      y,
+      textAnchor: x >= cx ? 'start' : 'end',
+      verticalAnchor: 'middle',
+    };
+  }
+
+  if (position === 'center') {
+    return {
+      x: cx,
+      y: cy,
+      textAnchor: 'middle',
+      verticalAnchor: 'middle',
+    };
+  }
+
+  if (position === 'centerTop') {
+    return {
+      x: cx,
+      y: cy,
+      textAnchor: 'middle',
+      verticalAnchor: 'start',
+    };
+  }
+
+  if (position === 'centerBottom') {
+    return {
+      x: cx,
+      y: cy,
+      textAnchor: 'middle',
+      verticalAnchor: 'end',
+    };
+  }
+
+  const r = (innerRadius + outerRadius) / 2;
+  const { x, y } = polarToCartesian(cx, cy, r, midAngle);
+
+  return {
+    x,
+    y,
+    textAnchor: 'middle',
+    verticalAnchor: 'middle',
+  };
+};
+
+/**
+ * Returns true if the label renders in a polar view box, which decides how its `position` is interpreted.
+ */
+export const isPolarViewBox = (
+  viewBox: CartesianViewBoxRequired | TrapezoidViewBox | PolarViewBoxRequired | undefined,
+): viewBox is PolarViewBoxRequired => viewBox != null && 'cx' in viewBox && isNumber(viewBox.cx);
+
+export type LabelPositionAttributes = {
+  x: number;
+  y: number;
+  textAnchor: TextAnchor;
+  verticalAnchor: TextVerticalAnchor;
+  width?: number;
+  height?: number;
+};
+
+export const defaultLabelProps = {
+  angle: 0,
+  offset: 5,
+  zIndex: DefaultZIndexes.label,
+  position: 'middle',
+  textBreakAll: false,
+} as const satisfies Partial<Props>;
+
+function polarViewBoxToTrapezoid(
+  viewBox: PolarViewBoxRequired | TrapezoidViewBox | undefined,
+): TrapezoidViewBox | undefined {
+  if (!isPolarViewBox(viewBox)) {
+    return viewBox;
+  }
+  const { cx, cy, outerRadius } = viewBox;
+  const diameter = outerRadius * 2;
+  return {
+    x: cx - outerRadius,
+    y: cy - outerRadius,
+    width: diameter,
+    upperWidth: diameter,
+    lowerWidth: diameter,
+    height: diameter,
+  };
+}
+
+/**
+ * @consumes CartesianViewBoxContext
+ * @consumes PolarViewBoxContext
+ * @consumes CartesianLabelContext
+ * @consumes PolarLabelContext
+ * @public
+ */
+export function Label(outerProps: Props) {
+  const labelTheme = useGlobalLabelTheme();
+  const themedProps: Props =
+    labelTheme == null ? outerProps : { ...outerProps, ...applyLabelTheme(labelTheme, outerProps) };
+  const props: PropsWithDefaults = resolveDefaultProps(themedProps, defaultLabelProps);
+  const {
+    viewBox: viewBoxFromProps,
+    parentViewBox,
+    position,
+    value,
+    children,
+    content,
+    className = '',
+    textBreakAll,
+    labelRef,
+  } = props;
+  const polarViewBox = usePolarLabelContext();
+  const parentPolarViewBox = useContext(PolarLabelContext);
+  const cartesianViewBox = useCartesianLabelContext();
+  /*
+   * Labels inside a LabelList render with zIndex 0, in the layer of the list,
+   * so their backgrounds go below the zIndex of the list.
+   */
+  const enclosingLabelZIndex = useLabelZIndex();
+  const labelZIndex = props.zIndex === 0 ? (enclosingLabelZIndex ?? props.zIndex) : props.zIndex;
+  const backgroundZIndex = getLabelBackgroundZIndex(labelZIndex, props.background);
+
+  /*
+   * I am not proud about this solution, but it's a quick fix for https://github.com/recharts/recharts/issues/6030#issuecomment-3155352460.
+   * What we should really do is split Label into two components: CartesianLabel and PolarLabel and then handle their respective viewBoxes separately.
+   * Also other components should set its own viewBox in a context so that we can fix https://github.com/recharts/recharts/issues/6156
+   * A Pie or a PolarRadiusAxis sets its own polar viewBox, so a centered Label inside of it uses that one.
+   */
+  const resolvedViewBox =
+    position === 'center' ? (parentPolarViewBox ?? cartesianViewBox) : (polarViewBox ?? cartesianViewBox);
+
+  let viewBox: PolarViewBoxRequired | TrapezoidViewBox | undefined,
+    label: RenderableText,
+    positionAttrs: LabelPositionAttributes | undefined;
+  if (viewBoxFromProps == null) {
+    viewBox = resolvedViewBox;
+  } else if (isPolarViewBox(viewBoxFromProps)) {
+    viewBox = viewBoxFromProps;
+  } else {
+    viewBox = cartesianViewBoxToTrapezoid(viewBoxFromProps);
+  }
+
+  const cartesianBox = polarViewBoxToTrapezoid(viewBox);
+
+  if (
+    !viewBox ||
+    (isNullish(value) && isNullish(children) && !isValidElement(content) && typeof content !== 'function')
+  ) {
+    return null;
+  }
+
+  // TODO: Generic Polar Hook
+  const isRadialPolarLabel =
+    isPolarViewBox(viewBox) && (position === 'insideStart' || position === 'insideEnd' || position === 'end');
+
+  if (isPolarViewBox(viewBox)) {
+    if (!isRadialPolarLabel) {
+      positionAttrs = getAttrsOfPolarLabel(viewBox, props.offset, props.position);
+    }
+  } else if (cartesianBox) {
+    const cartesianResult = getCartesianPosition({
+      viewBox: cartesianBox,
+      position,
+      offset: props.offset,
+      parentViewBox: isPolarViewBox(parentViewBox) ? undefined : parentViewBox,
+      clamp: true,
+    });
+
+    positionAttrs = {
+      x: cartesianResult.x,
+      y: cartesianResult.y,
+      textAnchor: cartesianResult.horizontalAnchor,
+      verticalAnchor: cartesianResult.verticalAnchor,
+      ...(cartesianResult.width !== undefined ? { width: cartesianResult.width } : {}),
+      ...(cartesianResult.height !== undefined ? { height: cartesianResult.height } : {}),
+    };
+  }
+
+  /*
+   * Custom content receives the computed x and y too, so that custom labels
+   * can be positioned the same way the built-in Text label is. Explicitly
+   * passed props win over the computed values. We deliberately forward only
+   * x and y (not the anchors): a custom label that spreads its props into a
+   * nested Label would otherwise have that Label's own computed anchors
+   * overridden by the inherited ones.
+   * https://github.com/recharts/recharts/issues/5067
+   */
+  const propsWithViewBox = {
+    ...(positionAttrs?.x !== undefined ? { x: positionAttrs.x } : {}),
+    ...(positionAttrs?.y !== undefined ? { y: positionAttrs.y } : {}),
+    ...props,
+    viewBox,
+  };
+
+  if (isValidElement(content)) {
+    /*
+     * The element is often a plain SVG element such as `<text>`,
+     * where `background` would end up as an invalid DOM attribute.
+     */
+    const { labelRef: _, background: _background, halo: _halo, ...propsForElement } = propsWithViewBox;
+    return cloneElement(content, propsForElement);
+  }
+
+  if (typeof content === 'function') {
+    const { content: _, ...propsForContent } = propsWithViewBox;
+    // @ts-expect-error we're not checking if the content component returns something that Text is able to render
+    label = createElement(content, propsForContent);
+
+    if (isValidElement(label)) {
+      return label;
+    }
+  } else {
+    label = getLabel(props);
+  }
+
+  const attrs = svgPropertiesAndEvents(props);
+
+  if (isRadialPolarLabel && isPolarViewBox(viewBox)) {
+    return renderRadialLabel(props, position, label, attrs, viewBox, props.halo);
+  }
+
+  if (positionAttrs == null) {
+    return null;
+  }
+
+  return (
+    <>
+      {props.background && <ZIndexLayer zIndex={backgroundZIndex} />}
+      <ZIndexLayer zIndex={props.zIndex}>
+        <LabelZIndexProvider value={labelZIndex}>
+          <Text
+            ref={labelRef}
+            className={clsx('recharts-label', className)}
+            {...attrs}
+            {...positionAttrs}
+            /*
+             * textAnchor is decided by default based on the `position`
+             * but we allow overriding via props for precise control.
+             */
+            textAnchor={isValidTextAnchor(attrs.textAnchor) ? attrs.textAnchor : positionAttrs.textAnchor}
+            breakAll={textBreakAll}
+            background={props.background}
+            halo={props.halo}
+          >
+            {label}
+          </Text>
+        </LabelZIndexProvider>
+      </ZIndexLayer>
+    </>
+  );
+}
+
+Label.displayName = 'Label';
+
+const parseLabel = (
+  label: ImplicitLabelType | undefined,
+  viewBox: ViewBox | undefined,
+  labelRef?: React.RefObject<SVGTextElement> | null,
+) => {
+  if (!label && label !== 0) {
+    return null;
+  }
+
+  const commonProps = { viewBox, labelRef };
+
+  if (label === true) {
+    return <Label key="label-implicit" {...commonProps} />;
+  }
+
+  if (isNumOrStr(label)) {
+    return <Label key="label-implicit" value={label} {...commonProps} />;
+  }
+
+  if (isValidElement(label)) {
+    if (label.type === Label) {
+      return cloneElement<SVGElement>(label, { key: 'label-implicit', ...commonProps });
+    }
+
+    return <Label key="label-implicit" content={label} {...commonProps} />;
+  }
+
+  if (isLabelContentAFunction(label)) {
+    return <Label key="label-implicit" content={label} {...commonProps} />;
+  }
+
+  if (label && typeof label === 'object') {
+    return <Label {...label} key="label-implicit" {...commonProps} />;
+  }
+
+  return null;
+};
+
+export function CartesianLabelFromLabelProp({
+  label,
+  labelRef,
+}: {
+  label: ImplicitLabelType | undefined;
+  labelRef?: React.RefObject<SVGTextElement> | null;
+}) {
+  const viewBox = useCartesianLabelContext();
+
+  return parseLabel(label, viewBox, labelRef) || null;
+}
+
+export function PolarLabelFromLabelProp({ label }: { label: ImplicitLabelType | undefined }) {
+  const viewBox = usePolarLabelContext();
+
+  return parseLabel(label, viewBox) || null;
+}
