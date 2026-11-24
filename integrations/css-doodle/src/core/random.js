@@ -1,0 +1,32 @@
+import seedrandom from '../lib/seedrandom.js';
+import { lerp } from '../lib/math.js';
+import { shuffle as shuffleBy } from '../lib/list.js';
+
+export default function createRandom(seed) {
+    let random = (typeof seed === 'function') ? seed : seedrandom(String(seed));
+
+    function updateRandom(seed) {
+        random = seedrandom(String(seed));
+    }
+
+    // rand() → [0, 1), rand(n) → [0, n), rand(a, b) → [a, b)
+    function rand(start, end) {
+        if (end === undefined) {
+            [start, end] = [0, start ?? 1];
+        }
+        return lerp(random(), start, end);
+    }
+
+    function pick(items) {
+        return items[~~(random() * items.length)];
+    }
+
+    function shuffle(arr) {
+        return shuffleBy(arr, random);
+    }
+
+    return {
+        rand, pick, shuffle, updateRandom,
+        get random() { return random; },
+    };
+}

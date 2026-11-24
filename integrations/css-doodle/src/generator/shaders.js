@@ -1,0 +1,352 @@
+import { hash } from '../lib/math.js';
+import { glsl } from '../lib/tagged-template.js';
+
+const DEFAULT_VERTEX_SHADER = glsl`#version 300 es
+    in vec4 position;
+    void main() {
+        gl_Position = position;
+    }
+`;
+
+const SCREEN_QUAD_VERTICES = new Float32Array([
+    -1, -1, 1, -1, -1, 1, 1, 1
+]);
+
+const MAX_TEXTURE_SIZE = 4096;
+
+function createProgram(gl, vss, fss) {
+    const program = gl.createProgram();
+    const shaders = [[gl.VERTEX_SHADER, vss], [gl.FRAGMENT_SHADER, fss]].map(([type, source]) => {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        gl.attachShader(program, shader);
+        return shader;
+    });
+    gl.bindAttribLocation(program, 0, 'position');
+    gl.linkProgram(program);
+    return { program, shaders, users: 0 };
+}
+
+function checkProgram(gl, entry) {
+    if (entry.shaders) {
+        const [vs, fs] = entry.shaders;
+        const linked = gl.getProgramParameter(entry.program, gl.LINK_STATUS);
+        const log = linked ? '' : [gl.getShaderInfoLog(fs), gl.getShaderInfoLog(vs)].find(log => /ERROR/.test(log)) || gl.getProgramInfoLog(entry.program) || '';
+        entry.shaders.forEach(shader => gl.deleteShader(shader));
+        entry.shaders = null;
+        if (!linked) entry.error = shaderError(log);
+    }
+    if (entry.error) throw entry.error;
+}
+
+const later = () => new Promise(resolve => setTimeout(resolve, 16));
+
+async function settle(surface, entry) {
+    const { gl, parallel } = surface;
+    gl.flush();
+    while (parallel && !surface.disposed && !gl.getProgramParameter(entry.program, parallel.COMPLETION_STATUS_KHR)) {
+        await later();
+    }
+    if (surface.disposed) return;
+    checkProgram(gl, entry);
+    gl.useProgram(entry.program);
+    gl.enable(gl.SCISSOR_TEST);
+    gl.scissor(0, 0, 1, 1);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.disable(gl.SCISSOR_TEST);
+    const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    gl.flush();
+    while (!surface.disposed && gl.getSyncParameter(sync, gl.SYNC_STATUS) !== gl.SIGNALED) {
+        await later();
+    }
+    gl.deleteSync(sync);
+}
+
+export function shaderError(log) {
+    let token = log.match(/ERROR:\s*\d+:\d+:\s*'(.+?)'/)?.[1];
+    return new Error(token ? `invalid ${token}` : 'shader failed');
+}
+
+export function generateFragment(fragment, textures) {
+    fragment = fragment.replace(/^\s*#version[^\n]*/, '');
+
+    const precisionMatch = fragment.match(/precision\s+(highp|mediump|lowp)\s+float\s*;/);
+    const outputMatch = fragment.match(/\bout\s+vec4\s+(\w+)/);
+    const snippets = ['#version 300 es'];
+
+    const push = line => fragment.includes(line) || snippets.push(line);
+    if (precisionMatch) {
+        fragment = fragment.replace(precisionMatch[0], '');
+    }
+    push(`precision ${precisionMatch ? precisionMatch[1] : 'highp'} float;`);
+
+    if (!outputMatch) {
+        push('out vec4 FragColor;');
+    }
+
+    for (const u of ['vec2 u_resolution', 'float u_time', 'float u_timeDelta', 'int u_frameIndex', 'vec2 u_seed', 'vec2 u_mouse']) {
+        push(`uniform ${u};`);
+    }
+
+    textures.forEach(t => {
+        push(`uniform sampler2D ${t.name};`);
+    });
+
+    if (/gl_FragColor\s*=/.test(fragment)) {
+        push(`#define gl_FragColor ${outputMatch ? outputMatch[1] : 'FragColor'}`);
+    }
+
+    if (/texture2D\s*\(/.test(fragment)) {
+        push('#define texture2D texture');
+    }
+
+    if (/\bpos\b/.test(fragment) && !/\b(?:[biu]?vec[234]|float|int|bool|mat[234])\s+pos\b/.test(fragment)) {
+        push('#define pos ((gl_FragCoord.xy - 0.5 * u_resolution.xy) / min(u_resolution.x, u_resolution.y))');
+    }
+
+    snippets.push(fragment);
+
+    return snippets.join('\n');
+}
+
+// https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Using_textures_in_WebGL
+function loadTexture(gl, image, i) {
+    const texture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0 + i);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    uploadTexture(gl, image);
+    return texture;
+}
+
+function uploadTexture(gl, image) {
+    if (!image) {
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        return;
+    }
+
+    let src = image;
+    if (image.width > MAX_TEXTURE_SIZE || image.height > MAX_TEXTURE_SIZE) {
+        const canvas = document.createElement('canvas');
+        const scale = Math.min(MAX_TEXTURE_SIZE / image.width, MAX_TEXTURE_SIZE / image.height);
+        canvas.width = image.width * scale;
+        canvas.height = image.height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        src = canvas;
+    }
+
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+}
+
+// Browsers cap the number of live WebGL contexts (Chrome evicts the oldest
+// past 16), so shaders share one context per raster size instead of holding
+// one each. A surface nobody draws on is dropped a moment later.
+const MAX_SURFACES = 8;
+const surfaces = new Map();
+let sweeper = null;
+
+function createSurface(width, height) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const gl = canvas.getContext('webgl2', {
+        powerPreference: 'high-performance',
+        antialias: false,
+        premultipliedAlpha: false,
+        failIfMajorPerformanceCaveat: true,
+        preserveDrawingBuffer: true
+    });
+
+    if (!gl) {
+        throw new Error('no WebGL2');
+    }
+
+    const parallel = gl.getExtension('KHR_parallel_shader_compile');
+    const surface = { canvas, gl, parallel, users: new Set(), programs: new Map(), disposed: false };
+    surface.buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, surface.buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, SCREEN_QUAD_VERTICES, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+    canvas.addEventListener('webglcontextlost', () => {
+        // losing it on purpose is not news
+        if (surface.disposed) return;
+        surface.disposed = true;
+        surfaces.delete(width + 'x' + height);
+        surface.users.forEach(drawing => drawing.onLost?.());
+    });
+
+    return surface;
+}
+
+function sweep() {
+    clearTimeout(sweeper);
+    sweeper = null;
+    for (const [key, surface] of surfaces) {
+        if (!surface.users.size) {
+            surfaces.delete(key);
+            surface.disposed = true;
+            surface.gl.deleteBuffer(surface.buffer);
+            surface.gl.getExtension('WEBGL_lose_context')?.loseContext();
+        }
+        for (const [source, entry] of surface.programs) {
+            if (!entry.users) {
+                surface.programs.delete(source);
+                entry.shaders?.forEach(shader => surface.gl.deleteShader(shader));
+                surface.gl.deleteProgram(entry.program);
+            }
+        }
+    }
+}
+
+function acquireProgram(surface, vertex, fragment) {
+    const source = vertex + fragment;
+    let entry = surface.programs.get(source);
+    if (!entry) {
+        entry = createProgram(surface.gl, vertex, fragment);
+        surface.programs.set(source, entry);
+    }
+    entry.users++;
+    return entry;
+}
+
+function acquireSurface(width, height, drawing) {
+    const key = width + 'x' + height;
+    let surface = surfaces.get(key);
+    if (!surface) {
+        if (surfaces.size >= MAX_SURFACES) {
+            sweep();
+        }
+        if (surfaces.size >= MAX_SURFACES) {
+            surface = [...surfaces.values()].reduce((a, b) => b.users.size < a.users.size ? b : a);
+        } else {
+            surface = createSurface(width, height);
+            surfaces.set(key, surface);
+        }
+    }
+    surface.users.add(drawing);
+    return surface;
+}
+
+function releaseSurface(surface, drawing) {
+    surface.users.delete(drawing);
+    if (!sweeper) {
+        sweeper = setTimeout(sweep, 1000);
+    }
+}
+
+export default function drawShader(shaders, seed, cell, onLost) {
+    const dpr = devicePixelRatio || 1;
+    const { textures } = shaders;
+    const vertex = shaders.vertex?.trim() || DEFAULT_VERTEX_SHADER;
+    const fragment = generateFragment(shaders.fragment, textures);
+    const uploaded = textures.map(t => t.value);
+    const raster = size => Math.min(size * dpr, MAX_TEXTURE_SIZE) | 0;
+    const seeds = [hash(seed) / 1e16, hash(seed + cell, 1) / 1e16];
+
+    let surface, gl, entry, program, textureList, uniforms, size;
+    let frameIndex = 0;
+    let currentTime = 0;
+
+    const drawing = { onLost, draw, dispose };
+
+    function setup(width, height) {
+        size = { width, height };
+        surface = acquireSurface(width, height, drawing);
+        gl = surface.gl;
+        entry = acquireProgram(surface, vertex, fragment);
+        program = entry.program;
+        drawing.canvas = surface.canvas;
+        textureList = uploaded.map((image, i) => loadTexture(gl, image, i));
+        uniforms = null;
+    }
+
+    function bind() {
+        try {
+            checkProgram(gl, entry);
+        } catch (e) {
+            dispose();
+            throw e;
+        }
+        // uniforms live in the program, so these are set once
+        gl.useProgram(program);
+        textures.forEach((n, i) => {
+            gl.uniform1i(gl.getUniformLocation(program, n.name), i);
+        });
+        uniforms = {};
+        for (const name of ['resolution', 'seed', 'time', 'frameIndex', 'timeDelta', 'mouse', 'drag', 'px']) {
+            uniforms[name] = gl.getUniformLocation(program, 'u_' + name);
+        }
+        drawing.animated = !!(uniforms.time || uniforms.frameIndex || uniforms.timeDelta || uniforms.mouse);
+        drawing.seeded = !!uniforms.seed;
+    }
+
+    function teardown() {
+        textureList.forEach(texture => gl.deleteTexture(texture));
+        entry.users--;
+        releaseSurface(surface, drawing);
+        surface = null;
+    }
+
+    function draw(t, w, h, mouse, images, drag) {
+        if (!surface) return;
+        const width = raster(w);
+        const height = raster(h);
+        if (surface.disposed || width !== size.width || height !== size.height) {
+            teardown();
+            setup(width, height);
+        }
+        if (!uniforms) bind();
+
+        const { canvas } = surface;
+        if (canvas.width !== width || canvas.height !== height) {
+            canvas.width = width;
+            canvas.height = height;
+            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        }
+        gl.useProgram(program);
+        gl.uniform2f(uniforms.resolution, width, height);
+
+        // the caller swaps in freshly rendered images after a resize
+        images.forEach((n, i) => {
+            gl.activeTexture(gl.TEXTURE0 + i);
+            gl.bindTexture(gl.TEXTURE_2D, textureList[i]);
+            if (n.value !== uploaded[i]) {
+                uploadTexture(gl, n.value);
+                uploaded[i] = n.value;
+            }
+        });
+
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        if (uniforms.seed) gl.uniform2f(uniforms.seed, seeds[0], seeds[1]);
+        if (uniforms.time) gl.uniform1f(uniforms.time, t * 0.001);
+        if (uniforms.frameIndex) gl.uniform1i(uniforms.frameIndex, frameIndex++);
+        if (uniforms.mouse) gl.uniform2f(uniforms.mouse, mouse ? mouse.x * dpr : 0, mouse ? (h - mouse.y) * dpr : 0);
+        if (uniforms.drag) gl.uniform2f(uniforms.drag, ...drag);
+        if (uniforms.px) gl.uniform1f(uniforms.px, 1 / Math.min(w, h));
+        if (uniforms.timeDelta) {
+            gl.uniform1f(uniforms.timeDelta, (t - currentTime) * 0.001);
+            currentTime = t;
+        }
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+
+    function dispose() {
+        if (surface) {
+            teardown();
+        }
+    }
+
+    setup(raster(shaders.width), raster(shaders.height));
+    entry.ready ||= settle(surface, entry);
+    drawing.ready = entry.ready.then(() => surface && !surface.disposed && !uniforms && bind(), e => {
+        dispose();
+        throw e;
+    });
+    return drawing;
+}

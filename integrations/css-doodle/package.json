@@ -1,0 +1,64 @@
+{
+  "name": "css-doodle",
+  "version": "0.71.0",
+  "description": "A web component for visual art & creative coding",
+  "scripts": {
+    "test": "node --test --test-reporter dot 'test/{core,parser,generator,component,lib,fuzz}/*.js'",
+    "test:dev": "node --test 'test/{core,parser,generator,component,lib,fuzz}/*.js'",
+    "test:browser": "node --test --test-reporter dot test/browser/render.js test/browser/component.js",
+    "test:pixel": "node test/browser/pixel.js",
+    "build": "node ./build/index.js",
+    "version": "git add changelog"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/css-doodle/css-doodle.git"
+  },
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/css-doodle"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.16.1",
+    "acorn": "^8.15.0",
+    "esbuild": "^0.25.4",
+    "playwright-core": "^1.64.1"
+  },
+  "files": [
+    "css-doodle*.js",
+    "src"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./css-doodle.min.js"
+    },
+    "./component": {
+      "import": "./src/exports/component/index.js"
+    },
+    "./generator": {
+      "import": "./src/exports/generator/index.js"
+    },
+    "./parser": {
+      "import": "./src/exports/parser/index.js"
+    },
+    "./meta": {
+      "import": "./src/exports/meta/index.js"
+    }
+  },
+  "keywords": [
+    "css",
+    "css-doodle",
+    "creative-coding",
+    "generative-art",
+    "patterns",
+    "web-component"
+  ],
+  "type": "module",
+  "author": "yuanchuan",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/css-doodle/css-doodle/issues"
+  },
+  "homepage": "https://css-doodle.com"
+}

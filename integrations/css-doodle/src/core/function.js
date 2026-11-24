@@ -1,0 +1,897 @@
+import parseValueGroup from '../parser/parse-value-group.js';
+import parseSvg from '../parser/parse-svg.js';
+import parseSvgPath from '../parser/parse-svg-path.js';
+import parseCompoundValue from '../parser/parse-compound-value.js';
+import parseShapeCommands, { spaced } from '../parser/parse-shape-commands.js';
+import parseDirection from '../parser/parse-direction.js';
+import svgSourceOf from '../parser/svg-source.js';
+
+import generateSvg from '../generator/svg.js';
+import generateShape, { shapeWarnings, PAINT } from '../generator/shapes.js';
+import { expandFilter, FILTER_COMMANDS } from '../generator/svg-filter.js';
+import { perimeter } from '../generator/polygon.js';
+
+import Noise from '../lib/noise.js';
+import seedrandom from '../lib/seedrandom.js';
+import calc, { defaultContext, binary, withUnit, pickIndex } from './calc.js';
+import { memo } from '../lib/cache.js';
+
+import { utime, UTime, umousex, umousey, uwidth, uheight } from './uniforms.js';
+
+import { createSvgUrl, normalizeSvg } from '../lib/svg.js';
+import { sequence, expand, carry, byUnit, byCharcode, getNamedArguments, MAX_SEQUENCE } from './arguments.js';
+import { cellVariables } from '../lib/cell.js';
+import { isLetter, isNil, isEmpty, getValue } from '../lib/type.js';
+import { addAlias, lazy } from '../lib/fn.js';
+import { placeholderId } from '../lib/placeholder.js';
+import { lerp, clamp, tidyNumber, map2d } from '../lib/math.js';
+import { getEasingFunction } from './easing.js';
+import { css } from '../lib/tagged-template.js';
+
+const RE_OP_PREFIX = /^[\+\*\-\/%][\-\.\d\s]/;
+const RE_OP_SUFFIX = /[\+\*\-\/]$|\D%$/;
+const RE_LIVE = /\b(var|calc)\(/;
+const RE_LETTER = /^[a-zA-Z]/;
+
+const MAX_SCATTER = 8192;
+const SCATTER_OUTLINE = 360;
+const NO_TILE = 'polygon(0 0)';
+
+// layout of the sequence tuples pushed onto `extra` (see arguments.js)
+export const SEQ = {
+    n: 0,     // current value            → @n
+    x: 1,     // column, for 2x3 forms    → @nx
+    y: 2,     // row, for 2x3 forms       → @ny
+    max: 3,   // total iterations         → @N
+    X: 4,     // sequence grid columns
+    Y: 5,     // sequence grid rows
+    index: 6, // iteration index, overrides pick counters
+    sig: 7    // invocation signature, separates pick counters across @m calls
+};
+
+// an operator argument ('*10', '%360deg', '-.5') parses once; computing
+// against a base — which runs per cell and per sequence iteration — is
+// then plain arithmetic
+const parseOperation = memo(input => {
+    let v = String(input);
+    let prefix = RE_OP_PREFIX.test(v);
+    let op = prefix ? v[0] : RE_OP_SUFFIX.test(v) ? v.slice(-1) : '';
+    let rest = op ? (prefix ? v.slice(1) : v.slice(0, -1)).trim() : v;
+    let { unit = '', value } = parseCompoundValue(rest || 0);
+    return op
+        ? { op, prefix, value, unit }
+        : { op: '+', prefix: true, value: Number(value) || 0, unit };
+});
+
+function calcWith(base) {
+    let unit = '';
+    return (...args) => {
+        for (let v of args) {
+            let { op, prefix, value, unit: u } = parseOperation(v);
+            // prefix op: base comes first; suffix op: base comes last
+            let [a, b] = prefix ? [base, value] : [value, base];
+            base = typeof base === 'string' && RE_LIVE.test(base)
+                ? `calc(${op === '%' ? `mod(${a}, ${b})` : `${a} ${op} ${b}`})`
+                : binary[op](Number(a), Number(b));
+            unit ||= u;
+        }
+        return withUnit(tidyNumber(base), unit);
+    }
+}
+
+function calcWithEasing(t) {
+    return (head = '', ...args) => {
+        if (RE_LETTER.test(head)) {
+            return calcWith(getEasingFunction(head)(t))(...args);
+        }
+        return calcWith(t)(head, ...args);
+    }
+}
+
+const STACK_LIMIT = 1024;
+
+function pushStack(context, name, value) {
+    let stack = context[name] ||= [];
+    stack.push(value);
+    // trim in batches: a shift() per push costs O(limit) on every @r/@p
+    if (stack.length >= STACK_LIMIT * 2) {
+        stack.splice(0, STACK_LIMIT);
+    }
+    return value;
+}
+
+function lastOf(stack, n = 1) {
+    if (stack === undefined) return '';
+    // lookback stops at the window edge, as if older values were shifted out
+    let i = Math.max(stack.length - n, stack.length - STACK_LIMIT, 0);
+    return stack[i];
+}
+
+let seqUid = 0;
+
+function makeSequence(c) {
+    return lazy((cell, env, position, input, ...actions) => {
+        if (!input || !actions.length) return '';
+        let count = getValue(input(...(env.extra.at(-1) || [])));
+        let evaluated = count;
+        let signature = ++seqUid;
+        let run = actions.length === 1
+            ? (n, x, y, max, X, Y, index) =>
+                getValue(actions[0](n, x, y, max, X, Y, index, signature))
+            : (n, x, y, max, X, Y, index) => actions.map(action =>
+                    getValue(action(n, x, y, max, X, Y, index, signature))).join(',');
+        if (/\D/.test(count) && !/^\d+-\d+$|^\s*\d+\s*x\s*\d+\s*$/.test(count)) {
+            evaluated = calc(count);
+            if (evaluated === 0) {
+                sequence(count, run);
+                return '';
+            }
+            evaluated = Math.ceil(evaluated);
+        }
+        let seen = new Set();
+        let outer = 1;
+        for (let e of env.extra) {
+            let key = e?.[SEQ.sig] ?? e;
+            if (!seen.has(key)) {
+                seen.add(key);
+                outer *= Number(e?.[SEQ.max]) || 1;
+            }
+        }
+        return sequence(evaluated, run, Math.max(1, Math.floor(MAX_SEQUENCE / outer))).join(c);
+    });
+}
+
+function seq(token, make) {
+    return (cell, { extra }) => {
+        let e = extra.at(-1);
+        return e?.length ? make(e) : token;
+    };
+}
+
+function createPlot(unit, kind, pieces) {
+    let plot = memo((commands, max, seed, aspect, svg) => {
+        let make = count => generateShape(commands, {min: 1, max: MAX_SEQUENCE, preset: pieces && 'square', seed}, (rules, preset) => {
+            delete rules['frame'];
+            if (kind) {
+                let count = Math.trunc(calc('points', rules));
+                rules.split ||= SCATTER_OUTLINE;
+                delete rules.points;
+                if (isEmpty(rules.seed)) {
+                    rules.seed = Math.floor(seedrandom('scatter:' + seed)() * 1e4);
+                }
+                rules.tile = kind;
+                if (aspect && isEmpty(rules.aspect)) rules.aspect = aspect;
+                rules.dots = !pieces;
+                rules.hasPoints = count > 0 && !pieces;
+                let points = kind == 'delaunay' ? Math.ceil(max / 2 + Math.sqrt(max)) : max;
+                rules.scatter = clamp(count > 0 && (!pieces || count < points) ? count : points, 1, MAX_SCATTER);
+                rules.count = max;
+            } else {
+                delete rules['fill-rule'];
+                delete rules['round'];
+                delete rules['grow'];
+                if (!preset && (rules.split || rules.points)) {
+                    rules.hasPoints = true;
+                } else {
+                    rules.points = count;
+                }
+            }
+            if (svg) {
+                rules.unit = 'none';
+            } else if (unit) {
+                rules.unit ||= 'none';
+            }
+            return rules;
+        });
+        let shape = make(max), { rings } = shape.points;
+        if (!shape.rules.hasPoints && !shape.rules.blocks && rings?.length > 1) {
+            let total = 0, done = 0;
+            // running totals of the lengths
+            let runs = rings.map(ring => total += perimeter(ring.map(p => String(p).split(' ').map(parseFloat))));
+            if (total) shape = make(runs.map(run => {
+                let n = Math.round(max * run / total) - done;
+                done += n;
+                return n;
+            }).join(','));
+        }
+        return shape;
+    });
+    return (cell, { extra, seed, rules, svg }) => {
+        let e = extra.at(-1) || [];
+        return (...args) => {
+            let [idx, max] = e[SEQ.index] ? [e[SEQ.n], e[SEQ.max]] : [cell.count, cell.grid.count];
+            let input = args.join(',');
+            shapeWarnings(input).forEach(m => rules?.warn(m));
+            let aspect = pieces && !svg && rules?.aspect || '';
+            let { points, rules: { hasPoints } } = plot(input, max, String(seed ?? ''), aspect, pieces && !!svg);
+            if (hasPoints) return points;
+            if (!pieces) return points[idx - 1] ?? '';
+            let point = points[idx - 1] ?? NO_TILE;
+            cellTiles.set(cell, point);
+            return svg ? piecePath(point) : point;
+        };
+    };
+}
+
+const piecePath = piece => {
+    let [, rx, ry, x, y] = /^ellipse\((\S+) (\S+) at (\S+) (\S+)\)$/.exec(piece) || [];
+    if (rx) return `M${tidyNumber(x - rx)} ${y}a${rx} ${ry} 0 1 0 ${2 * rx} 0a${rx} ${ry} 0 1 0 ${-2 * rx} 0Z`;
+    let points = String(piece).replace(/^polygon\((evenodd,\s*)?|\)$/g, '').split(/\s*,\s*/);
+    return 'M' + points.join('L').replaceAll('L' + points[0] + 'L', 'ZM') + 'Z';
+};
+const cellTiles = new WeakMap();
+const tileAxis = i => cell => () => cellTiles.get(cell)?.origin?.split(' ')[i] ?? '';
+
+// appends the args in reverse; `even` repeats the turning point:
+// @mirror 1 2 3 → 1 2 3 3 2 1, @Mirror 1 2 3 → 1 2 3 2 1
+function createMirror(even) {
+    let offset = even ? 1 : 2;
+    return () => (...args) => {
+        for (let i = args.length - offset; i >= 0; --i) {
+            args.push(args[i]);
+        }
+        return args;
+    };
+}
+
+const countOf = (cell, e) => e?.[SEQ.index] ? e[SEQ.max] : cell.grid.count;
+
+function createPick(name, fn, random = false) {
+    return (cell, { context, extra, shuffle, level }, position) => {
+        let lastExtra = extra.at(-1);
+        let sig = lastExtra?.[SEQ.sig] ?? '';
+        let index = lastExtra?.[SEQ.index];
+        let counter = index === undefined && `${name}-counter${position}:${level}`;
+        let valuesKey = random && `${name}-values${position}:${sig}`;
+        let count = fn !== pickN && countOf(cell, lastExtra);
+
+        return expand(args => {
+            let source = random ? (context[valuesKey] ??= shuffle(args)) : args;
+            let max = args.length;
+            let idx = index ?? (context[counter] = (context[counter] || 0) + 1);
+            let value = fn(source, (idx - 1) % max, max, idx - 1);
+            return pushStack(context, 'lastPick', value);
+        }, count);
+    };
+}
+
+const INVERT_COMMAND = { v: 'h', V: 'H', h: 'v', H: 'V' };
+
+function transformPath(xx, xy, yx, yy) {
+    let swap = xx === 0;
+    // a reflection reverses the turning direction of the arcs
+    let reflect = xx * yy - xy * yx < 0;
+    return (...args) => {
+        let input = args.join(',');
+        let { valid, commands } = parseSvgPath(input);
+        if (!valid || !commands.length) return input;
+        let first = commands[0];
+        let [ox = 0, oy = 0] = /^[ml]$/i.test(first.name) ? first.value : [];
+        let point = (x, y, abs) => {
+            let dx = abs ? x - ox : x;
+            let dy = abs ? y - oy : y;
+            let px = xx * dx + xy * dy;
+            let py = yx * dx + yy * dy;
+            if (abs) { px += ox; py += oy; }
+            return [tidyNumber(px), tidyNumber(py)];
+        };
+        return commands.map(({ name, value, type }, i) => {
+            let abs = type === 'absolute';
+            let lower = name.toLowerCase();
+            let out = [];
+            if (lower === 'h' || lower === 'v') {
+                // one coordinate, which lands on the other axis under a swap
+                let isH = lower === 'h';
+                for (let n of value) {
+                    let [px, py] = isH ? point(n, abs ? oy : 0, abs) : point(abs ? ox : 0, n, abs);
+                    out.push(isH === swap ? py : px);
+                }
+                if (swap) name = INVERT_COMMAND[name];
+            } else if (lower === 'a') {
+                for (let j = 0; j < value.length; j += 7) {
+                    let [rx, ry, rot, large, sweep, x, y] = value.slice(j, j + 7);
+                    out.push(
+                        swap ? ry : rx, swap ? rx : ry, reflect ? -rot : rot,
+                        large, reflect ? 1 - sweep : sweep, ...point(x, y, abs)
+                    );
+                }
+            } else {
+                for (let j = 0; j < value.length; j += 2) {
+                    out.push(...point(value[j], value[j + 1], abs || (i === 0 && j === 0)));
+                }
+            }
+            return name + out.join(' ');
+        }).join(' ');
+    };
+}
+
+const composeSvgUrl = memo(value => {
+    let warnings = [];
+    if (!value.startsWith('<')) {
+        value = generateSvg(parseSvg(value), message => warnings.push(message));
+    }
+    return { url: createSvgUrl(normalizeSvg(value)), warnings };
+});
+
+const composeFilter = memo((value, seed, chain, svg) => {
+    let warnings = [], warn = message => warnings.push(message);
+    let parsed = parseSvg(value, { type: 'block', name: 'filter' });
+    let expanded = expandFilter(parsed, seed, warn, chain);
+    return { value: svg ? svgSourceOf(expanded, { repeat: false }) : generateSvg(expanded, warn), warnings };
+});
+
+const ringsToPath = rings => rings.map(ring => 'M' + ring.join('L') + 'Z').join('');
+
+const composeSvgPolygonUrl = memo((commands, seed) => {
+    let { rules, points } = generateShape(commands, {min: 3, max: MAX_SEQUENCE, seed}, rules => {
+        delete rules.frame;
+        rules['unit'] = 'none';
+        rules['stroke-width'] ??= .01;
+        rules['stroke'] ??= 'currentColor';
+        rules['fill'] ??= 'none';
+        return rules;
+    });
+    let props = '';
+    let p = rules.padding ?? Number(rules['stroke-width']) / 2;
+    for (let name of Object.keys(rules)) {
+        if (PAINT.test(name)) {
+            props += `${name}: ${rules[name]};`
+        }
+    }
+    let { rings } = points, shape = rings?.length > 1
+        ? `path { ${props} d: ${ringsToPath(rings)}; }`
+        : `polygon { ${props} points: ${rings?.[0] || points}; }`;
+    let parsed = parseSvg(css`viewBox: -1 -1 2 2 p ${p}; ${shape}`);
+    return createSvgUrl(generateSvg(parsed));
+});
+
+const Function = Object.create(null);
+
+Function.m = makeSequence(',');
+
+Function.M = makeSequence(' ');
+
+Function.rep = makeSequence('');
+
+Function.n = seq('@n', e => calcWith(e[SEQ.n]));
+
+Function.nx = seq('@nx', e => calcWith(e[SEQ.x]));
+
+Function.ny = seq('@ny', e => calcWith(e[SEQ.y]));
+
+Function.N = seq('@N', e => calcWith(e[SEQ.max]));
+
+Function.nN = seq('@nN', e => calcWithEasing(e[SEQ.n] / e[SEQ.max]));
+
+Function.Nn = seq('@Nn', e => calcWithEasing((e[SEQ.max] - e[SEQ.n] + 1) / e[SEQ.max]));
+
+Function.nd = seq('@nd', e => d => {
+    d = Number(d) || 0;
+    return calcWith(e[SEQ.n] - .5 - d - e[SEQ.max] / 2)();
+});
+
+// @p and @P with no arguments reuse the arguments of the last pick
+Function.p = (cell, { context, pick, extra }) => {
+    return expand(args => {
+        if (!args.length) {
+            args = context.lastPickArgs || [];
+        }
+        context.lastPickArgs = args;
+        return pushStack(context, 'lastPick', pick(args));
+    }, countOf(cell, extra.at(-1)));
+};
+
+Function.P = (cell, { context, pick, rand, extra }, position) => {
+    let counter = 'P-counter' + position;
+    return expand(args => {
+        let own = args.length > 0;
+        if (!own) {
+            args = context.lastPickArgs || [];
+        }
+        let memory = own ? (context[counter] ??= {}) : null;
+        let last = own ? memory.lastPick : lastOf(context.lastPick);
+        context.lastPickArgs = args;
+        let i = args.indexOf(last), picked;
+        if (i < 0 || args.length < 2) {
+            picked = pick(args);
+        } else if (args.indexOf(last, i + 1) < 0) {
+            let k = ~~rand(args.length - 1);
+            picked = args[k < i ? k : k + 1];
+        } else {
+            let rest = args.filter(n => n !== last);
+            picked = pick(rest.length ? rest : args);
+        }
+        if (own) {
+            memory.lastPick = picked;
+        }
+        return pushStack(context, 'lastPick', picked);
+    }, countOf(cell, extra.at(-1)));
+};
+
+function pickN(args, pos, max, i) {
+    let at = args[max - 1] === '...' && carry(args[max - 3], args[max - 2]);
+    return !at ? args[pos] : i < max - 1 ? args[i] : at(i - max + 2);
+}
+
+Function.pn = createPick('pn', pickN);
+Function.pnr = createPick('pnr', (args, pos, max) => args[max - pos - 1]);
+Function.pd = createPick('pd', (args, pos) => args[pos], true);
+
+Function.lp = (_, { context }) => n => lastOf(context.lastPick, n);
+
+const whole = rand => (a = 1, b = 0) => {
+    let lo = Math.ceil(Math.min(a, b)), hi = Math.floor(Math.max(a, b));
+    return Math.floor(rand(lo, hi + 1));
+};
+
+export const KEYED = Symbol();
+
+function createRand(integer) {
+    let fn = (_, { context, rand }) => (...args) => {
+        let letters = args.length && args.every(isLetter);
+        let draw = letters || integer ? whole(rand) : rand;
+        return pushStack(context, 'lastRand', (letters ? byCharcode : byUnit)(draw)(...args));
+    };
+    fn[KEYED] = (cell, env) => (vars, k, ...range) => {
+        k = calc(k, vars());
+        if (!Number.isFinite(k)) return '';
+        let t = defaultContext.random(k);
+        return fn(cell, { ...env, rand: (a = 1, b) => b === undefined ? lerp(t, 0, a) : lerp(t, a, b) })(...range);
+    };
+    fn[KEYED].vars = true;
+    return fn;
+}
+
+Function.r = createRand();
+
+Function.ri = createRand(true);
+
+function createNoise(outline) {
+    return ({ x, y, grid }, { context, extra, random }, position) => {
+        let counter = (outline ? 'noise-t' : 'noise-2d') + position;
+        let e = extra.at(-1) || [];
+        let [cx, cy, X, Y] = (e[SEQ.index] && e[SEQ.n]) ? [e[SEQ.x], e[SEQ.y], e[SEQ.X], e[SEQ.Y]] : e.shared ? [1, 1, 1, 1] : [x, y, grid.x, grid.y];
+        let u = X <= 1 ? .5 : (cx - 1) / X;
+        let v = Y <= 1 ? .5 : (cy - 1) / Y;
+        return (...args) => {
+            let {from, to, frequency = 1, scale = 1, octave = 1} = getNamedArguments(args, [
+                'from', 'to', 'frequency', 'scale', 'octave'
+            ]);
+
+            frequency = clamp(frequency, 0, Infinity);
+            scale = clamp(scale, 0, Infinity);
+            octave = clamp(octave, 1, 100);
+
+            if (to === undefined) [from, to] = [0, from ?? 1];
+            from ??= 0;
+
+            if (outline) {
+                let { offsetX, offsetY } = context[counter] ??= {
+                    offsetX: random() * 256, offsetY: random() * 256
+                };
+                let at = [(offsetX + u) * frequency, (offsetY + v) * frequency, octave, scale, parseFloat(from), parseFloat(to), frequency];
+                return `noise(t,${at.map(tidyNumber)})`;
+            }
+
+            let { noise2d, offsetX, offsetY } = context[counter] ??= {
+                noise2d: new Noise(random), offsetX: random(), offsetY: random()
+            };
+            let transform = (isLetter(from) && isLetter(to)) ? byCharcode : byUnit;
+            let _x = offsetX + u;
+            let _y = offsetY + v;
+
+            let t = noise2d.fbm(_x * frequency, _y * frequency, octave, scale);
+            let fn = transform((from = 0, to = 1) => map2d(t, from, to, scale));
+            return pushStack(context, 'lastRand', fn(from, to));
+        };
+    };
+}
+
+Function.R = createNoise();
+Function.R.t = createNoise(true);
+
+Function.lr = (_, { context }) => n => lastOf(context.lastRand, n);
+
+Function.match = lazy((cell, { extra }, position, vars, ...args) => {
+    if (args.length <= 1) {
+        return '';
+    }
+    let e = extra.at(-1) || [];
+    vars = vars();
+    let value = i => getValue(args[i](...e));
+    for (let i = 0; i < args.length; i += 2) {
+        if (i + 1 === args.length) {
+            return value(i);
+        }
+        if (calc(value(i), vars)) {
+            return value(i + 1);
+        }
+    }
+});
+
+export const pickAt = lazy((cell, { context, extra }, position, vars, ...args) => {
+    if (args.length <= 1) {
+        return '';
+    }
+    let e = extra.at(-1) || [];
+    vars = vars();
+    let k = calc(getValue(args[0](...e)), vars);
+    return Number.isFinite(k) ? pushStack(context, 'lastPick', getValue(args[1 + pickIndex(k, args.length - 1)](...e))) : '';
+});
+
+export const pickAtList = (cell, { context }) => (vars, k, ...items) => {
+    k = calc(k, vars());
+    return Number.isFinite(k) && items.length ? expand(list => pushStack(context, 'lastPick',
+        pickN(list, pickIndex(k, list.length), list.length, Math.max(Math.round(k) - 1, 0))))(...items) : '';
+};
+
+Function.match.vars = pickAt.vars = pickAtList.vars = true;
+
+Function.calc = () => (value, context) => tidyNumber(calc(value, context, 1));
+
+Function.var = () => (value = '') => `var(${value})`;
+
+Function.stripe = () => (...input) => {
+    let colors = input.flat();
+    let max = colors.length;
+    let pairs = colors.map(step => parseValueGroup(step));
+    let sizes = pairs.map(pair => pair[1]).filter(size => size !== undefined);
+    if (!sizes.length) {
+        return colors.map((color, i) => `${color} 0 ${tidyNumber(100 / max * (i + 1))}%`).join(',');
+    }
+    let share = `(100% - (${sizes.join(' + ')})) / ${max - sizes.length}`;
+    let sized = [], rest = 0;
+    return pairs.map(([color, size]) => {
+        if (size === undefined) rest++;
+        else sized.push(size);
+        let end = sized.concat(rest > 1 ? `${share} * ${rest}` : rest ? share : []);
+        return `${color} 0 calc(${end.join(' + ')})`;
+    }).join(',');
+};
+
+function maxChroma(L, h) {
+    let x = Math.cos(h), y = Math.sin(h);
+    let ax = .3963377774 * x + .2158037573 * y;
+    let am = .1055613458 * x + .0638541728 * y;
+    let as = .0894841775 * x + 1.291485548 * y;
+    let inside = c => {
+        let l = (L + c * ax) ** 3;
+        let m = (L - c * am) ** 3;
+        let s = (L - c * as) ** 3;
+        return [
+            4.0767416621 * l - 3.3077115913 * m + .2309699292 * s,
+            -1.2684380046 * l + 2.6097574011 * m - .3413193965 * s,
+            -.0041960863 * l - .7034186147 * m + 1.707614701 * s
+        ].every(v => v >= -1e-4 && v <= 1.0001);
+    };
+    let lo = 0, hi = .4;
+    for (let i = 0; i < 12; ++i) {
+        let c = (lo + hi) / 2;
+        inside(c) ? lo = c : hi = c;
+    }
+    return lo;
+}
+
+const PALETTE_HUES = [
+    [16, 30, 32, 33, 38, 42, 45, 49, 70, 84, 93, 101],
+    [29, 55, 61, 63, 69, 74, 79, 84, 91, 94, 96, 101],
+    [6, 15, 48, 72, 81, 86, 92, 95, 96, 97, 98, 101]
+];
+
+const PALETTE_LIGHTNESS = [.2, .37, .48, .58, .65, .72, .78, .84, .89, .94, .98];
+const PALETTE_CHROMA = [.35, .2, .15, .3, .9, 1.6, .75, .4, .35, 1, 2.5, 1.6];
+const TAU = Math.PI * 2;
+const hueTurn = (a, b) => ((b - a) % TAU + TAU + Math.PI) % TAU - Math.PI;
+
+function paletteAnchor(r, hues = [], e = 1, x = r()) {
+    let i = ~~(x * 10), h;
+    let L = lerp(x * 10 - i, PALETTE_LIGHTNESS[i], PALETTE_LIGHTNESS[i + 1]);
+    if (hues.length && r() < .6) {
+        h = hues[~~(r() * hues.length)] + (r() - .5) / 2;
+    } else {
+        let row = PALETTE_HUES[L < .5 ? 0 : L < .75 ? 1 : 2];
+        let y = r() * row[11], j = row.findIndex(v => v > y);
+        h = ((j + r()) * 30) * Math.PI / 180;
+    }
+    let H = h + hueTurn(h, (L > .6 ? 70 : 250) * Math.PI / 180) * .875 * Math.abs(L - .6);
+    let z = r() ** e, k = (H / TAU * 12 % 12 + 12) % 12, j = ~~k;
+    let p = lerp(k - j, PALETTE_CHROMA[j], PALETTE_CHROMA[(j + 1) % 12]);
+    let C = maxChroma(L, H) * (z < .15 ? z / 3 : .05 + .95 * ((z - .15) / .85) ** p);
+    return [L, C * Math.cos(H), C * Math.sin(H), h];
+}
+
+const labDistance = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+
+const palette = memo((key, n, color, lab) => {
+    let r = seedrandom(key), colors = [], base = lab && lab.split(' ').map(Number);
+    if (base) base.push(Math.atan2(base[2], base[1]));
+    r();
+    let e = lerp(r(), .5, 1.2), hues = base && Math.hypot(base[1], base[2]) > .02 ? [base[3]] : [];
+    let w = r() < .2 ? .3 + .3 * r() : 1, lo = r() * (1 - w), ground;
+    for (let k = 0; k < 8; ++k) {
+        let g = r(), t = g < .6 ? .85 + .15 * r() : g < .72 ? .05 * r() : .3 + .5 * r();
+        let [L, a, b, h] = paletteAnchor(r, hues, .3, lo + t * w);
+        let tint = L > .85 || L < .3 ? .35 * r() : .3 + .4 * r();
+        ground = [L, a * tint, b * tint, h];
+        if (!base || labDistance(ground, base) >= .3) break;
+    }
+    colors.push(ground);
+    hues.push(ground[3]);
+    if (base) colors.push(base);
+    while (colors.length < n) {
+        let best, far = -1;
+        for (let k = 0; k < 8 && (colors.length < 2 || far < .1); ++k) {
+            let c = paletteAnchor(r, hues, e, lo + r() * w);
+            let d = Math.min(...colors.map(o => labDistance(o, c)));
+            if (Math.hypot(c[1], c[2]) < .03 && c[0] > .35 && c[0] < .85) d /= 2;
+            if (d > far) best = c, far = d;
+        }
+        colors.push(best);
+        hues.push(best[3]);
+    }
+    return colors.slice(0, n).map(([L, a, b], i) => base && i == 1 ? color :
+        `oklch(${+L.toFixed(3)} ${+Math.hypot(a, b).toFixed(3)} ${+((Math.atan2(b, a) * 180 / Math.PI + 360) % 360).toFixed(1)})`);
+});
+
+Function.palette = (_, { seed, rules, host }) => (...args) => {
+    let n = 5, color = '', lab = '';
+    for (let arg of args) {
+        if (/[a-z#]/i.test(arg)) color = String(arg).trim(); else n = arg;
+    }
+    if (color) {
+        let read = rules.colors ??= new Map();
+        if (!read.has(color)) {
+            let rgba = host?.getRgbaColor?.(color, 'oklab');
+            read.set(color, rgba && rgba.slice(0, 3).map(v => v.toFixed(2)).join(' '));
+        }
+        lab = read.get(color);
+        if (!lab) {
+            if (lab === null) rules.warn(`unknown ${color}`);
+            color = lab = '';
+        }
+    }
+    return [...palette('palette:' + seed, ~~clamp(calc(n), 1, 256), color, lab)];
+};
+
+
+Function.cycle = () => (...args) => {
+    let separator = args.length == 1 ? ' ' : ',';
+    let list = parseValueGroup(args.join(separator), { symbol: separator });
+    return list.map((_, i) => list.slice(i).concat(list.slice(0, i)).join(separator));
+};
+
+Function.mirror = createMirror(true);
+
+Function.Mirror = createMirror(false);
+
+Function.code = () => (...args) => args.map(code => String.fromCharCode(code));
+
+const shapePolygon = memo((input, seed, svg) => {
+    if (svg) {
+        return ringsToPath(generateShape(input, { seed }, rules => (rules.unit = 'none', rules)).points.rings || []);
+    }
+    if (input.trim() == 'circle') return 'ellipse(50% 50%)';
+    return generateShape(input, { seed }).clip;
+});
+
+const shaped = (compose, paint) => (_, { seed, rules, svg } = {}) => (...args) => {
+    let input = args.join(',');
+    shapeWarnings(input, paint).forEach(m => rules?.warn(m));
+    return compose(input, seed, svg);
+};
+
+Function.shape = shaped(shapePolygon);
+
+Function.plot = createPlot(false);
+Function.Plot = createPlot(true);
+for (let kind of ['scatter', 'hex', 'grid', 'penrose']) {
+    Function.plot[kind] = createPlot(false, kind);
+    Function.Plot[kind] = createPlot(true, kind);
+}
+
+Function.tile = createPlot(false, 'slice', true);
+Function.tile.slice = Function.tile;
+for (let kind of ['voronoi', 'delaunay', 'hex', 'triangle', 'grid', 'circle', 'cube', 'penrose']) {
+    Function.tile[kind] = createPlot(false, kind, true);
+}
+Function.tile.x = tileAxis(0);
+Function.tile.y = tileAxis(1);
+Function.tile.xy = cell => () => cellTiles.get(cell)?.origin ?? '';
+Function.tile.k = cell => () => cellTiles.get(cell)?.kind ?? '';
+Function.tile.r = cell => () => cellTiles.get(cell)?.r ?? '';
+
+function arcShorthand(args) {
+    let c = { ranges: [] };
+    for (let part of args) {
+        let [from, to] = part.split(/(?:^|\s+)to\s+/);
+        if (to !== undefined) {
+            c.ranges.push([from, to]);
+        } else {
+            let [r, at] = part.split(/(?:^|\s+)at\s+/);
+            if (r.trim()) c.r = r;
+            if (at !== undefined) c.at = at;
+        }
+    }
+    return c;
+}
+
+const arcPath = memo((...args) => {
+    let named = args.join(',').includes(':');
+    let c = named ? parseShapeCommands(args.join(',')) : arcShorthand(args);
+    let [rx, ry = rx] = spaced(c.r ?? '0').map(v => calc(v));
+    let [cx, cy = cx] = spaced(c.at ?? c.move ?? '0').map(v => calc(v));
+    let point = a => {
+        let t = a * Math.PI / 180;
+        return tidyNumber(cx + rx * Math.cos(t)) + ' ' + tidyNumber(cy + ry * Math.sin(t));
+    };
+    let arc = `A ${tidyNumber(rx)} ${tidyNumber(ry)} 0`;
+    let ranges = named || !c.ranges[0] ? [[c.from, c.to]] : c.ranges;
+    return ranges.map(([a, b = '360'], i) => {
+        let from = parseDirection(a).angle;
+        let sweep = parseDirection(b).angle - from;
+        let full = Math.abs(sweep) >= 360;
+        if (full) {
+            sweep = sweep < 0 ? -360 : 360;
+        }
+        let dir = sweep > 0 ? 1 : 0;
+        let piece = `${i ? 'M' : 'L'} ${point(from)} ${arc} ${Math.abs(sweep) > 180 ? 1 : 0} ${dir} ${point(from + (full ? sweep / 2 : sweep))}`;
+        return full ? `${piece} ${arc} 1 ${dir} ${point(from)}` : piece;
+    }).join(' ');
+});
+
+Function.arc = () => arcPath;
+
+Function.invert = () => transformPath(0, 1, 1, 0);
+
+Function.flip = () => transformPath(-1, 0, 0, -1);
+
+Function.flip.x = () => transformPath(-1, 0, 0, 1);
+
+Function.flip.y = () => transformPath(1, 0, 0, -1);
+
+Function.reverse = () => (...args) => {
+    let { valid, commands } = parseSvgPath(args.join(','));
+    if (!valid) return args.reverse();
+    let list = commands.map(({ name, value }) => name + value.join(' '));
+    let head = /^[ml]/i.test(list[0]) ? list.shift() : '';
+    let tail = /^z$/i.test(list.at(-1)) ? list.pop() : '';
+    return [head, ...list.reverse(), tail].filter(Boolean).join(' ');
+};
+
+Function.svg = lazy((cell, env, position, ...args) => {
+    let outer = env.svg, tile = cellTiles.get(cell);
+    env.svg = true;
+    let value = args.map(input => getValue(input())).join(',');
+    env.svg = outer;
+    tile ? cellTiles.set(cell, tile) : cellTiles.delete(cell);
+    let { url, warnings } = composeSvgUrl(value);
+    for (let message of warnings) {
+        env.rules.warn(message);
+    }
+    return url;
+});
+
+Function['svg-filter'] = lazy((_, env, position, ...args) => {
+    let values = args.map(input => getValue(input()));
+    let value = values.join(',');
+    // the positional / name=value short form
+    let shorthand = values.every(n => !/[{}<>]/.test(n) && /^([\-\d.]|\w+=)/.test(n));
+    if (shorthand) {
+        let named = getNamedArguments(values, FILTER_COMMANDS);
+        value = FILTER_COMMANDS.map(name => isNil(named[name]) ? '' : `${name}: ${named[name]};`).join('');
+    }
+    if (!value.startsWith('<')) {
+        let filter = composeFilter(value, String(env.seed), !shorthand, !!env.svg);
+        for (let message of filter.warnings) {
+            env.rules.warn(message);
+        }
+        if (env.svg) {
+            return filter.value;
+        }
+        value = filter.value;
+    }
+    let markup = normalizeSvg(value);
+    let rules = env.rules;
+    let id = rules.filterIds.get(markup);
+    if (!id) {
+        id = rules.nextId('filter');
+        rules.filters[id] = markup.replace(/<filter([\s>])/, `<filter id="${ id }"$1`);
+        rules.filterIds.set(markup, id);
+    }
+    return `url(#${ id })`;
+});
+
+Function['svg-polygon'] = shaped(composeSvgPolygonUrl, true);
+
+Function.shaders = Function.pattern = Function.scene = () => {};
+
+const wrapped = (code, extra) => `@doodle(${code};:doodle{position:absolute;inset:25%;width:auto;height:auto;contain:none${extra}})`;
+
+Function.doodle = () => {};
+
+Function.doodle.wrap = code => `@grid:1/100%;--b:${wrapped(code, ';background:none')};--f:${wrapped(code, ';inset:calc(25% - 1px)}:container{visibility:hidden')};background:`
+    + ['50% 50%', '-50% 50%', '50% -50%', '-50% -50%'].map(p => `var(--b) ${p}/200% 200%,`).join('') + 'var(--f) 50% 50%/200% 200%';
+
+Function.once = lazy((cell, { context }, position, ...args) => {
+    let counter = 'once-counter' + position;
+    return context[counter] ??= args.map(input => getValue(input())).join(',');
+});
+
+Function.raw = (cell, { rules }) => (...args) => {
+    let raw = args.join(',');
+    let id = placeholderId(raw);
+    if (id && rules.doodles[id]) {
+        return `<css-doodle>${rules.doodles[id].doodle}</css-doodle>`
+    }
+    if (raw.startsWith('url("data:image/svg+xml;utf8')) {
+        try {
+            return raw.replace(/url\("data:image\/svg\+xml;utf8,([^"]*)"\)(,\s*)?/g, (_, svg) => decodeURIComponent(svg));
+        } catch (e) {}
+    }
+    return raw;
+};
+
+// the component loads the collected names
+Function['google-font'] = (cell, { rules }) => (name = '') => {
+    rules.addFont(name);
+    return name && `"${name.split(':')[0]}"`;
+};
+
+// @x and @X: the cell's column and the grid's; @xX and @Xx: the way along from either end, eased
+for (let [k, v] of [['i', 'count'], ['x', 'x'], ['y', 'y'], ['z', 'z']]) {
+    let K = k.toUpperCase();
+    Function[k] = c => calcWith(c[v]);
+    Function[K] = c => calcWith(c.grid[v]);
+    if (k === 'z') break;
+    Function[k + K] = c => calcWithEasing(c[v] / c.grid[v]);
+    Function[K + k] = c => calcWithEasing((c.grid[v] - c[v] + 1) / c.grid[v]);
+}
+
+for (let name of ['dx', 'dy', 'dr', 'dc', 'dm', 'da', 'db']) {
+    Function[name] = cell => calcWith(cellVariables(cell)[name]);
+}
+
+for (let [name, u] of Object.entries({ t: utime, T: UTime, uw: uwidth, uh: uheight, ux: umousex, uy: umousey })) {
+    Function[name] = () => calcWith(`var(${u})`);
+}
+
+Function.ts = () => calcWith(`calc(var(${utime}) / 1000)`);
+Function.TS = () => calcWith(`calc(var(${UTime}) / 1000)`);
+
+Function.udx = ({ x, grid, center }) => calcWith(`calc(${center ? tidyNumber(center[0]) : `${tidyNumber((x - .5) / grid.x)} * var(${uwidth})`} - var(${umousex}))`);
+Function.udy = ({ y, grid, center }) => calcWith(`calc(${center ? tidyNumber(center[1]) : `${tidyNumber((y - .5) / grid.y)} * var(${uheight})`} - var(${umousey}))`);
+
+/**
+ * expose JS Math functions with css-doodle calc/value semantics
+ */
+export const MathFunc = Object.create(null);
+
+for (let name of Object.getOwnPropertyNames(Math)) {
+    if (name === 'random') continue;
+    let member = defaultContext[name];
+    MathFunc[name] = (typeof member === 'number')
+        ? () => () => tidyNumber(member)
+        : () => (...args) => tidyNumber(args.some(n => RE_LIVE.test(n))
+            ? calc(`${name}(${args})`, 0, 1)
+            : member(...args.map(n => calc(n))));
+}
+
+export const alias = {
+    'index': 'i',
+    'col': 'x',
+    'row': 'y',
+    'depth': 'z',
+    'rand': 'r',
+    'random': 'r',
+    'pick': 'p',
+    'rn': 'R',
+
+    // legacy names, keep them before 1.0
+    'filter': 'svg-filter',
+    'repeat': 'rep',
+    'size': 'I',
+    'pl': 'pn',
+    'pr': 'pnr'
+};
+
+export default addAlias(Function, alias);

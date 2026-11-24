@@ -1,0 +1,779 @@
+import { readShapes, degrees, partsOf } from '../parser/parse-shape-commands.js';
+import { textOf, itemsOf } from '../parser/tokenizer.js';
+import { compile as parse, float } from './glsl-math-transformer.js';
+import { outline } from './shapes.js';
+import { HELPERS, DERIVATIVES, NAME, cssColor, colorReader, compileValue } from './pattern.js';
+import { reads, used } from '../parser/parse-body.js';
+import { glsl } from '../lib/tagged-template.js';
+
+const SHAPES = {
+    __proto__: null,
+    sphere: ['r'],
+    ellipsoid: ['r'],
+    box: ['size', 'round'],
+    cylinder: ['r', 'height', 'round'],
+    cone: ['r', 'height'],
+    torus: ['r'],
+    capsule: ['from', 'to', 'r'],
+    polygon: ['points', 'text', 'font', 'path', 'depth', 'round'],
+    lathe: ['points', 'text', 'font', 'path'],
+    plane: [],
+    sdf: ['d'],
+};
+
+const GROUPS = { __proto__: null, union: '1.0, 1.0', subtract: '-1.0, 1.0', intersect: '-1.0, -1.0' };
+
+const COMMANDS = new Set(['move', 'rotate', 'scale', 'mirror', 'repeat', 'twist', 'grow', 'frame']);
+const AXES = { __proto__: null, x: glsl`1.0, 0.0, 0.0`, y: glsl`0.0, 1.0, 0.0`, z: glsl`0.0, 0.0, 1.0` };
+
+const SCENE_HELPERS = glsl`
+    vec4 g_op(vec4 a, vec4 b, float k, float sa, float sb) {
+        a.w *= sa;
+        b.w *= sb;
+        k = max(k, 1e-6);
+        float h = clamp(0.5 + 0.5 * (b.w - a.w) / k, 0.0, 1.0);
+        return vec4(mix(b.rgb, a.rgb, h), sa * (mix(b.w, a.w, h) - k * h * (1.0 - h)));
+    }
+    vec3 g_rotate(vec3 p, vec3 k, float a) {
+        k = normalize(k);
+        return mix(k * dot(k, p), p, cos(a)) - cross(k, p) * sin(a);
+    }
+    float g_smin(float a, float b, float k, float sa, float sb) {
+        a *= sa;
+        b *= sb;
+        k = max(k, 1e-6);
+        float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+        return sa * (mix(b, a, h) - k * h * (1.0 - h));
+    }
+    float g_box(vec3 p, vec3 b) {
+        vec3 d = abs(p) - b;
+        return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0);
+    }
+    float g_ellipsoid(vec3 p, vec3 r) {
+        float k0 = length(p / r);
+        return max(k0 * (k0 - 1.0) / length(p / (r * r)), length(p) - max(r.x, max(r.y, r.z)));
+    }
+    float g_cylinder(vec3 p, float r, float h) {
+        vec2 d = vec2(length(p.xz) - r, abs(p.y) - h);
+        return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
+    }
+    float g_cone(vec3 p, float h, float r1, float r2) {
+        vec2 q = vec2(length(p.xz), p.y), k1 = vec2(r2, h), k2 = vec2(r2 - r1, 2.0 * h);
+        vec2 ca = vec2(q.x - min(q.x, q.y < 0.0 ? r1 : r2), abs(q.y) - h);
+        vec2 cb = q - k1 + k2 * clamp(dot(k1 - q, k2) / dot(k2, k2), 0.0, 1.0);
+        return (cb.x < 0.0 && ca.y < 0.0 ? -1.0 : 1.0) * sqrt(min(dot(ca, ca), dot(cb, cb)));
+    }
+    bool g_cross(vec2 q, vec2 a, vec2 b) {
+        vec2 e = b - a, w = q - a;
+        bvec3 c = bvec3(q.y >= a.y, q.y < b.y, e.x * w.y > e.y * w.x);
+        return all(c) || all(not(c));
+    }
+    float g_capsule(vec3 p, vec3 a, vec3 b, vec2 r) {
+        vec3 pa = p - a, ba = b - a;
+        float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+        return length(pa - ba * h) - mix(r.x, r.y, h);
+    }
+`;
+
+const LIGHT = glsl`vec3(0.6, 0.8, 0.5)`, SHADE = ' * g_L';
+
+const shadows = narrow => glsl`
+    // soft: how near the way to the light passes a shape, for how far along it
+    float g_shadow(vec3 p, vec3 l, float far, float e) {
+        float s = 1.0, t = e;
+        for (int k = 0; k < 64 && t < far && s > 1e-3; k++) {
+            float d = g_dist(p + l * t);
+            s = min(s, ${narrow} * d / t);
+            t += max(d, e);
+        }
+        return smoothstep(0.0, 1.0, s);
+    }
+    // 1 in the open, less where other shapes crowd p along n
+    float g_open(vec3 p, vec3 n, float s) {
+        float o = 0.0;
+        for (int k = 1; k <= 4; k++) {
+            float h = 0.01 * s * float(k);
+            o += clamp(1.0 - g_dist(p + n * h) / h, 0.0, 1.0);
+        }
+        return 1.0 - o / 4.0;
+    }
+`;
+
+function isVar(node, name) {
+    return !COMMANDS.has(name) && name !== 'fill' && !SHAPES[node.name]?.includes(name)
+        && !(name === 'smooth' && (GROUPS[node.name] || node.count));
+}
+
+function checkAll(node, warn, unread, code, copy) {
+    if (!NAME.test(node.name)) warn(`unexpected ${node.name}${node.count ? '*' + node.count.join('x') : ''}`);
+    if (SHAPES[node.name] || GROUPS[node.name]) {
+        for (let r of node.rows) {
+            if (!isVar(node, r.name)) {
+                let m = !/^(fill|text|font|path)$/.test(r.name) && textOf(r.value).match(/\b(normal|light)\b/);
+                if (m) warn(`${m[1]} is fill-only`);
+                continue;
+            }
+            let valid = NAME.test(r.name);
+            if (r.name == 'p') {
+                unread.add(r);
+                warn('read-only p');
+                continue;
+            }
+            if (valid && (reads(code, r.name) || /^match_\d+_$/.test(r.name))) continue;
+            unread.add(r);
+            if (!used(code, r.name)) warn(!valid ? `invalid name "${r.name}"` : `unused ${r.name}`);
+        }
+    }
+    if (/^(polygon|lathe)$/.test(node.name) && !node.rings && (node.children.length || node.rows.some(r => /^(text|path)$/.test(r.name)))) {
+        let reads = n => n.rows.some(r => /(?<![a-zA-Z_])(n|N|nx|ny)(?!\w)/.test(textOf(r.value))) || n.children.some(reads);
+        let [X, Y] = node.count || [1, 1], own = { rows: node.rows.filter(r => SHAPES.lathe.includes(r.name)), children: node.children };
+        let at = copy != null ? [copy] : node.copies ? [] : [...Array(reads(own) ? X * Y : 1).keys()];
+        if (at.length > 32) {
+            warn('outline traced once');
+            at = [0];
+        }
+        let all = at.map(i => outline(node, warn, { n: i + 1, N: X * Y, nx: i % X + 1, ny: (i / X | 0) + 1 }).map(ring => ring.map(xy => xy.map(float))));
+        node.children = [];
+        if (new Set(all.map(rings => JSON.stringify(rings))).size > 1) node.copies = all.map(rings => ({ ...node, rings }));
+        node.rings = all[0];
+    }
+    if (SHAPES[node.name] && node.children.length) warn('wrap in union');
+    (node.copies || node.children).forEach((c, i) => checkAll(c, warn, unread, code, node.copies && i));
+}
+
+export default function drawScene(code, extra, report = () => {}) {
+    let said = new Set(), warn = message => said.has(message) || (said.add(message), report(message));
+    let tree = readShapes(code, warn, { ignoreInlineComment: true });
+    let root = { name: 'union', rows: [], children: tree.children }, camera = {};
+    for (let r of tree.rows) {
+        if (/^(view|perspective|zoom|light|shadow|ambient|drag|eye|look)$/.test(r.name)) camera[r.name] = r.value;
+        else root.rows.push(r);
+    }
+    let drag = textOf(camera.drag || []).split(/[\s,]+/).filter(w => w && w !== 'none');
+    for (let w of drag) if (!/^(turn|tilt)$/.test(w)) warn(`invalid drag ${w}`);
+    let unread = new Set();
+    for (let node of [root, ...tree.unused]) checkAll(node, warn, unread, code);
+    let vars = node => node.rows.filter(r => isVar(node, r.name) && !unread.has(r));
+    if (!root.children.length) warn('no shapes');
+    if (/\bcalc\(/.test(code)) warn('no calc()');
+
+    // compiled three times: distances for marching, the far field the camera fit reads, colors for the hit
+    let arrays = new Map();
+    let build = (dist, warn, fit) => {
+        let counter = 0, sites = 0, key = '0.0', cap, fill, cut, loose, self;
+        let types = { __proto__: null, p: 'vec3', normal: 'vec3', light: 'float' };
+        // outside copies the scene is one copy
+        let names = { __proto__: null, t: 't', n: '1.0', N: '1.0', nx: '1.0', ny: '1.0' };
+        let unknown = colorReader(extra, name => warn(`unknown ${name}`));
+        let next = () => `g_${++counter}`;
+        let compile = (value, p) => parse(value.replace(/\bcalc\(/g, '('), {
+            types, warn, unknown,
+            names: { __proto__: names, p },
+            rand: () => glsl`rand(vec2(${key}, ${float(++sites)}) * vec2(0.7548, 0.5698))`,
+        });
+        // `.2 -.1 0` and `.2, -.1, 0` → ['.2', '-.1', '0.0']; an angle in degrees
+        let numbers = (tokens, p, angle) => {
+            let text = textOf(tokens);
+            return partsOf(angle ? degrees(text) : text).map(v => compile(v, p).code());
+        };
+        let vec3 = (items, pad = '0.0') => `vec3(${items.length > 1 ? [0, 1, 2].map(i => items[i] || pad).join(', ') : items[0] || pad})`;
+        let value = (text, p) => compileValue(text = text.trim(), names[text], v => compile(v, p), extra, warn) || {};
+        let color = (text, p) => {
+            let { type, code } = value(text, p);
+            if (!/^vec[34]$/.test(type)) {
+                warn('fill needs color');
+                return null;
+            }
+            return type === 'vec4' ? `${code}.rgb` : code;
+        };
+
+        let out = '';
+        let lit = new Set(['light']), reads = code => code.match(/\w+/g)?.some(w => lit.has(w));
+        let scoped = new Map();
+        let scope = (node, p, again) => {
+            let first = scoped.get(node), end = sites, moved = [p];
+            if (!again) scoped.set(node, { p, sites: end });
+            else if (first.p === p) return;
+            else sites = first.sites;
+            for (let { name, value: text } of vars(node)) {
+                let { type: t, code: c } = value(textOf(text), p);
+                if (!c) continue;
+                if (again && !new RegExp(`\\b(${moved.join('|')})\\b`).test(c)) continue;
+                let id = next();
+                types[id] = t;
+                moved.push(id);
+                names = { __proto__: names, [name]: id };
+                if (reads(c)) lit.add(id);
+                out += `${t} ${id} = ${c};\n`;
+            }
+            if (again) sites = end;
+        };
+        let base = fill = next(), none = dist ? '1e5' : `vec4(${base}, 1e5)`;
+        let T = dist ? 'float' : 'vec4', W = dist ? '' : '.w';
+        let declare = (r, v = none) => out += `${T} ${r} = ${v};\n`;
+        if (!dist) out += `vec3 ${base} = vec3(0.9)${SHADE};\n`;
+        // a hard join is min for union, max against -b for subtract, max for intersect
+        let join = (a, b, k, signs = '1.0, 1.0') => `${a} = ${dist && k === '0.0'
+            ? signs === '1.0, 1.0' ? `min(${a}, ${b})` : `max(${a}, ${signs === '-1.0, 1.0' ? '-' : ''}${b})`
+            : `${dist ? 'g_smin' : 'g_op'}(${a}, ${b}, ${k}, ${signs})`};\n`;
+        let row = (node, name) => node.rows.findLast(r => r.name === name)?.value || [];
+        let first = (tokens, p, angle) => numbers(tokens, p, angle)[0] || '0.0';
+        // a part reading cap or more changes nothing, so a costly shape may stop at a bound that reaches it
+        let below = a => cap ? `min(${cap}, ${a})` : a;
+        let within = (bound, f) => {
+            let saved = cap;
+            cap = bound;
+            let r = f();
+            cap = saved;
+            return r;
+        };
+
+        function generate(node, p) {
+            let commands = node => node.rows.filter(r => COMMANDS.has(r.name));
+            let outer = names;
+            if (!node.count) {
+                scope(node, p);
+                let r = chain(node, commands(node), p);
+                names = outer;
+                return r;
+            }
+            let [X, Y] = node.count, r = next();
+            let outerKey = key, start = sites, end = start;
+            let copy = (node, n, nx, ny) => {
+                names = { __proto__: outer, n, N: float(X * Y), nx, ny };
+                key = glsl`(${outerKey} * 31.0 + ${n})`;
+                sites = start;
+                scope(node, p);
+                let c = within(!row(node, 'smooth').length && below(r), () => chain(node, commands(node), p));
+                let k = first(row(node, 'smooth'), p);
+                out += join(r, c, k);
+                end = Math.max(end, sites);
+                return k;
+            };
+            declare(r);
+            if (node.copies) {
+                node.copies.slice(0, X * Y).forEach((c, i) => copy(c, float(i + 1), float(i % X + 1), float((i / X | 0) + 1)));
+            } else {
+                let [i, n, nx, ny] = [next(), next(), next(), next()], head = out;
+                out = '';
+                let same = copy(node, n, nx, ny) === '0.0' && !new RegExp(`\\b(${n}|${nx}|${ny})\\b`).test(out);
+                out = head + glsl`
+                    for (int ${i} = 0; ${i} < ${same ? 1 : X * Y}; ${i}++) {
+                        float ${n} = float(${i} + 1), ${nx} = float(${i} % ${X} + 1), ${ny} = float(${i} / ${X} + 1);
+                ` + '\n' + out + '}\n';
+            }
+            names = outer;
+            key = outerKey;
+            sites = end;
+            return r;
+        }
+
+        // commands apply top to bottom to the shape, so the point meets the last one first
+        function chain(node, mods, p) {
+            if (!mods.length) return atom(node, p);
+            let m = mods.at(-1), inner = mods.slice(0, -1);
+            let args = () => numbers(m.value, p);
+            let q = next(), r;
+            types[q] = 'vec3';
+            if (m.name === 'move') {
+                out += `vec3 ${q} = ${p} - ${vec3(args())};\n`;
+            } else if (m.name === 'scale') {
+                let s = next();
+                out += `vec3 ${s} = ${vec3(args(), '1.0')};\n`;
+                if (fit) {
+                    // far away a shape reads |p| - its reach; scaled, it reaches |S e| times the inner reach along S e
+                    let w = next();
+                    out += glsl`vec3 ${w} = ${p} * ${s};\nvec3 ${q} = normalize(${w}) * length(${p});` + '\n';
+                    r = chain(node, inner, q);
+                    out += glsl`${r} = length(${p}) - length(${w}) + ${r} * length(${w}) / length(${p});` + '\n';
+                    return r;
+                }
+                out += `vec3 ${q} = ${p} / ${s};\n`;
+                // a negative scale mirrors
+                let f = glsl`min(abs(${s}.x), min(abs(${s}.y), abs(${s}.z)))`;
+                r = within(cap && `${cap} / ${f}`, () => chain(node, inner, q));
+                out += `${r}${W} *= ${f};\n`;
+                return r;
+            } else if (m.name === 'rotate') {
+                let axis = AXES.z, angle = '0.0';
+                for (let g of itemsOf(m.value)) {
+                    let named = g.find(t => t.isWord() && AXES[t.value]);
+                    if (named) axis = AXES[named.value];
+                    let v = numbers(g.filter(t => t !== named), p, true);
+                    if (v.length === 3) axis = v.join(', ');
+                    else if (v.length === 4) [axis, angle] = [v.slice(0, 3).join(', '), `radians(${v[3]})`];
+                    else if (v.length === 1) angle = `radians(${v[0]})`;
+                }
+                out += `vec3 ${q} = g_rotate(${p}, vec3(${axis}), ${angle});\n`;
+            } else if (m.name === 'mirror') {
+                // every reflection reuses the same rand() sites
+                let axes = [];
+                for (let t of m.value.filter(t => !t.isSpace() && !t.isSymbol(','))) {
+                    // a repeated axis mirrors nothing new, and each axis doubles the code
+                    if (AXES[t.value]) axes.includes(t.value) || axes.push(t.value);
+                    else warn(`invalid mirror ${t.value}`);
+                }
+                let start = sites, end = start;
+                declare(r = next());
+                for (let k = 0; k < 1 << axes.length; k++) {
+                    let c = next();
+                    types[c] = 'vec3';
+                    out += `vec3 ${c} = ${p};\n`;
+                    axes.forEach((a, j) => { if (k >> j & 1) out += `${c}.${a} = -${c}.${a};\n`; });
+                    sites = start;
+                    let d = within(below(r), () => chain(node, inner, c));
+                    out += join(r, d, '0.0');
+                    end = Math.max(end, sites);
+                }
+                sites = end;
+                return r;
+            } else if (m.name === 'twist') {
+                let a = first(m.value, p, true);
+                if (fit) {
+                    let k = next();
+                    r = next();
+                    declare(r);
+                    out += glsl`for (int ${k} = 0; ${k} < 16; ${k}++) {\nvec3 ${q} = ${p};\n${q}.xz = rot(${p}.xz, float(${k}) * PI / 8.0);` + '\n';
+                    let c = chain(node, inner, q);
+                    out += join(r, c, '0.0') + '}\n';
+                    return r;
+                }
+                out += glsl`vec3 ${q} = ${p};\n${q}.xz = rot(${p}.xz, -radians(${a}) * ${p}.y);` + '\n';
+            } else if (m.name === 'repeat') {
+                let [s = [], n] = itemsOf(m.value).map(g => numbers(g, p));
+                if (n) warn('repeat: no count');
+                let [on, base, dir, id, k, outerKey] = [next(), next(), next(), next(), next(), key];
+                r = next();
+                out += glsl`
+                    vec3 ${on} = step(1e-6, ${vec3(s)});
+                    vec3 ${base} = ${on} * round(${p} / max(${vec3(s)}, 1e-6));
+                    vec3 ${dir} = ${on} * sign(${p} - ${vec3(s)} * ${base});
+                    ${T} ${r} = ${none};
+                    for (int ${k} = 0; ${k} < 8; ${k}++) {
+                        vec3 ${id} = vec3(${k} & 1, (${k} >> 1) & 1, (${k} >> 2) & 1);
+                        if (any(greaterThan(${id}, ${on}))) continue;
+                        ${id} = ${base} + ${id} * ${dir};
+                        vec3 ${q} = ${p} - ${vec3(s)} * ${id};
+                ` + '\n';
+                key = glsl`(${outerKey} + dot(${id}, vec3(1.0, 57.0, 113.0)))`;
+                let c = within(below(r), () => chain(node, inner, q));
+                key = outerKey;
+                out += join(r, c, '0.0') + '}\n';
+                return r;
+            } else {
+                // a frame only adds the inside back, while a grow subtracts a value read after the shape
+                r = within(m.name === 'frame' && cap, () => chain(node, inner, p));
+                let v = first(m.value, p);
+                out += m.name === 'grow' ? `${r}${W} -= ${v};\n` : `${r}${W} = max(${r}${W}, -${r}${W} - ${v});\n`;
+                return r;
+            }
+            return chain(node, inner, q);
+        }
+
+        function atom(node, p) {
+            let saved = fill, outer = names, f = row(node, 'fill');
+            scope(node, p, true);
+            let c = f.length && color(textOf(f), p);
+            if (c && !dist) {
+                fill = next();
+                out += `vec3 ${fill} = ${c}${reads(c) ? (self = 1, '') : SHADE};\n`;
+            }
+            let r = shape(node, p);
+            fill = saved;
+            names = outer;
+            return r;
+        }
+
+        function shape(node, p) {
+            let r = next();
+            if (GROUPS[node.name]) {
+                let k = first(row(node, 'smooth'), p), a, outerCut = cut, name = node.name;
+                cut ||= name === 'intersect';
+                loose ||= cut;
+                for (let child of node.children) {
+                    let bound = k !== '0.0' ? null : !a || name === 'intersect' ? cap : name === 'union' ? below(a) : `-${a}`;
+                    let b = within(bound, () => generate(child, p));
+                    if (a) out += join(a, b, k, GROUPS[node.name]);
+                    a ??= b;
+                }
+                cut = outerCut;
+                declare(r, a);
+                return r;
+            }
+            if (!SHAPES[node.name]) {
+                warn(`unknown shape ${node.name}`);
+                declare(r);
+                return r;
+            }
+            // round keeps the outer size: shrink by r, then grow by r
+            let k = first(row(node, 'round'), p);
+            let get = name => numbers(row(node, name), p), name = node.name;
+            let rs = SHAPES[name].includes('r') ? get('r') : [], [r1, r2] = rs, d;
+            if (name === 'sphere') d = glsl`length(${p}) - ${r1 || '0.3'}`;
+            else if (name === 'ellipsoid') d = `g_ellipsoid(${p}, ${vec3(rs, '0.3')})`;
+            else if (name === 'box') d = glsl`g_box(${p}, ${vec3(get('size'), '0.5')} * 0.5 - ${k}) - ${k}`;
+            else if (name === 'torus') d = glsl`length(vec2(length(${p}.xz) - ${r1 || '0.3'}, ${p}.y)) - ${r2 || '0.08'}`;
+            else if (name === 'cylinder') d = glsl`g_cylinder(${p}, ${r1 || '0.2'} - ${k}, ${get('height')[0] || '0.5'} * 0.5 - ${k}) - ${k}`;
+            else if (name === 'cone') d = glsl`g_cone(${p}, ${get('height')[0] || '0.4'} * 0.5, ${r1 || '0.2'}, ${r2 || '0.0'})`;
+            else if (name === 'capsule') d = glsl`g_capsule(${p}, ${vec3(get('from'))}, ${vec3(get('to'))}, vec2(${r1 || '0.1'}, ${r2 || r1 || '0.1'}))`;
+            else if (name === 'plane') d = `${p}.y`;
+            else if (name === 'sdf') {
+                let value = textOf(row(node, 'd')), start = sites;
+                let { type, code } = compile(value || '1e5', p);
+                let ok = value && /^(float|int)$/.test(type);
+                if (!ok) warn('sdf needs d');
+                d = ok ? code('float') : '1e5';
+                loose = true;
+                if (ok && fit && !cut) {
+                    let [a, h, c] = [next(), next(), next()];
+                    types[h] = 'vec3';
+                    out += `float ${a} = ${d};\nvec3 ${h} = ${p} * 0.5;\n`;
+                    scope(node, h, true);
+                    sites = start;
+                    out += glsl`float ${c} = 2.0 * (${a} - ${compile(value, h).code('float')}) / length(${p});` + '\n';
+                    d = glsl`${c} > 0.1 ? ${a} / ${c} : ${a}`;
+                }
+            } else {
+                // in the xy plane, `depth` thick along z, or a lathe's outline turned around y
+                let rings = node.rings || [itemsOf(row(node, 'points')).map(g => numbers(g, p))], lathe = name === 'lathe';
+                if (!rings.length || rings.some(ring => ring.length < 3)) {
+                    warn(`${name} needs points`);
+                    d = '1e5';
+                } else {
+                    let all = rings.flatMap(ring => [...ring, ring[0]]).map(([x = '0.0', y = '0.0']) => [x, y]), n = all.length, at = 0, v;
+                    let array = `vec2[${n}](${all.map(([x, y]) => `vec2(${x}, ${y})`).join(', ')})`;
+                    let [q, e, s, w] = [next(), next(), next(), next()];
+                    let constant = array => arrays.get(array) || arrays.set(array, `g_c${arrays.size}`).get(array);
+                    let plain = all.flat().every(x => !isNaN(x));
+                    if (plain) v = constant(array);
+                    else out += `vec2 ${v = next()}[${n}] = ${array};\n`;
+                    let walk = (from, to) => glsl`
+                        for (int i = ${from}; i < ${to}; i++) {
+                            vec2 a = ${v}[i], b = ${v}[i + 1] - a, w = ${q} - a, d = w - b * clamp(dot(w, b) / max(dot(b, b), 1e-12), 0.0, 1.0);
+                            ${e} = min(${e}, dot(d, d));
+                            if (g_cross(${q}, a, ${v}[i + 1])) ${s} = -${s};
+                        }
+                    ` + '\n';
+                    out += `vec2 ${q} = ${lathe ? `vec2(length(${p}.xz), ${p}.y)` : `${p}.xy`};\n`;
+                    let mark = out.length, depth = lathe ? '' : get('depth')[0] || '0.1';
+                    out += glsl`float ${e} = 1e30, ${s} = 1.0;` + '\n';
+                    if (!plain || n < 64) {
+                        for (let ring of rings) {
+                            out += walk(at, at + ring.length);
+                            at += ring.length + 1;
+                        }
+                    } else {
+                        let runs = [], circles = [];
+                        for (let ring of rings) {
+                            let len = ring.length, size = Math.ceil(Math.sqrt(len));
+                            for (let i = 0; i < len; i += size) {
+                                let j = Math.min(i + size, len), run = all.slice(at + i, at + j + 1).map(xy => xy.map(Number));
+                                let [x, y] = [0, 1].map(k => (run[0][k] + run.at(-1)[k]) / 2);
+                                let r = Math.max(...run.map(([a, b]) => Math.hypot(a - x, b - y))) + 1e-5;
+                                runs.push(`ivec2(${at + i}, ${at + j})`);
+                                circles.push(`vec3(${[x, y, r].map(v => v.toFixed(6))})`);
+                            }
+                            at += len + 1;
+                        }
+                        let m = runs.length, R = constant(`ivec2[${m}](${runs})`), C = constant(`vec3[${m}](${circles})`);
+                        out += glsl`
+                            for (int c = 0; c < ${m}; c++) {
+                                vec2 a = ${v}[${R}[c].x];
+                                ${e} = min(${e}, dot(${q} - a, ${q} - a));
+                                if (g_cross(${q}, a, ${v}[${R}[c].y])) ${s} = -${s};
+                            }
+                            for (int c = 0; c < ${m}; c++) {
+                                float h = max(length(${q} - ${C}[c].xy) - ${C}[c].z, 0.0);
+                                if (h * h >= ${e}) continue;
+                                if (g_cross(${q}, ${v}[${R}[c].x], ${v}[${R}[c].y])) ${s} = -${s};
+                                ${walk(`${R}[c].x`, `${R}[c].y`)}
+                            }
+                        ` + '\n';
+                    }
+                    if (lathe) d = `${s} * sqrt(${e})`;
+                    else {
+                        out += glsl`
+                            vec2 ${w} = vec2(${s} * sqrt(${e}) + ${k}, abs(${p}.z) - ${depth} * 0.5 + ${k});
+                        ` + '\n';
+                        d = glsl`min(max(${w}.x, ${w}.y), 0.0) + length(max(${w}, 0.0)) - ${k}`;
+                    }
+                    // the outline's box is never farther than the outline, so the walk runs only where it may count
+                    if (plain && dist && !fit && cap) {
+                        let ends = [0, 1].map(i => all.map(xy => +xy[i])).map(v => [Math.max(...v), Math.min(...v)]);
+                        let box = `box(${q} - vec2(${ends.map(([a, b]) => float(+((a + b) / 2).toFixed(6)))}), vec2(${ends.map(([a, b]) => float(+((a - b) / 2 + 1e-5).toFixed(6)))}))`;
+                        let walk = out.slice(mark);
+                        out = out.slice(0, mark) + `float ${r} = ${lathe ? box : glsl`max(${box}, abs(${p}.z) - ${depth} * 0.5)`};\nif (${r} < ${cap}) {\n${walk}${r} = ${d};\n}\n`;
+                        return r;
+                    }
+                }
+            }
+            declare(r, dist ? d : `vec4(${fill}, ${d})`);
+            return r;
+        }
+
+        let result = generate(root, 'p');
+        // the named shapes nothing draws are compiled too, so their mistakes show
+        if (!dist) {
+            let used = out, size = arrays.size;
+            for (let def of tree.unused) generate(def, 'p');
+            out = used;
+            [...arrays.keys()].slice(size).forEach(k => arrays.delete(k));
+        }
+        if (!self) out = out.replaceAll(SHADE, '');
+
+        let off = v => /^\s*none\s*$/.test(textOf(v || []));
+        let angles = numbers(camera.view || [], 'p', true);
+        let [turn = '0.0', tilt = '0.0'] = angles.map(v => `radians(${v})`);
+        let depth = !camera.perspective ? '2.0' : off(camera.perspective) ? '0.0' : first(camera.perspective, 'p');
+        let zoom = camera.zoom ? first(camera.zoom, 'p') : '1.0';
+        let shadow = camera.shadow && !off(camera.shadow) && first(camera.shadow, 'p');
+        let wide = shadow && numbers(camera.shadow, 'p')[1];
+        let eye = camera.eye && vec3(numbers(camera.eye, 'p')), look = vec3(numbers(camera.look || [], 'p'));
+        // the values of a row, and a CSS color such as rgb() standing after the last space
+        let paint = g => {
+            let level = 0, at = 0;
+            g.forEach((t, i) => (level += t.isSymbol('(') - t.isSymbol(')')) || !t.isSpace() || (at = i));
+            let tail = textOf(g.slice(at)).trim(), rgba = cssColor(extra, tail);
+            return [numbers(rgba ? g.slice(0, at) : g, 'p'), rgba && `vec3(${rgba.slice(0, 3).map(float)})`];
+        };
+        // `x y z color`, toward the light as `normal` sees it
+        let lights = off(camera.light) ? [] : itemsOf(camera.light || []).map(g => {
+            let [v, c] = paint(g);
+            return [v.length ? vec3(v.slice(0, 3)) : LIGHT, c || `vec3(${v[3] || '1.0'})`];
+        });
+        if (!camera.light) lights.push([LIGHT, glsl`vec3(1.0)`]);
+        // `sky ground`, the light from all around: a surface facing up gets sky, one facing down ground, a fifth of sky unless given
+        let ambient = glsl`0.3 * (0.6 + 0.4 * n.y)`;
+        if (camera.ambient) {
+            let [v, c] = off(camera.ambient) ? [['0.0']] : paint(camera.ambient), sky;
+            if (c) v.push(c);
+            sky = `vec3(${v[0]})`;
+            ambient = glsl`mix(${v[1] ? `vec3(${v[1]})` : glsl`${sky} * 0.2`}, ${sky}, 0.5 + 0.5 * n.y)`;
+        }
+        return { out, result, turn, tilt, depth, zoom, shadow, wide, eye, look, lights, ambient, self, base: +angles[1] || 0, loose };
+    };
+    let full = build(false, warn), bare = build(true, () => {}), fit = build(true, () => {}, true);
+    let { turn, tilt, depth, zoom, shadow, wide, eye, look, lights, ambient, self, base } = full;
+    let usesTime = /(?<![\w.])t\b/.test([full.out, full.result, fit.out, turn, tilt, depth, zoom, shadow, wide, eye, look, ambient, ...lights.flat()].join('\n'));
+    let slopes = DERIVATIVES.test([full.out, full.result, ambient, ...lights.flat()].join('\n'));
+    let common = glsl`
+    const float PI = 3.1415926535897932;
+    float t;
+    vec3 normal = vec3(0.0, 0.0, 1.0);
+    float light = 1.0;
+    ${HELPERS}
+    ${SCENE_HELPERS}
+    ${[...arrays].map(([array, v]) => `const ${array.match(/^\w+/)} ${v}[] = ${array};`).join('\n')}
+    `;
+    let now = `t = ${usesTime ? 'u_time' : '0.0'};`;
+    let turned = drag.length && (turn != '0.0' || tilt != '0.0');
+    let view = (turn, tilt) => glsl`
+        vec3 g_x = g_rotate(vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), ${turn});
+        vec3 g_y = g_rotate(g_rotate(vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), ${tilt}), vec3(0.0, 1.0, 0.0), ${turn});
+        vec3 g_z = cross(g_x, g_y);
+    `;
+    let vertex = glsl`#version 300 es
+    precision highp float;
+    precision highp int;
+    #define fwidth(x) (0.0 * (x))
+    in vec4 position;
+    uniform float u_time;
+    uniform vec2 u_seed;
+    flat out vec3 g_vhi, g_vlo, g_vc;
+    ${drag.length ? 'flat out vec3 g_rhi, g_rlo;' : ''}
+    ${common}
+    float g_fit(vec3 p) {
+        ${fit.out}
+        return ${fit.result};
+    }
+    ${fit.loose ? glsl`
+        float g_dist(vec3 p) {
+            ${bare.out}
+            return ${bare.result};
+        }
+        float g_walk(vec3 e) {
+            vec3 q = e * 50.0;
+            for (int k = 0; k < 16; k++) {
+                float d = g_dist(q), h = max(1e-3 * abs(d), 1e-5);
+                if (abs(d) < 1e-4) return dot(q, e);
+                vec3 g = vec3(0.0);
+                for (int j = 0; j < 4; j++) {
+                    vec3 o = 2.0 * vec3(float(((j + 3) >> 1) & 1), float((j >> 1) & 1), float(j & 1)) - 1.0;
+                    g += o * g_dist(q + o * h);
+                }
+                q -= d * g * 4.0 * h / max(dot(g, g), 1e-12);
+            }
+            return -1e9;
+        }
+    ` : ''}
+    float g_reach(vec3 e) {
+        vec3 t = vec3(100.0, 400.0, 2e3), u;
+        for (int i = 0; i < 3; i++) u[i] = t[i] * (t[i] - g_fit(e * t[i]));
+        float g = (u.y - u.x) / 300.0, s = ((u.z - u.y) / 1600.0 - g) / 1900.0;
+        return s < 0.9 ? ${fit.loose ? glsl`max(g_walk(e), (g - 500.0 * s) / (1.0 - s))` : glsl`(g - 500.0 * s) / (1.0 - s)`} : 1e9;
+    }
+    void g_reach6(mat3 v, inout vec3 hi, inout vec3 lo) {
+        for (int i = 0; i < 6; i++) {
+            float r = g_reach(i < 3 ? v[i] : -v[i - 3]);
+            if (i < 3) hi[i] = max(hi[i], r);
+            else lo[i - 3] = min(lo[i - 3], -r);
+        }
+    }
+    ${drag.length ? glsl`
+        vec3 g_corner(int k) {
+            return vec3(float(k & 1), float((k >> 1) & 1), float((k >> 2) & 1));
+        }
+        float g_far(vec3 a, float h) {
+            float m = 0.0;
+            for (int k = 0; k < 8; k++) {
+                vec3 u = a * g_corner(k);
+                float s = u.x + u.y + u.z;
+                if (s <= h) m = max(m, dot(u, u));
+                for (int i = 0; i < 3; i++) {
+                    float v = h - s + u[i];
+                    if (((k >> i) & 1) == 0 || v < 0.0 || v > a[i]) continue;
+                    vec3 w = u;
+                    w[i] = v;
+                    m = max(m, dot(w, w));
+                }
+            }
+            return m;
+        }
+    ` : ''}
+    void main() {
+        gl_Position = position;
+        ${now}
+        g_vhi = vec3(-1e9);
+        g_vlo = vec3(1e9);
+        ${turned ? glsl`g_rhi = vec3(-1e9);\ng_rlo = vec3(1e9);` : ''}
+        ${drag.length ? glsl`float g_dhi[8];\nfor (int k = 0; k < 8; k++) g_dhi[k] = -1e9;` : ''}
+        for (int i = 0; i <= ${usesTime ? 32 : 0}; i++) {
+            if (i > 0) t = float(i - 1) * PI / 16.0;
+            ${drag.length ? view('0.0', '0.0') : view(turn, tilt)}
+            g_reach6(mat3(g_x, g_y, g_z), g_vhi, g_vlo);
+            ${turned ? glsl`{
+                ${view(turn, tilt)}
+                g_reach6(mat3(g_x, g_y, g_z), g_rhi, g_rlo);
+            }` : ''}
+            ${drag.length ? glsl`for (int k = 0; k < 8; k++) g_dhi[k] = max(g_dhi[k], g_reach(normalize(g_corner(k) * 2.0 - 1.0)));` : ''}
+        }
+        g_vc = vec3(0.0);
+        ${drag.length ? glsl`
+            ${turned ? '' : glsl`g_rhi = g_vhi;\ng_rlo = g_vlo;`}
+            vec3 a = (g_vhi - g_vlo) * 0.5, c = (g_vhi + g_vlo) * 0.5;
+            float r = length(a);
+            if (r < 1e8) {
+                g_vc = c;
+                float m = 0.0;
+                for (int k = 0; k < 8; k++) {
+                    vec3 e = g_corner(k) * 2.0 - 1.0;
+                    m = max(m, g_far(a, sqrt(3.0) * g_dhi[k] - dot(e, c)));
+                }
+                r = min(1.02 * sqrt(m), r);
+            }
+            g_vhi = vec3(r);
+            g_vlo = -g_vhi;
+        ` : ''}
+    }
+    `;
+    let fragment = glsl`
+    precision highp int;
+    uniform vec2 u_drag;
+    flat in vec3 g_vhi, g_vlo, g_vc;
+    ${drag.length ? 'flat in vec3 g_rhi, g_rlo;' : ''}
+    ${common}
+    float g_dist(vec3 p) {
+        ${bare.out}
+        return ${bare.result};
+    }
+    ${shadow ? shadows(wide ? glsl`(1.0 / max(tan(radians(${wide})), 1e-4))` : '10.0') : ''}
+    vec3 g_L = vec3(1.0);
+    vec4 g_scene(vec3 p) {
+        ${full.out}
+        return ${full.result};
+    }
+    void main() {
+        ${now}
+        ${view(drag.includes('turn') ? turn + ' + u_drag.x' : turn, drag.includes('tilt') ? tilt + ' + u_drag.y' : tilt)}
+        float g_m = min(u_resolution.x, u_resolution.y), g_px = g_m * ${zoom};
+        vec2 g_q = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / g_px;
+        mat3 g_v = mat3(g_x, g_y, g_z);
+        float g_d = ${depth}, g_f = g_d > 0.0 ? 1.0 / g_d : 0.0;
+        vec2 g_w = 0.5 * u_resolution.xy / g_m;
+        vec3 g_hi = g_vhi, g_lo = g_vlo;
+        vec2 g_n = (g_hi.xy - g_lo.xy) * 0.5 / g_w + g_hi.z * g_f;
+        float g_k = max(1.0, max(g_n.x, g_n.y));
+        bool g_b = g_n.x + g_n.y < 1e3;
+        if (!g_b) { g_k = 1.0; g_hi = g_lo = vec3(0.0); }
+        ${drag.length && !eye ? glsl`
+            vec2 g_rn = (g_rhi.xy - g_rlo.xy) * 0.5 / g_w + g_rhi.z * g_f;
+            if (g_b && g_d > 0.0 && g_rn.x + g_rn.y < 1e3) {
+                float g_ra = max(g_d * max(1.0, max(g_rn.x, g_rn.y)) - 0.5 * (g_rhi.z + g_rlo.z), 1.25 * g_hi.x);
+                g_d = min(min(min(g_w.x, g_w.y) * sqrt(g_ra * g_ra - g_hi.x * g_hi.x) / max(g_hi.x, 1e-6), g_d), g_ra);
+                g_k = g_ra / g_d;
+                g_f = 1.0 / g_d;
+            }
+        ` : glsl`g_w *= g_k - g_hi.z * g_f;`}
+        float g_z0 = g_d > 0.0 ? g_d * g_k : max(g_hi.z, 0.0) + g_k;
+        vec3 g_o = vec3(${drag.length ? 'vec2(0.0)' : glsl`clamp(vec2(0.0), g_hi.xy - g_w, g_lo.xy + g_w)`} + (g_d > 0.0 ? vec2(0.0) : g_q * g_k), g_z0);
+        vec3 g_r = normalize(vec3(g_d > 0.0 ? g_q : vec2(0.0), -(g_d > 0.0 ? g_d : 1.0)));
+        ${eye ? glsl`
+            vec3 g_ez = ${eye} - ${look}, g_ex = normalize(cross(vec3(0.0, 1.0, -1e-5), g_ez));
+            mat3 g_ev = mat3(g_ex, normalize(cross(g_ez, g_ex)), normalize(g_ez));
+            g_z0 = length(g_ez);
+            g_k = g_d > 0.0 ? g_z0 * g_f : g_z0;
+            g_o = ${eye} - g_vc + g_ev * vec3(g_d > 0.0 ? vec2(0.0) : g_q * g_k, 0.0);
+            g_r = g_ev * g_r;
+        ` : ''}
+        vec3 g_a = (g_lo - 0.02 * g_k - g_o) / (g_r + 1e-9), g_c = (g_hi + 0.02 * g_k - g_o) / (g_r + 1e-9);
+        vec3 g_in = min(g_a, g_c), g_out = max(g_a, g_c);
+        float g_t = g_b ? max(max(max(g_in.x, g_in.y), g_in.z), 0.0) : 0.0;
+        float g_far = g_b ? min(min(g_out.x, g_out.y), g_out.z) : g_z0 + 4.0 * g_k;
+        if (g_t > g_far) {
+            FragColor = vec4(0.0);
+            return;
+        }
+        vec3 g_ro = g_vc + g_v * g_o, g_rd = g_v * g_r;
+        float g_tn = g_t, g_near = 1e9;
+        for (int k = 0; k < 128; k++) {
+            float d = g_dist(g_ro + g_rd * g_t);
+            float e = d * g_px / (g_d > 0.0 ? g_t * g_f : g_k);
+            if (e < g_near) { g_near = e; g_tn = g_t; }
+            if (g_near < 0.1 || g_t > g_far) break;
+            g_t += d;
+        }
+        ${slopes ? '' : glsl`
+            if (g_near >= 1.1) {
+                FragColor = vec4(0.0);
+                return;
+            }
+        `}
+        vec3 g_h = g_ro + g_rd * g_tn;
+        vec3 n = vec3(0.0);
+        float g_u = g_k / ${zoom};
+        for (int k = 0; k < 4; k++) {
+            vec3 e = 0.5773 * (2.0 * vec3(float(((k + 3) >> 1) & 1), float((k >> 1) & 1), float(k & 1)) - 1.0);
+            n += e * g_dist(g_h + e * 5e-4 * g_u);
+        }
+        if (g_near >= 0.1) g_near /= clamp(length(n) * 1500.0 / g_u, 1e-3, 1.0);
+        n = normalize(n);
+        normal = n * g_v;
+        ${lights.length ? glsl`
+            vec3 g_lit = vec3(0.0);
+            ${shadow ? glsl`
+                float g_e = (g_d > 0.0 ? g_tn * g_f : g_k) / g_px, g_s = g_b ? length(g_hi - g_lo) : g_k, g_sh = ${shadow};
+            ` : ''}
+            vec3 g_ld[] = vec3[](${lights.map(l => l[0])}), g_lc[] = vec3[](${lights.map(l => l[1])});
+            for (int i = 0; i < ${lights.length}; i++) {
+                vec3 g_l = g_v * normalize(g_ld[i]);
+                float g_c = max(dot(n, g_l), 0.0);
+                if (g_c > 0.0) g_lit += g_lc[i] * g_c${shadow ? ' * mix(1.0, g_shadow(g_h + n * g_e, g_l, 2.0 * g_s, g_e), g_sh)' : ''};
+            }
+            g_L = sqrt((0.7 * g_lit + ${ambient})${shadow ? ' * mix(1.0, g_open(g_h, n, g_s), g_sh)' : ''});
+        ` : ''}
+        ${self ? glsl`light = dot(g_L, vec3(1.0 / 3.0));` : ''}
+        FragColor = vec4(g_scene(g_h).rgb${self ? '' : SHADE}, 1.0 - clamp(g_near - 0.1, 0.0, 1.0));
+    }
+  `;
+    return { vertex, fragment, textures: [], drag: drag.length && [base * Math.PI / 180] };
+}

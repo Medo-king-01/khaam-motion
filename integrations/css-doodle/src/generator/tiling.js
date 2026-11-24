@@ -1,0 +1,706 @@
+import seedrandom from '../lib/seedrandom.js';
+import { clamp, map2d, cos, sin, tan, asin, atan2, sqrt, hypot, log, ceil, floor, round, abs, min, max, PI } from '../lib/math.js';
+import Perlin from '../lib/noise.js';
+import { memo } from '../lib/cache.js';
+import calc, { defaultContext, randomOf } from '../core/calc.js';
+import { mix, dist, lists, sum, perimeter, turn, insideTest, bridge, resample, keepers, scale, bounds, signed, area } from './polygon.js';
+
+const SCATTER_SAMPLES = 16;
+const SCATTER_ROUNDS = 10;
+const PHI = (1 + sqrt(5)) / 2;
+
+const perlinOf = memo(seed => new Perlin(seedrandom('noise:' + seed)));
+
+const r2 = (k, x0, y0, w, h) => {
+    let u = .5 + k * .7548776662, v = .5 + k * .5698402909;
+    return [x0 + (u - floor(u)) * w, y0 + (v - floor(v)) * h];
+};
+
+function noiseOf(props) {
+    let perlin;
+    return (t, x, y, octave = 1, scale = 1, from = 0, to = 1, r = 1) => {
+        perlin ??= perlinOf(props.seed ?? '');
+        return map2d(perlin.fbm(x + r * cos(t), y + r * sin(t), octave, scale), from, to, scale);
+    };
+}
+
+function scatter(outline, count, evenodd, seed, density, rounds = SCATTER_ROUNDS) {
+    let [x0, y0, x1, y1] = bounds(outline.flat()), w = x1 - x0, h = y1 - y0;
+    let inside = insideTest([outline], evenodd);
+    let total = max(1024, SCATTER_SAMPLES * count);
+    let sx = new Float64Array(total), sy = new Float64Array(total), n = 0, tried = 0;
+    let rnd = seedrandom('density:' + seed), peak = 0;
+    if (density) for (let i = 0; i < 1024; ++i) {
+        let x = x0 + (i % 32 + .5) / 32 * w, y = y0 + ((i >> 5) + .5) / 32 * h;
+        if (inside(x, y)) peak = max(peak, density(x, y));
+    }
+    if (!(peak > 0)) density = null;
+    // quasi-random R2 samples over the box, kept when inside the shape
+    for (; n < total && tried < (n ? total * 100 : 1e3); ++tried) {
+        let [x, y] = r2(tried + seed % 1e4 * 1e4, x0, y0, w, h);
+        if (!inside(x, y) || density && density(x, y) < peak * rnd()) continue;
+        sx[n] = x, sy[n++] = y;
+    }
+    let m = min(count, n);
+    if (!rounds) for (let i = 0, rnd = seedrandom('relax:' + seed); i < m; ++i) {
+        let j = i + (rnd() * (n - i) | 0);
+        [sx[i], sx[j], sy[i], sy[j]] = [sx[j], sx[i], sy[j], sy[i]];
+    }
+    let px = sx.slice(0, m), py = sy.slice(0, m);
+    let size = sqrt(w * h * n / tried / count) || 1;
+    let cols = ceil(w / size) || 1, rows = ceil(h / size) || 1;
+    let col = x => min(cols - 1, (x - x0) / size | 0);
+    let row = y => min(rows - 1, (y - y0) / size | 0);
+    let head = new Int32Array(cols * rows), next = new Int32Array(m);
+    let sums = new Float64Array(m * 3);
+    for (let r = 0; r < rounds; ++r) {
+        head.fill(-1);
+        sums.fill(0);
+        for (let k = 0; k < m; ++k) {
+            let c = col(px[k]) + cols * row(py[k]);
+            next[k] = head[c];
+            head[c] = k;
+        }
+        for (let s = 0; s < n; ++s) {
+            let x = sx[s], y = sy[s];
+            let cx = col(x), cy = row(y), near = -1, best = Infinity;
+            for (let ring = 1; near < 0; ++ring) {
+                for (let j = max(0, cy - ring); j <= min(rows - 1, cy + ring); ++j) {
+                    for (let i = max(0, cx - ring); i <= min(cols - 1, cx + ring); ++i) {
+                        for (let k = head[i + cols * j]; k >= 0; k = next[k]) {
+                            let d = (x - px[k]) ** 2 + (y - py[k]) ** 2;
+                            if (d < best) best = d, near = k;
+                        }
+                    }
+                }
+            }
+            near *= 3;
+            sums[near] += x;
+            sums[near + 1] += y;
+            sums[near + 2]++;
+        }
+        for (let k = 0; k < m; ++k) {
+            let c = sums[k * 3 + 2], x = sums[k * 3] / c, y = sums[k * 3 + 1] / c;
+            if (c && inside(x, y)) px[k] = x, py[k] = y;
+        }
+    }
+    return Array.from(px, (x, k) => [x, py[k]]).sort((a, b) => b[1] - a[1]);
+}
+
+function halfplane(poly, nx, ny, mx, my, ids, q) {
+    let out = [], next = [];
+    for (let a = 0, n = poly.length; a < n; a += 2) {
+        let b = (a + 2) % n, id = ids[a / 2];
+        let sa = nx * (poly[a] - mx) + ny * (poly[a + 1] - my);
+        let sb = nx * (poly[b] - mx) + ny * (poly[b + 1] - my);
+        if (sa <= 0) {
+            out.push(poly[a], poly[a + 1]);
+            next.push(sa < 0 || sb <= 0 ? id : q);
+        }
+        if (sa * sb < 0) {
+            let t = sa / (sa - sb);
+            out.push(poly[a] + (poly[b] - poly[a]) * t, poly[a + 1] + (poly[b + 1] - poly[a + 1]) * t);
+            next.push(sa < 0 ? q : id);
+        }
+    }
+    return [out, next];
+}
+
+function voronoi(px, py, x0, y0, x1, y1, gap) {
+    let m = px.length, w = x1 - x0, h = y1 - y0;
+    let size = sqrt(w * h / m) || 1;
+    let cols = ceil(w / size) || 1, rows = ceil(h / size) || 1;
+    let col = x => clamp((x - x0) / size | 0, 0, cols - 1);
+    let row = y => clamp((y - y0) / size | 0, 0, rows - 1);
+    let head = new Int32Array(cols * rows).fill(-1), next = new Int32Array(m);
+    for (let k = 0; k < m; ++k) {
+        let c = col(px[k]) + cols * row(py[k]);
+        next[k] = head[c];
+        head[c] = k;
+    }
+    return Array.from(px, (x, k) => {
+        let y = py[k];
+        let poly = [x0, y0, x1, y0, x1, y1, x0, y1], ids = [-1, -1, -1, -1];
+        let far = () => {
+            let r = 0;
+            for (let i = 0; i < poly.length; i += 2) {
+                r = max(r, (poly[i] - x) ** 2 + (poly[i + 1] - y) ** 2);
+            }
+            return r;
+        };
+        let limit = far(), cx = col(x), cy = row(y);
+        for (let ring = 0; ring < max(cols, rows); ++ring) {
+            let reach = (ring - 1) * size - gap;
+            if (!poly.length || reach > 0 && reach * reach / 4 > limit) break;
+            for (let j = max(0, cy - ring); j <= min(rows - 1, cy + ring); ++j) {
+                for (let i = max(0, cx - ring); i <= min(cols - 1, cx + ring); ++i) {
+                    if (max(abs(i - cx), abs(j - cy)) != ring) continue;
+                    for (let q = head[i + cols * j]; q >= 0; q = next[q]) {
+                        let ax = px[q] - x, ay = py[q] - y, d = sqrt(ax * ax + ay * ay);
+                        if (q == k || d > gap && (d - gap) ** 2 / 4 > limit) continue;
+                        let s = (d - gap) / (2 * d);
+                        [poly, ids] = halfplane(poly, ax, ay, x + ax * s, y + ay * s, ids, q);
+                        limit = far();
+                    }
+                }
+            }
+        }
+        return [poly, ids];
+    });
+}
+
+function colors(cells) {
+    let kinds = [];
+    cells.forEach(([, ids], k) => {
+        let kind = 1;
+        while (ids.some(q => kinds[q] == kind)) ++kind;
+        kinds[k] = kind;
+    });
+    return kinds;
+}
+
+function clip(p, outer, d = 0) {
+    for (let i = 0, n = outer.length; i < n && p.length; i += 2) {
+        let dx = outer[(i + 2) % n] - outer[i], dy = outer[(i + 3) % n] - outer[i + 1], l = hypot(dx, dy) || 1;
+        let nx = dy / l, ny = -dx / l;
+        p = halfplane(p, nx, ny, outer[i] - nx * d, outer[i + 1] - ny * d, [])[0];
+    }
+    return p;
+}
+
+function shrink(p, d) {
+    if (d > 0 || !p.length) return clip(p, p, d);
+    let [l, t, r, b] = bounds(p), m = r - l + b - t, q = [];
+    for (let i = 0; i < p.length; i += 2) if (hypot(p[i] - p.at(i - 2), p[i + 1] - p.at(i - 1)) > m * 1e-7) q.push(p[i], p[i + 1]);
+    return clip([l - m, t - m, r + m, t - m, r + m, b + m, l - m, b + m], q, d);
+}
+
+function lattice(k, box, view, s, [a, b], pair, half) {
+    let [cx, cy] = centre(box);
+    if (half) cx += s / 2, cy += k == 4 ? s / 2 : 0;
+    let h = k == 4 ? s : s * sqrt(3) / 2, r = s / sqrt(3), out = [];
+    let i0 = floor((view[0] - cx) / s) - 2, i1 = ceil((view[2] - cx) / s) + 2;
+    let j0 = floor((view[1] - cy) / h) - 2, j1 = ceil((view[3] - cy) / h) + 2;
+    let rims = new Map();
+    let add = (x, y, angle, kind, marks) => {
+        let rim = rims.get(angle), p = [];
+        if (!rim) {
+            rims.set(angle, rim = []);
+            for (let m = 0; m < k; ++m) {
+                let a = angle + m * 2 * PI / k;
+                rim.push(r * cos(a), r * sin(a));
+            }
+        }
+        for (let m = 0; m < rim.length; m += 2) {
+            p.push(x + rim[m], y + rim[m + 1]);
+        }
+        out.push([p, [x, y], kind, marks]);
+    };
+    let mod = (v, m) => (v % m + m) % m;
+    a -= floor(a), b = a ? 0 : b - floor(b);
+    for (let j = j0; j <= j1; ++j) {
+        let y = cy + j * h, shift = j & 1 ? k == 4 ? a * s : s / 2 : 0;
+        for (let i = i0; i <= i1; ++i) {
+            let x = cx + i * s + shift;
+            if (k == 4) {
+                let m = y + (i & 1) * b * s, f = (j & 1 ? 1 - a : a) % 1 * s, g = (i & 1 ? 1 - b : b) % 1 * s;
+                let l = x - s / 2, t = m - s / 2, R = l + s, B = t + s;
+                let p = [R, B, ...f ? [l + f, B] : [], l, B, ...g ? [l, t + g] : [], l, t, ...f ? [l + f, t] : [], R, t, ...g ? [R, t + g] : []];
+                if (pair && !a && !b) {
+                    let mk = (u, v) => (u + v) & 1 ? 0 : (u & 1) + 1;
+                    out.push([p, [x, m], 1 + (2 * (i & 1) + 3 * ((i + j) & 1)) % 4, [mk(i + 1, j + 1), mk(i, j + 1), mk(i, j), mk(i + 1, j)]]);
+                }
+                else out.push([p, [x, m], 1]);
+            }
+            else if (k == 6 && pair) {
+                let c = mod(i - (j >> 1) - j, 3);
+                add(x, y, PI / 6, c + 1, [mod(c - 1, 3) + 1, 0, mod(c - 2, 3) + 1, 0, c + 1, 0]);
+            }
+            else if (k == 6) add(x, y, PI / 6, 1);
+            else add(x + s / 2, y + h / 3, -PI / 6, 1), add(x + s, y + h * 2 / 3, PI / 6, 2);
+        }
+    }
+    return out;
+}
+
+// P3 rhombs from Robinson triangles; a rhombus is a triangle and its mirror over BC
+function penrose(box, view, s, half, grow = 1) {
+    let [cx, cy] = centre(box);
+    let far = hypot(max(cx - view[0], view[2] - cx), max(cy - view[1], view[3] - cy)) / cos(PI / 10) + 2 * s;
+    let n = max(0, ceil(log(far / s) / log(PHI))), r = s * PHI ** n, tris = [];
+    for (let i = 0; i < 10; ++i) {
+        let b = (2 * i - 1) * PI / 10, c = (2 * i + 1) * PI / 10;
+        if (i & 1) [b, c] = [c, b];
+        tris.push([0, cx, cy, cx + r * cos(b), cy + r * sin(b), cx + r * cos(c), cy + r * sin(c)]);
+    }
+    let at = (ax, ay, bx, by) => [ax + (bx - ax) / PHI, ay + (by - ay) / PHI];
+    while (n--) tris = tris.flatMap(([t, ax, ay, bx, by, cx, cy]) => {
+        if (!t) {
+            let [px, py] = at(ax, ay, bx, by);
+            return [[0, cx, cy, px, py, bx, by], [1, px, py, cx, cy, ax, ay]];
+        }
+        let [qx, qy] = at(bx, by, ax, ay), [rx, ry] = at(bx, by, cx, cy);
+        return [[1, rx, ry, cx, cy, ax, ay], [1, qx, qy, rx, ry, bx, by], [0, rx, ry, qx, qy, ax, ay]];
+    }).filter(([, ax, ay, bx, by, cx, cy]) => {
+        // its rhombs, grown as the reach test grows them, stay within grow sides of it
+        let m = grow * max(abs(bx - ax), abs(cx - ax), abs(cx - bx), abs(by - ay), abs(cy - ay), abs(cy - by));
+        return min(ax, bx, cx) - m < view[2] && max(ax, bx, cx) + m > view[0]
+            && min(ay, by, cy) - m < view[3] && max(ay, by, cy) + m > view[1];
+    });
+    return tris.filter(([, ax, ay, bx, by, cx, cy]) => (bx - ax) * (cy - ay) > (cx - ax) * (by - ay)).map(([t, ax, ay, bx, by, cx, cy]) => {
+        let p = [ax, ay, bx, by, bx + cx - ax, by + cy - ay, cx, cy];
+        return [p, centre(p), t + 1];
+    });
+}
+
+function conway(op, star, pre) {
+    let letters = [...String(op ?? '').replace(/[^abdegjkmost]/g, '').replace(/[gjmo]/g, c => ({ g: 'ds', j: 'da', m: 'kda', o: 'de' })[c])].reverse();
+    // each step multiplies the pieces, so the first 5 run
+    letters.length = min(letters.length, 5);
+    star = parseFloat(star);
+    if (star > 0 && star < 90) letters.push('*');
+    let fn = (pieces, box, unit) => {
+        if (pre) pieces = pre(pieces);
+        letters.forEach((letter, j) => {
+            pieces = derive(pieces, letter, star * PI / 180);
+            if (box) pieces = pieces.filter(within(box, (letters.length - j) * unit));
+        });
+        return pieces;
+    };
+    let growth = n => {
+        let vef = [n / 2 - 1, n / 2, 1];
+        for (let letter of letters) vef = GROWTH[letter](vef);
+        return vef[2];
+    };
+    return { rim: letters.length + 1, fn, growth };
+}
+
+const GROWTH = {
+    d: ([v, e, f]) => [f, e, v],
+    a: ([v, e, f]) => [e, 2 * e, v + f],
+    t: ([v, e, f]) => [2 * e, 3 * e, v + f],
+    k: ([v, e, f]) => [v + f, 3 * e, 2 * e],
+    e: ([v, e, f]) => [2 * e, 4 * e, v + e + f],
+    b: ([v, e, f]) => [4 * e, 6 * e, v + e + f],
+    s: ([v, e, f]) => [2 * e, 5 * e, v + 2 * e + f],
+    '*': ([v, e, f]) => [3 * e, 4 * e, v + f],
+};
+
+function within([x0, y0, x1, y1], m) {
+    return ([p]) => {
+        let [a, b, c, d] = bounds(p);
+        return a < x1 + m && c > x0 - m && b < y1 + m && d > y0 - m;
+    };
+}
+
+function derive(pieces, letter, angle) {
+    let eps = sqrt(area(pieces[0]?.[0] || [])) * 1e-7 || 1e-9, ids = new Map(), V = [], F = [], top = 0, M = 1;
+    for (let [p, c, kind = 1] of pieces) {
+        let f = [];
+        for (let i = 0; i < p.length; i += 2) {
+            let qx = round(p[i] / eps), qy = round(p[i + 1] / eps), row = ids.get(qx), v = row?.get(qy);
+            if (v === undefined) {
+                if (!row) ids.set(qx, row = new Map());
+                row.set(qy, v = V.length), V.push([p[i], p[i + 1]]);
+            }
+            if (v !== f[f.length - 1]) f.push(v);
+        }
+        if (f[0] === f[f.length - 1]) f.pop();
+        if (f.length > 2) F.push([signed(p) < 0 ? f.reverse() : f, c, kind]), top = max(top, kind), M = max(M, f.length);
+    }
+    let n = V.length, half = new Map(), first = [], out = [];
+    F.forEach(([f], k) => f.forEach((v, i) => {
+        half.set(v * n + f[(i + 1) % f.length], k * M + i);
+        first[v] ??= k * M + i;
+    }));
+    let id = (k, i) => { let f = F[k][0]; return f[(i + f.length) % f.length]; }, at = (k, i) => V[id(k, i)];
+    let rings = first.map((c, v) => {
+        let ring = [], k = c / M | 0, i = c % M, k0 = k;
+        do {
+            ring.push(k * M + i);
+            let e = half.get(id(k, i + 1) * n + v);
+            if (e === undefined) return;
+            k = e / M | 0, i = (e % M + 1) % F[k][0].length;
+        } while (k != k0);
+        return ring;
+    });
+    let emit = (ps, kind) => {
+        let p = [];
+        for (let q of ps) {
+            if (typeof q[0] == 'number') p.push(q[0], q[1]);
+            else for (let r of q) p.push(r[0], r[1]);
+        }
+        out.push([p, centre(p), kind]);
+    };
+    if (letter == 'd') rings.forEach(ring => ring && emit(ring.map(c => F[c / M | 0][1]), 1));
+    else if (letter == 'k') F.forEach(([f, c, kind], k) => f.forEach((v, i) => emit([c, at(k, i), at(k, i + 1)], kind)));
+    else {
+        let pair = (k, i) => {
+            let [cx, cy] = F[k][1], b = PI / F[k][0].length, T = tan(b) ** 2, x = 1 / (2 + 2 * cos(b)), a = 0, r, w = at(k, i);
+            if (letter == 'a') return [w = mix(w, at(k, i + 1), .5), w];
+            if (letter == 't') return [-1, 1].map(d => mix(w, at(k, i + d), 1 / (2 + 2 * sin(PI / (rings[id(k, i)]?.length || 3)))));
+            if (letter == '*') {
+                let ex = cx - w[0], ey = cy - w[1], l = 0;
+                for (let d of [-1, 1]) {
+                    let [ux, uy] = at(k, i + d), dx = w[0] - ux, dy = w[1] - uy, h = hypot(dx, dy), cs = cos(angle) / h, sn = -d * sin(angle) / h;
+                    let rx = cs * dx - sn * dy, ry = cs * dy + sn * dx, det = rx * ey - ex * ry;
+                    let t = det && (ry * dx - rx * dy) / 2 / det, s = det && (ey * dx - ex * dy) / 2 / det;
+                    l += t > 0 && t < 1 && s > 0 ? t / 2 : .5;
+                }
+                return [mix(w, [cx, cy], l), mix(w, at(k, i + 1), .5)];
+            }
+            if (letter == 's') r = sqrt((1 + T - sqrt(3 * T)) / (1 - T + T * T)), a = asin(r * tan(b) / 2);
+            else r = 1 / (1 + tan(b) * (letter == 'b' ? 1 - 2 * x : 1));
+            let spin = j => { let [px, py] = at(k, j); px -= cx, py -= cy; return [cx + (px * cos(a) - py * sin(a)) * r, cy + (px * sin(a) + py * cos(a)) * r]; };
+            return letter == 'b' ? [mix(spin(i), spin(i - 1), x), mix(spin(i), spin(i + 1), x)] : [w = spin(i), w];
+        };
+        let pairs = F.map(([f], k) => f.map((v, i) => pair(k, i))), moved = (k, i) => pairs[k][i % pairs[k].length];
+        F.forEach(([, , kind], k) => emit(pairs[k], kind));
+        rings.forEach(ring => ring && emit(ring.map(c => pairs[c / M | 0][c % M]), top + 1));
+        if ('esb'.includes(letter)) F.forEach(([f], k) => f.forEach((u, i) => {
+            let e = half.get(f[(i + 1) % f.length] * n + u);
+            if (e < k * M) {
+                let g = e / M | 0, j = e % M;
+                let [a, b, c, d] = [moved(k, i)[1], moved(k, i + 1)[0], moved(g, j)[1], moved(g, j + 1)[0]];
+                if (letter != 's') emit([a, b, c, d], top + 2);
+                else if (dist(a, c) < dist(b, d)) emit([a, b, c], top + 2), emit([a, c, d], top + 2);
+                else emit([a, b, d], top + 2), emit([b, c, d], top + 2);
+            }
+        }));
+    }
+    return out;
+}
+
+function delaunay(px, py, box, inside, count, gap) {
+    let [x0, y0, x1, y1] = box, w = x1 - x0, h = y1 - y0;
+    let tris = [];
+    voronoi(px, py, x0 - w, y0 - h, x1 + w, y1 + h, 0).forEach(([, ids], k) => {
+        for (let i = 0, n = ids.length; i < n; ++i) {
+            let a = ids[i], b = ids[(i + 1) % n];
+            if (a < k || b < k) continue;
+            let cx = (px[k] + px[a] + px[b]) / 3, cy = (py[k] + py[a] + py[b]) / 3;
+            if (inside(cx, cy)) tris.push([k, a, b, cx, cy]);
+        }
+    });
+    let d = (p, q) => (px[p] - px[q]) ** 2 + (py[p] - py[q]) ** 2;
+    let twice = (k, a, b) => (px[a] - px[k]) * (py[b] - py[k]) - (px[b] - px[k]) * (py[a] - py[k]);
+    let circum = ([k, a, b]) => d(k, a) * d(a, b) * d(b, k) / (4 * twice(k, a, b) ** 2);
+    let sorted = tris.map(circum).sort((u, v) => u - v);
+    let keep = sorted[sorted.length >> 1] * 9, edge = (p, q) => min(p, q) + ' ' + max(p, q);
+    for (let drop = 1; drop;) {
+        let uses = {};
+        for (let [k, a, b] of tris) for (let e of [edge(k, a), edge(a, b), edge(b, k)]) uses[e] = (uses[e] || 0) + 1;
+        let outer = tris.filter(([k, a, b]) => uses[edge(k, a)] < 2 || uses[edge(a, b)] < 2 || uses[edge(b, k)] < 2);
+        drop = outer.filter(t => circum(t) > keep);
+        if (!drop.length) drop = outer.sort((u, v) => circum(v) - circum(u)).slice(0, max(0, tris.length - count));
+        tris = tris.filter(t => !drop.includes(t));
+        drop = drop.length;
+    }
+    return tris.map(([k, a, b, cx, cy]) => {
+        let tri = [px[k], py[k], px[a], py[a], px[b], py[b]];
+        if (gap) {
+            let la = sqrt(d(a, b)), lb = sqrt(d(b, k)), lc = sqrt(d(k, a)), per = la + lb + lc;
+            tri = inset(tri, (la * px[k] + lb * px[a] + lc * px[b]) / per, (la * py[k] + lb * py[a] + lc * py[b]) / per, gap / 2);
+        }
+        return [tri, [cx, cy]];
+    });
+}
+
+function border(rings, count) {
+    let len = sum(rings.map(perimeter)), a = area(bridge(rings).flat());
+    let s = (len * sqrt(3) / 4 + sqrt(len * len * 3 / 16 + 2 * sqrt(3) * count * a)) / (sqrt(3) * count);
+    let rim = [], sharp = rings.flatMap(ring => ring.filter((p, i) => turn(ring, i) > .5));
+    for (let p of sharp.concat(resample(rings, [round(len / s)]).flat())) if (rim.length < count - 1 && rim.every(q => dist(p, q) > s / 2)) rim.push(p);
+    return rim;
+}
+
+function reacher(box, inside, grow, derived) {
+    let corners = [[box[0], box[1]], [box[2], box[1]], [box[2], box[3]], [box[0], box[3]]].filter(c => inside(...c));
+    let crosses = p => {
+        for (let i = 0; i < p.length; i += 2) {
+            let ax = p[i], ay = p[i + 1], dx = p[(i + 2) % p.length] - ax, dy = p[(i + 3) % p.length] - ay, t0 = 0, t1 = 1;
+            let cut = (d, q) => d < 0 ? t0 = max(t0, q / d) : d > 0 ? t1 = min(t1, q / d) : q < 0 && (t1 = -1);
+            cut(-dx, ax - box[0]), cut(dx, box[2] - ax), cut(-dy, ay - box[1]), cut(dy, box[3] - ay);
+            if (t0 < t1 && inside(ax + dx * (t0 + t1) / 2, ay + dy * (t0 + t1) / 2)) return true;
+        }
+    };
+    return ([p, c]) => reaches(grow == 1 ? p : scale(p, c, grow), c, inside, corners) || derived && crosses(p);
+}
+
+function tiles(make, box, screen, inside, count, grow, derived, half, dots) {
+    let [x0, y0, x1, y1] = bbox(screen, [2 * box[0] - box[2], 2 * box[1] - box[3], 2 * box[2] - box[0], 2 * box[3] - box[1]]), space = (x1 - x0) * (y1 - y0);
+    if (!(space > 0)) return [];
+    let clear = ([p, [x, y]]) => inside(x, y) && p.every((v, i) => i & 1 || inside((v + x) / 2, (p[i + 1] + y) / 2));
+    let test = dots ? clear : reacher(box, inside, grow, derived);
+    let reaching = (s, half) => make(box, [x0, y0, x1, y1], s, half, grow).filter(test);
+    let hi = sqrt(space / count), fit = (size, hi, lo) => {
+        let start = hi, got = size(hi).length;
+        for (let i = 0; i < 30 && got > count; ++i) got = size(hi *= 1.25).length;
+        if (got > count) hi = start;
+        lo ??= hi / 8;
+        for (let i = 0; i < 20; ++i) {
+            let mid = (lo + hi) / 2;
+            if (size(mid).length > count) lo = mid; else hi = mid;
+        }
+        if (!dots) return size(hi);
+        if (!size(hi).length) return Object.assign(size(lo).slice(0, count), { cut: true });
+        let a = lo = hi, n = size(a).length;
+        for (let i = 0; i < 30 && size(hi).length >= n; ++i) hi *= 1.25;
+        for (let i = 0; i < 20; ++i) {
+            let mid = (lo + hi) / 2;
+            if (size(mid).length < n) hi = mid; else lo = mid;
+        }
+        let p = size(1 / (.25 / a + .75 / lo));
+        return p.length == n ? p : size(a);
+    };
+    if (!derived) {
+        let best = fit(reaching, hi), other = half && fit(s => reaching(s, 1), hi), fill = p => p.cut || p.length > count ? 0 : p.length;
+        return other && fill(other) - fill(best) >= min(sqrt(count) / 2, count / 20) ? other : best;
+    }
+    let o = centre(box), [cx, cy] = o, { rim, fn, ratio } = derived;
+    let s = hi * sqrt(ratio * reaching(hi).length / count || 1) / 1.25;
+    let span = [min(x0, cx), min(y0, cy), max(x1, cx), max(y1, cy)];
+    let pieces = fn(make(box, [x0 - rim * s, y0 - rim * s, x1 + rim * s, y1 + rim * s], s), span, s).filter(within(span, 0));
+    let bufs = pieces.map(([p]) => p.slice()), mids = pieces.map(() => [0, 0]);
+    let size = t => {
+        let f = t / s, kept = [];
+        for (let k = 0; k < pieces.length; ++k) {
+            let [p, c] = pieces[k], q = bufs[k], m = mids[k];
+            for (let i = 0; i < p.length; ++i) q[i] = o[i & 1] + (p[i] - o[i & 1]) * f;
+            m[0] = o[0] + (c[0] - o[0]) * f, m[1] = o[1] + (c[1] - o[1]) * f;
+            if (test([q, m])) kept.push(k);
+        }
+        return kept;
+    };
+    return fit(size, s, s).map(k => [bufs[k], mids[k], pieces[k][2]]);
+}
+
+function shake(pieces, n, seed) {
+    let d = n * sqrt(pieces.reduce((s, [p]) => s + area(p), 0) / pieces.length), moved = {};
+    return pieces.map(([p, , kind]) => {
+        let q = [];
+        for (let i = 0; i < p.length; i += 2) {
+            let key = round(p[i] * 1e6) + ',' + round(p[i + 1] * 1e6);
+            if (!moved[key]) {
+                let rnd = seedrandom('jitter:' + seed + ':' + key), a = 2 * PI * rnd(), r = d * sqrt(rnd());
+                moved[key] = [r * cos(a), r * sin(a)];
+            }
+            q.push(p[i] + moved[key][0], p[i + 1] + moved[key][1]);
+        }
+        return [q, centre(q), kind];
+    });
+}
+
+function bend(p, [cx, cy], edge, classes, tol, toShape, marks) {
+    let out = [];
+    for (let i = 0; i < p.length; i += 2) {
+        let ax = p[i], ay = p[i + 1], dx = p[(i + 2) % p.length] - ax, dy = p[(i + 3) % p.length] - ay;
+        let a = atan2(dy, dx), first = a > -1e-9 && a < PI - 1e-9, e;
+        if (marks) e = marks[i / 2] || marks[(i / 2 + 1) % marks.length], first = !!marks[i / 2];
+        else e = floor(((a % PI) + PI) % PI / (PI / classes) + .25) % classes + 1;
+        let table = edge(e, ...toShape(ax + dx / 2, ay + dy / 2));
+        let { f, g, n } = table, idx = table.idx ||= simplify(table, tol);
+        let nx = dy, ny = -dx;
+        if (!marks && nx * (ax - cx) + ny * (ay - cy) < 0) nx = -nx, ny = -ny;
+        for (let m = 0; m < idx.length - 1; ++m) {
+            let j = first ? idx[m] : n - idx[idx.length - 1 - m], o = first ? f[j] : -f[n - j], u = j / n + (first ? g[j] : -g[n - j]);
+            out.push(ax + dx * u + nx * o, ay + dy * u + ny * o);
+        }
+    }
+    return out;
+}
+
+function inset(p, x, y, d, q = p) {
+    let per = 0;
+    for (let i = 0; i < p.length; i += 2) {
+        per += hypot(p[(i + 2) % p.length] - p[i], p[(i + 3) % p.length] - p[i + 1]);
+    }
+    let f = 1 - d * per / 2 / area(p);
+    return f > 0 ? scale(q, [x, y], f) : [];
+}
+
+function nearest(rings) {
+    let segs = [];
+    for (let ring of rings) ring.forEach(([bx, by], i) => {
+        let [ax, ay] = ring.at(i - 1), dx = bx - ax, dy = by - ay;
+        segs.push(ax, ay, dx, dy, 1 / (dx * dx + dy * dy || Infinity));
+    });
+    return (x, y) => {
+        let d = Infinity;
+        for (let i = 0; i < segs.length; i += 5) d = min(d, away(segs, i, x, y));
+        return sqrt(d);
+    };
+}
+
+// the squared distance from (x, y) to the side at a in segs, kept as ax, ay, dx, dy, 1 / length²
+function away(segs, a, x, y) {
+    let ax = x - segs[a], ay = y - segs[a + 1], dx = segs[a + 2], dy = segs[a + 3];
+    let t = (ax * dx + ay * dy) * segs[a + 4];
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    return (ax - dx * t) ** 2 + (ay - dy * t) ** 2;
+}
+
+function bbox(screen, box) {
+    let [x0, y0, x1, y1] = bounds(screen.flat());
+    return [max(box[0], x0), max(box[1], y0), min(box[2], x1), min(box[3], y1)];
+}
+
+// the circles keep clear of every contour, given apart so the bridges between them are no walls
+function pack(rings, box, inside, count, seed, size) {
+    let [x0, y0, x1, y1] = bbox(rings.flat(), box), w = x1 - x0, h = y1 - y0;
+    let total = max(4096, 32 * count), xs = [], ys = [], heap = [], key = [], out = [];
+    let k = seed % 1e4 * 1e4, start = k;
+    for (; xs.length < total && k < start + total * 50; ++k) {
+        let [x, y] = r2(k, x0, y0, w, h);
+        if (inside(x, y)) heap.push(xs.length), key.push(Infinity), xs.push(x), ys.push(y);
+    }
+    let avg = sqrt(w * h * xs.length / (k - start) / count / PI) || 1;
+    let caps = xs.map((x, i) => avg * size(x, ys[i])), cap = caps.reduce((a, b) => max(a, b), 0);
+    if (!(cap > 0)) return out;
+    cap = max(cap, avg);
+    let cols = ceil(w / cap) + 1, rows = ceil(h / cap) + 1, sides = lists(cols * rows);
+    let edge = [], segs = [], cell = (v, o) => floor((v - o) / cap);
+    let span = 3 * avg, gx = ceil(w / span) + 1, gy = ceil(h / span) + 1, grid = lists(gx * gy);
+    let slot = (v, o, n) => clamp(floor((v - o) / span), 0, n - 1);
+    let under = (x, y, r, fn) => {
+        for (let j = slot(y - r, y0, gy), j1 = slot(y + r, y0, gy); j <= j1; ++j) {
+            for (let m = slot(x - r, x0, gx), m1 = slot(x + r, x0, gx); m <= m1; ++m) fn(grid[m + gx * j]);
+        }
+    };
+    for (let ring of rings) ring.forEach(([bx, by], a) => {
+        let [ax, ay] = ring.at(a - 1), dx = bx - ax, dy = by - ay;
+        for (let j = max(0, cell(min(ay, by), y0) - 2); j <= min(rows - 1, cell(max(ay, by), y0) + 2); ++j) {
+            for (let m = max(0, cell(min(ax, bx), x0) - 2); m <= min(cols - 1, cell(max(ax, bx), x0) + 2); ++m) sides[m + cols * j].push(segs.length);
+        }
+        segs.push(ax, ay, dx, dy, 1 / (dx * dx + dy * dy || Infinity));
+    });
+    let room = i => {
+        let x = xs[i], y = ys[i], r = edge[i];
+        if (r === undefined) {
+            r = max(0, min(caps[i], x - box[0], box[2] - x, y - box[1], box[3] - y)) ** 2;
+            for (let a of sides[cell(x, x0) + cols * cell(y, y0)]) r = min(r, away(segs, a, x, y));
+            r = edge[i] = sqrt(r);
+        }
+        under(x, y, r, circles => {
+            if (r > 0) for (let [cx, cy, cr] of circles) r = min(r, sqrt((x - cx) ** 2 + (y - cy) ** 2) - cr);
+        });
+        return r;
+    };
+    while (out.length < count && heap.length) {
+        let i = heap[0], r = key[i] = room(i);
+        if (r > 0 && r >= max(key[heap[1]] ?? 0, key[heap[2]] ?? 0)) {
+            let x = xs[i], y = ys[i];
+            out.push([x, y, r]);
+            under(x, y, r, circles => circles.push([x, y, r]));
+            r = 0;
+        }
+        if (!(r > 0)) heap[0] = heap.at(-1), heap.pop();
+        for (let a = 0, b; (b = 2 * a + 1) < heap.length; a = b) {
+            if (b + 1 < heap.length && key[heap[b + 1]] > key[heap[b]]) ++b;
+            if (key[heap[a]] >= key[heap[b]]) break;
+            [heap[a], heap[b]] = [heap[b], heap[a]];
+        }
+    }
+    return out;
+}
+
+function slice(screen, box, inside, count, seed, gap, spread, density) {
+    let [x0, y0, x1, y1] = bbox(screen, box);
+    let rnd = seedrandom('slice:' + seed);
+    let N = 64, w = (x1 - x0) / N, h = (y1 - y0) / N;
+    let grid = density && Array.from({ length: N * N }, (_, i) => max(0, density(x0 + (i % N + .5) * w, y0 + ((i / N | 0) + .5) * h)));
+    if (grid && !grid.some(v => v > 0)) density = null;
+    let weight = p => {
+        if (!density) return area(p);
+        let [l, t, r, b] = bounds(p), acc = 0, n = 0;
+        for (let j = max(0, ceil((t - y0) / h - .5)); j <= min(N - 1, (b - y0) / h - .5); ++j) {
+            for (let i = max(0, ceil((l - x0) / w - .5)); i <= min(N - 1, (r - x0) / w - .5); ++i) {
+                if (contains(p, x0 + (i + .5) * w, y0 + (j + .5) * h)) acc += grid[i + N * j], ++n;
+            }
+        }
+        return area(p) * (n ? acc / n : max(0, density(...centre(p))));
+    };
+    let pieces = [[x0, y0, x1, y0, x1, y1, x0, y1]], weights = pieces.map(weight), total = weights[0];
+    for (let tries = 0; pieces.length < count && tries < count * 4 && total > 0; ++tries) {
+        let run = 0, pick = rnd() * total, k = 0;
+        while (k < pieces.length - 1 && (run += weights[k]) < pick) ++k;
+        let p = pieces[k], [cx, cy] = centre(p);
+        let [l, t, r, b] = bounds(p);
+        let a = (r - l > b - t ? 0 : PI / 2) + (rnd() - .5) * spread;
+        let nx = cos(a), ny = sin(a), shift = (rnd() - .5) * .5 * sqrt(area(p));
+        let mx = cx + nx * shift, my = cy + ny * shift, g = max(0, gap) / 2;
+        let parts = [1, -1].map(d => halfplane(p, d * nx, d * ny, mx - d * nx * g, my - d * ny * g, [])[0])
+            .filter(p => p.length && reaches(p, centre(p), inside, screen));
+        if (!parts.length) continue;
+        let sizes = parts.map(weight);
+        total += sum(sizes) - weights[k];
+        pieces.splice(k, 1, ...parts);
+        weights.splice(k, 1, ...sizes);
+    }
+    return pieces.map(p => [gap < 0 ? shrink(p, gap / 2) : p, centre(p)]).sort((a, b) => a[1][1] - b[1][1] || a[1][0] - b[1][0]);
+}
+
+function centre(p) {
+    let x = 0, y = 0, n = p.length / 2;
+    for (let i = 0; i < p.length; i += 2) x += p[i], y += p[i + 1];
+    return [x / n, y / n];
+}
+
+function reaches(p, [x, y], inside, points) {
+    if (inside(x, y)) return true;
+    for (let i = 0; i < p.length; i += 2) if (inside(p[i], p[i + 1])) return true;
+    return points.some(([px, py]) => contains(p, px, py));
+}
+
+function contains(p, x, y) {
+    let sign = 0;
+    for (let i = 0; i < p.length; i += 2) {
+        let j = (i + 2) % p.length;
+        let s = (p[j] - p[i]) * (y - p[i + 1]) - (p[j + 1] - p[i + 1]) * (x - p[i]);
+        if (s && sign && (s > 0) != (sign > 0)) return false;
+        if (s) sign = s;
+    }
+    return true;
+}
+
+function edges(props, odd, seed, n = 256) {
+    let noise = noiseOf(props);
+    let context = Object.assign(Object.create(defaultContext), {
+        noise: (t, a, b, octave, scale, from, to, r = 1) =>
+            noise(t, a + context.x * r / 2, b + context.y * r / 2, octave, scale, from, to, r)
+    }, props), cache = {};
+    let seen = new Set(['edge', 'slide', 'e', 't']);
+    let reads = text => /\b[xy]\b|random|noise/.test(text) || (String(text).match(/[\w$-]+/g) || []).some(name =>
+        !seen.has(name) && Object.hasOwn(props, name) && seen.add(name) && reads(props[name]));
+    let local = reads(props.edge) || reads(props.slide || '');
+    return (e, x, y) => {
+        let key = local ? e + ',' + x.toFixed(4) + ',' + y.toFixed(4) : e;
+        if (cache[key]) return cache[key];
+        let rnd = seedrandom('edge:' + seed + ':' + key), draws = [], k;
+        Object.assign(context, { e, x, y, random: randomOf(() => draws[k++] ??= rnd()) });
+        let table = text => {
+            let f = [];
+            for (let j = 0; j <= n; ++j) {
+                k = 0;
+                context.t = context['θ'] = 2 * PI * j / n;
+                f.push(text ? Number(calc(text, context)) || 0 : 0);
+            }
+            f = f.map((v, j) => v - f[0] - (f[n] - f[0]) * j / n);
+            return odd ? f.map((v, j) => (v - f[n - j]) / 2) : f;
+        };
+        return cache[key] = { f: table(props.edge), g: table(props.slide), n };
+    };
+}
+
+function simplify({ f, g, n }, tol) {
+    let u = k => k / n + g[k];
+    return keepers(n, (i, j) => {
+        let dx = u(j) - u(i), dy = f[j] - f[i], len = hypot(dx, dy) || 1e-9;
+        return k => abs((u(k) - u(i)) * dy - (f[k] - f[i]) * dx) / len;
+    }, tol);
+}
+
+export {
+    scatter, voronoi, colors, shrink, lattice, penrose, conway, delaunay, border, reacher, tiles, shake, bend,
+    inset, nearest, pack, slice, centre, contains, edges, noiseOf, PHI,
+};
