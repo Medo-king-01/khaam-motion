@@ -9,10 +9,10 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 VENDOR = [
-    'anything2explainer', 'awesome-canvas', 'awesome-lottie', 'css-doodle',
-    'drei', 'gl-transitions', 'gsap', 'helios', 'html-video', 'hyperframes', 'lottie-web',
-    'lucide-icons', 'magicui', 'mojs', 'motion-canvas', 'particles.js', 'recharts',
-    'simple-icons', 'tabler-icons', 'three.js', 'tsparticles',
+    'alansari-motion-library', 'anything2explainer', 'awesome-canvas', 'awesome-lottie',
+    'css-doodle', 'drei', 'gl-transitions', 'gsap', 'helios', 'html-video', 'hyperframes',
+    'lottie-web', 'lucide-icons', 'magicui', 'mojs', 'motion-canvas', 'particles.js',
+    'recharts', 'simple-icons', 'tabler-icons', 'three.js', 'tsparticles',
 ]
 PROVENANCE = [
     'KHAAM-INTEGRATION.md', 'README.md', 'UPSTREAM_LICENSE', 'UPSTREAM_README.md',
@@ -43,7 +43,7 @@ class IntegrationsBuiltInTest(unittest.TestCase):
 
     def test_khaam_integration_notes_record_snapshot_commits(self):
         notes = sorted((ROOT / 'integrations').glob('*/KHAAM-INTEGRATION.md'))
-        self.assertGreaterEqual(len(notes), 21)
+        self.assertGreaterEqual(len(notes), 22)
         for note in notes:
             self.assertIn('Snapshot commit', note.read_text(encoding='utf-8'), str(note))
 

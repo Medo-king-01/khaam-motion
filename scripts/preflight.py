@@ -62,14 +62,14 @@ else:
 try: _major=int(checks['node']['version'].lstrip('v').split('.')[0]) if checks['node'].get('available') else 0
 except ValueError: _major=0
 r['hyperframes']={'node_major':_major,'node_ok':_major>=22,'minimum_node':22,'pinned':'hyperframes@0.9.88','note':'Runs through npx; the first render downloads the CLI and its Chrome.'}
-# Built-in vendored integrations: 21 upstream snapshots that are part of the skill, copied on every install.
+# Built-in vendored integrations: 22 upstream snapshots that are part of the skill, copied on every install.
 # Read-only presence inventory; a missing entry means an incomplete checkout of the skill itself.
 # integrations/creative/ is NOT one of them: it is Khaam's own installer/manifest for the downloaded-on-demand
 # stack (Lemo-Opuscar, Blender MCP, PixelFX, the audio environments) and is reported under optional_creative_tools.
-_INTEGRATIONS=['anything2explainer','awesome-canvas','awesome-lottie','css-doodle','drei','gl-transitions','gsap','helios','html-video','hyperframes','lottie-web','lucide-icons','magicui','mojs','motion-canvas','particles.js','recharts','simple-icons','tabler-icons','three.js','tsparticles']
+_INTEGRATIONS=['alansari-motion-library','anything2explainer','awesome-canvas','awesome-lottie','css-doodle','drei','gl-transitions','gsap','helios','html-video','hyperframes','lottie-web','lucide-icons','magicui','mojs','motion-canvas','particles.js','recharts','simple-icons','tabler-icons','three.js','tsparticles']
 _int_root=SKILL/'integrations'
 _missing=[d for d in _INTEGRATIONS if not (_int_root/d).is_dir()]
-r['integrations_vendored']={'expected':len(_INTEGRATIONS),'present':len(_INTEGRATIONS)-len(_missing),'missing':_missing,'complete':not _missing,'on_demand_installer_present':(_int_root/'creative').is_dir(),'note':'The 21 vendored upstream snapshots are part of the skill and are copied on every install (only caches, node_modules and bytecode are excluded). Presence only, not a runtime/render test; each snapshot keeps its own licence. integrations/creative/ is the on-demand installer, tracked but not a vendored snapshot.'}
+r['integrations_vendored']={'expected':len(_INTEGRATIONS),'present':len(_INTEGRATIONS)-len(_missing),'missing':_missing,'complete':not _missing,'on_demand_installer_present':(_int_root/'creative').is_dir(),'note':'The 22 vendored upstream snapshots are part of the skill and are copied on every install (only caches, node_modules and bytecode are excluded). Presence only, not a runtime/render test; each snapshot keeps its own licence. integrations/creative/ is the on-demand installer, tracked but not a vendored snapshot.'}
 # Downloaded-on-demand creative stack in this skill checkout (integrations/creative/ via setup.py; never bundled). Presence is not a runtime or render test.
 _creative = SKILL / 'integrations' / 'creative'
 _creative_cache = SKILL / '.cache' / 'creative-tools'
