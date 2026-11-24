@@ -1,4 +1,8 @@
-# Setup and optional integrations
+# Setup and built-in integrations
+
+## Built-in integrations (part of the skill)
+The vendored snapshots under `integrations/` (alansari-motion-library, anything2explainer, motion-canvas, html-video, helios, awesome-canvas, mojs, gsap, particles.js, three.js, drei, tsparticles, simple-icons, lucide-icons, tabler-icons, lottie-web, awesome-lottie, css-doodle, gl-transitions, recharts, magicui, hyperframes) are part of the skill, not optional add-ons: they ship in the repository, are copied on every install (only caches, `node_modules` and bytecode are excluded) and are inventoried read-only by `scripts/preflight.py` under `integrations_vendored`. Select what the brief needs; availability is not a licence to use everything. Keep each snapshot's licence and provenance intact (`KHAAM-INTEGRATION.md`, `UPSTREAM_LICENSE`, per-snapshot LICENSE files). Licensing note for the Alansari snapshot: `lib/` sits on the owner's written permission, `sfx/` is CC0 per the upstream credits, and `lut/` carries no upstream licence at all — private internal use only, never redistributed. Only the downloaded-on-demand stack remains optional and is never fetched without explicit approval: `integrations/creative/` (Lemo-Opuscar, PixelFX, Blender MCP, React Three Rapier/Postprocessing, librosa audio environments via `integrations/creative/setup.py`), plus external services (ElevenLabs, yt-dlp) and fonts.
+
 
 ## Core environment
 Run `scripts/preflight.py` from the project using a verified Python 3.9+ interpreter (on a Mac, the tools' Python: `reference/mac.md`). This is a stdlib-only, read-only check; Node/Chromium/FFmpeg and optional audio packages are reported independently. A missing optional tool is not an error that requires installing everything.
@@ -19,7 +23,7 @@ Give a short explanation of the selected workflow and ask only for missing essen
 
 For narrated work, time production only on the final approved narration: the user's recording/file, or Eleven v4 takes generated with `scripts/gen_tts_elevenlabs.py` after approval (see `reference/voiceover.md`); guide tracks need explicit approval. A particular paid TTS service is not required. Follow project-specific approval waivers and constraints rather than always restarting approval gates.
 
-## Optional connections
+## Optional external connections (ElevenLabs, MCP, Firecrawl)
 Read `reference/mcp-setup.md` only to configure a chosen integration. Firecrawl can support research, Playwright browser automation can acquire permitted assets, and stock/Lottie services may help when needed. Use native tools available to the agent; do not assume every runtime exposes these MCPs. Authentication is user-specific and is never part of a redistributed package.
 
 New SFX generation uses ElevenLabs’ API; read `reference/elevenlabs-sfx.md`. Narration (Eleven v4 text to speech with a voice designed for the user or cloned from the user's sample, interview dialogue) uses the same key through `scripts/gen_tts_elevenlabs.py`; read `reference/voiceover.md`. Each user supplies their own securely configured key and approves credit-consuming requests. Reference analysis and mixing remain local with optional CLAP/PANNs and experimental/manual CoNeTTE. Existing licence-clear sounds and procedural recipes remain fallbacks; no local generative audio model is required. External source discovery/downloads are distinct from hosted inference and still require source/licence checks and any needed user authorization.

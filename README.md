@@ -1,4 +1,4 @@
-# «موشن خام» — Khaam Motion v1.7
+# «موشن خام» — Khaam Motion v1.7.1
 
 أدوات وتعليمات لصناعة فيديوهات موشن جرافيك عربية: الفكرة، والتصميم، والحركة، والصوت، والرندر إلى MP4. صُممت النسخة الأصلية لـ Claude؛ أُضيفت طبقة توافق للوكلاء الآخرين في هذه النسخة الخاصة. قدرة كل وكيل تعتمد على صلاحياته وأدواته، ولا يوجد ضمان للتوافق مع جميع الوكلاء. اقرأ `reference/agent-compatibility.md`.
 
@@ -24,7 +24,8 @@
 - **ستايلك أنت:** يبني لك ستايل من مراجعك ويحفظه. وفيه 9 أمثلة للإلهام (`styles/`).
 - **نظام فيديوهات الشرح:** هيكل السكربت، والكابشن، والانتقالات، وخاتمة «علّق الكلمة» أو «الرابط في البايو» (`reference/explainer-reel-system.md`).
 - **anything2explainer مدمج (استخدام خاص):** خط إنتاج topic→narrated explainer بـ Remotion (بحث، سرد، TTS timeline، storyboard، QC، render) في `integrations/anything2explainer/` مع مرجع `reference/anything2explainer.md` (ترخيص PolyForm NC).
-- **تكاملات Canvas/Motion/3D/Particles إضافية (استخدام خاص):** `motion-canvas`, `html-video`, `helios`, `awesome-canvas`, `mojs`, `gsap`, `particles.js`, `three.js`, `drei`, `tsparticles` داخل `integrations/` مع مرجع `reference/canvas-motion-integrations.md` (انتبه: GSAP بترخيص Standard خاص).
+- **مكتبة الحركات Alansari Motion Library مدمجة (استخدام خاص):** ١٠٠٠ فكرة حركة مرقّمة (M-001..M-1000) بملفات عربية/إنجليزية، ومؤثرات CC0 كمرجع صوتي، و١٠ ملفات LUT داخل `integrations/alansari-motion-library/` مع مرجع `reference/alansari-motion-library.md` وأداة `scripts/motion_sound.py` (الصوت الحقيقي للأشياء المعروضة يحكم على «الصوت المقترح»، والصوت v2 مع الفحص بالمكس كما هو). لا نسخ للخارج مطلقًا.
+- **تكاملات Canvas/Motion/3D/Particles مدمجة (استخدام خاص، جزء من المهارة):** `motion-canvas`, `html-video`, `helios`, `awesome-canvas`, `mojs`, `gsap`, `particles.js`, `three.js`, `drei`, `tsparticles` داخل `integrations/` مع مرجع `reference/canvas-motion-integrations.md` (انتبه: GSAP بترخيص Standard خاص).
 - **مكتبات أيقونات وأصول SVG مدمجة (استخدام خاص):** `simple-icons` (شعارات marcas/منصات، CC0)، و`lucide` (أيقونات UI عامة، ISC)، و`tabler-icons` (تغطية واسعة outline+filled، MIT) داخل `integrations/` مع مرجع `reference/icon-asset-integrations.md` (انتبه لحقوق العلامات التجارية عند استخدام شعارات).
 - **Lottie/After Effects JSON مدمج (استخدام خاص):** `lottie-web` لتشغيل رسوم Lottie في الويب/Remotion داخل `integrations/lottie-web/` مع مرجع `reference/lottie-integrations.md` (تحقق من حقوق ملفات Lottie JSON نفسها).
 - **Generative CSS / Shader resources:** `css-doodle` (MIT) مدمج في `integrations/css-doodle/` لأنماط CSS توليدية، و`The Book of Shaders` مُوثّق كمرجع خارجي فقط (All rights reserved - لا نسخ/استضافة) في `reference/generative-css-and-shader-resources.md`.
@@ -58,19 +59,21 @@
 | `styles/` | بناء ستايلك، وأمثلة للإلهام |
 | `scripts/` | أدوات: الفحص، والتثبيت في مجلدك، والمفتاح، والبلاغ، والخطوط، والأصوات، والمعاينة |
 | `templates/` | قالب HyperFrames العربي وقطع النص والقصة وطقم المشاهد، وقالب الرندر، وملفات الذاكرة، وملف الذوق، وخطة الحكاية، وقالب الكابشن، وقوالب Remotion الجاهزة (`overlay`, `code-hike`, `tiktok-captions`) |
-| `integrations/` | تكاملات منسوخة للاستخدام الخاص (`anything2explainer`, `motion-canvas`, `html-video`, `helios`, `awesome-canvas`, `mojs`, `gsap`, `particles.js`, `three.js`, `drei`, `tsparticles`, `simple-icons`, `lucide-icons`, `tabler-icons`, `lottie-web`, `awesome-lottie`, `css-doodle`, `gl-transitions`, `recharts`, `magicui`, `hyperframes`) مع إشعارات الترخيص |
+| `integrations/` | **جزء إلزامي من المهارة**: مكتبات ولقطات مصدر مثبتة (`alansari-motion-library`, `anything2explainer`, `motion-canvas`, `html-video`, `helios`, `awesome-canvas`, `mojs`, `gsap`, `particles.js`, `three.js`, `drei`, `tsparticles`, `simple-icons`, `lucide-icons`, `tabler-icons`, `lottie-web`, `awesome-lottie`, `css-doodle`, `gl-transitions`, `recharts`, `magicui`, `hyperframes`) تُنسخ مع كل تثبيت ويفحصها الفحص المسبق (`integrations_vendored`)، استخدام خاص، مع إشعارات الترخيص |
 | `CHANGELOG.md` | الإصدارات |
 | `LICENSE.md` | الرخصة: مجانية للاستعمال، وممنوع إعادة النشر |
 
 ---
 ## English
-**Khaam Motion v1.7** by Khaam (@khaam.hq), edited by Rashed Alhazmi. Originally a Claude skill for Arabic-first motion graphics. This private copy includes an agent-neutral compatibility guide (`reference/agent-compatibility.md`); availability depends on each host’s capabilities and permissions.
+**Khaam Motion v1.7.1** by Khaam (@khaam.hq), edited by Rashed Alhazmi. Originally a Claude skill for Arabic-first motion graphics. This private copy includes an agent-neutral compatibility guide (`reference/agent-compatibility.md`); availability depends on each host’s capabilities and permissions.
 
 What's in it:
 - **Workspace.** Claude installs the skill into the user's own folder, never globally (a «مونتاجي» folder on the Desktop when the chat has no folder of its own), and builds خام / إلهام / جاهز there, so the user never makes or moves files by hand.
 - **Memory.** A session handoff the workspace loads in every chat lets work pick up across chats («كمّل»).
 - **Taste.** It is learned from references, with an honest first-time line.
 - **Engines by job.** HyperFrames is the default engine (a pinned Arabic starter); Remotion is used on demand for 3D. FFmpeg, yt-dlp for references, and ElevenLabs complete the toolset.
+- **Built-in integrations (private use).** Everything under `integrations/` is part of the skill — copied on every install and inventoried by `scripts/preflight.py` under `integrations_vendored` — not an optional add-on. Pick per the brief; licenses and provenance are preserved.
+- **Alansari Motion Library (private use).** Vendored snapshot of the 1000-idea motion library (Arabic/English files, M-001..M-1000), 28 CC0 SX sounds and 10 LUT previews in `integrations/alansari-motion-library/`, with `reference/alansari-motion-library.md` and `scripts/motion_sound.py`; `lib/` under the owner's written permission, `sfx/` CC0, `lut/` no upstream licence (private internal use only) — nothing is redistributed, and sound v2 (real recordings) governs over upstream sound hints.
 - **Remotion starters (private use).** Vendored templates in `templates/remotion/` for overlay, code-hike, and TikTok-style captions, plus `scripts/use_remotion_template.py` and Remotion capability/reference docs; Remotion License applies.
 - **Icon/SVG asset libraries (private use).** Vendored snapshots of `simple-icons` (CC0 brand logos), `lucide` (ISC UI icons), and `tabler-icons` (MIT wide icon set) in `integrations/`, with `reference/icon-asset-integrations.md`; respect trademark/context rules for brand marks.
 - **Lottie playback/discovery (private use).** Vendored `lottie-web` (MIT, selective) and `awesome-lottie` (no clear upstream license; vendored at owner's explicit request, private-use only, do not redistribute) in `integrations/`, with `reference/lottie-integrations.md`; verify rights for embedded Lottie JSON assets.
