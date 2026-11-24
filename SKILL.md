@@ -21,6 +21,7 @@ For every host, first read `reference/agent-compatibility.md`. Its capability ch
 - For Lottie/AE JSON animation playback (lottie-web) and Lottie resource notes, use `reference/lottie-integrations.md` and `integrations/lottie-web/`; preserve licenses and verify rights of embedded Lottie animation assets.
 - For generative CSS patterns (css-doodle, MIT snapshot) and shader-learning external reference (The Book of Shaders, external only / not vendored), use `reference/generative-css-and-shader-resources.md` and `integrations/css-doodle/`; preserve licenses and do not copy The Book of Shaders content.
 - For GL transitions, React charting, and animated UI component registries (gl-transitions, recharts, magicui), use `reference/react-ui-charts-transitions-integrations.md` and `integrations/`; preserve licenses, check gl-transitions per-transition headers, and install deps in target projects.
+- For HyperFrames upstream registry/components/examples and shader-transitions (Apache-2.0, Batch 1), use `reference/hyperframes-registry.md`, `reference/hyperframes-craft-notes.md`, and `integrations/hyperframes/`; adapt LTR components to Khaam Arabic/RTL rules and preserve provenance.
 
 ## 0. First run and language
 - **When onboarding runs:** the user says «ابدأ» / «ثبّت المهارة» / start / install, attaches this skill's folder or ZIP, or has no workspace yet. Follow the protocol at the end of `START-HERE.md`:
@@ -175,7 +176,7 @@ Production rules behind the gates:
 ## 4. Engines and tools, by job
 | Job | Tool |
 |---|---|
-| Most new videos: kinetic type, captions, explainers, told stories, lists, titles, overlays | **HyperFrames** (`reference/hyperframes.md`; `templates/hyperframes/`; `npx --yes hyperframes@0.8.225`; Node 22+) |
+| Most new videos: kinetic type, captions, explainers, told stories, lists, titles, overlays | **HyperFrames** (`reference/hyperframes.md`; `templates/hyperframes/`; `npx --yes hyperframes@0.9.88`; Node 22+) |
 | Projects made before 1.6, the explainer kit (`templates/render/lib/kit.js`), or no Node 22+ | the canvas renderer (`templates/render/`) |
 | Real 3D, a data-driven or templated series, batch variants | **Remotion**, only when needed (`reference/remotion.md`; licence note for companies of 4+) |
 | References from a link | **yt-dlp**, for study only (`reference/reference-and-delivery.md` §13) |
@@ -282,6 +283,8 @@ Production rules behind the gates:
 | `reference/lottie-integrations.md` | lottie-web (MIT) and awesome-lottie (no clear upstream license; private-use-only, owner-requested) snapshots/references for Lottie playback and discovery |
 | `reference/generative-css-and-shader-resources.md` | css-doodle (MIT, vendored) for generative CSS patterns; The Book of Shaders as external-only reference (all rights reserved, not vendored) |
 | `reference/react-ui-charts-transitions-integrations.md` | gl-transitions, recharts, magicui snapshots (private use): GL transitions, React charts, animated UI registry; source/reference only |
+| `reference/hyperframes-registry.md` | HyperFrames upstream registry components/examples/all blocks + shader-transitions (Apache-2.0, Batch 1+2+3): discovery, mount contract, Arabic/RTL adaptation |
+| `reference/hyperframes-craft-notes.md` | Khaam-adapted HyperFrames craft reminders (motion/format/look/spec/review), Apache-2.0 upstream provenance |
 | `reference/portability.md` | First setup, path/config resolution, fresh machines and OS differences |
 | `reference/mac.md` | **A Mac (1.7.1):** the tools with no Homebrew and no password (`scripts/mac_tools.sh`), Apple's install window, the privacy window and the way back, a folder instead of a ZIP, the hidden folder |
 | `reference/setup-and-integrations.md` | Prerequisites, optional integrations, keys and browser/tool setup |

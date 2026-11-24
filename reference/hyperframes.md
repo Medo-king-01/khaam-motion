@@ -16,10 +16,10 @@
 
 ## Setup
 - **Needs Node 22 or newer.** Preflight reports it under `hyperframes.node_ok`. When it's false, offer to update Node, or use the canvas renderer.
-- **Nothing is installed ahead of time.** Every command runs through `npx --yes hyperframes@0.8.225 …`:
+- **Nothing is installed ahead of time.** Every command runs through `npx --yes hyperframes@0.9.88 …`:
   - **Pinned version:** that is the version we tested with Arabic. Don't float to `latest`, because the framework changes often before 1.0.
   - **First use:** the first render downloads the CLI and its own Chrome (about 150 MB, once).
-  - **Telemetry:** 0.8.225 never asks. On its first command it prints once that it collects anonymous usage data (no file paths or video content) and goes on collecting. Tell the user once, in one line, before the first video: as one line of the Gate A plan, off by default («أداة الرسم ترسل بيانات استخدام مجهولة، بدون ملفاتك: بوقفها لك إلا إذا تبيها»), so it never adds a question to a flow that limits them (a course card asks three at most). Unless they keep it, run `npx --yes hyperframes@0.8.225 telemetry disable` (setting `HYPERFRAMES_NO_TELEMETRY=1` also works). Record the answer in `onboarding.json` as `hyperframes_telemetry` (on|off) and never ask again.
+  - **Telemetry:** 0.9.88 never asks. On its first command it prints once that it collects anonymous usage data (no file paths or video content) and goes on collecting. Tell the user once, in one line, before the first video: as one line of the Gate A plan, off by default («أداة الرسم ترسل بيانات استخدام مجهولة، بدون ملفاتك: بوقفها لك إلا إذا تبيها»), so it never adds a question to a flow that limits them (a course card asks three at most). Unless they keep it, run `npx --yes hyperframes@0.9.88 telemetry disable` (setting `HYPERFRAMES_NO_TELEMETRY=1` also works). Record the answer in `onboarding.json` as `hyperframes_telemetry` (on|off) and never ask again.
   - **Never `publish`:** it uploads to HeyGen's hosting, so it needs the user's explicit OK.
 
 ## Start a video
@@ -76,7 +76,7 @@
 3. **Whole words only.** Never split Arabic into letters (`split("")`, SplitText chars): the letters detach. If letters truly must move, use GSAP's `splitArabicText()` helper, which keeps the joins, and test it first.
 4. **Arabic fonts:** none ship with HyperFrames. Declare each with `@font-face` from `assets/fonts/`.
 5. **IBM Plex Sans Arabic draws «تى» like «ق»** («حتى» → «حق»). Avoid it for headlines, or put a tatweel in the word («حتـى»). Read every «تى» at full size.
-6. **Catalog blocks** (`npx --yes hyperframes@0.8.225 catalog --json`, then `add <name>`) are built left to right. Each one needs:
+6. **Catalog blocks** (`npx --yes hyperframes@0.9.88 catalog --json`, then `add <name>`) are built left to right. Each one needs:
    - `dir="rtl"`;
    - motion from the right (`transform-origin: 100% 50%`);
    - our Arabic font instead of theirs;
@@ -88,10 +88,10 @@
 ## Check, look, render
 Run everything from the video folder. A full render goes through the user's normal flow (no lock needed on a personal machine).
 ```
-npx --yes hyperframes@0.8.225 check                                    # layout, motion, contrast, craft, audio
-npx --yes hyperframes@0.8.225 snapshot --at 0,1.5,3                    # stills + contact sheet: LOOK at the Arabic
-npx --yes hyperframes@0.8.225 render --output "renders/previews/<name> - Preview v1.mp4"
-npx --yes hyperframes@0.8.225 render --output "renders/final/<name> v1.mp4"
+npx --yes hyperframes@0.9.88 check                                    # layout, motion, contrast, craft, audio
+npx --yes hyperframes@0.9.88 snapshot --at 0,1.5,3                    # stills + contact sheet: LOOK at the Arabic
+npx --yes hyperframes@0.9.88 render --output "renders/previews/<name> - Preview v1.mp4"
+npx --yes hyperframes@0.9.88 render --output "renders/final/<name> v1.mp4"
 ```
 - **Read the `runtime` section of `check`'s report first** (the console and the report JSON): a composition script that throws (a missing kit file, a wrong selector) shows only there, and the craft warning `check` prints at the end («dead_stretch») is its echo.
 - Read every warning `check` prints. Four that are known:
@@ -101,7 +101,7 @@ npx --yes hyperframes@0.8.225 render --output "renders/final/<name> v1.mp4"
   - contrast errors on layers hidden at that moment by `clip-path` or `autoAlpha: 0` are false: confirm with a snapshot at that time.
 - Scene-kit layers are wider than the frame so the camera can move; since 1.7.0 of 11-12 the stage marks them `data-layout-allow-overflow`, so "container_overflow" no longer shows for them (a project with an older kit may still list it: not a fault).
 - HyperFrames moves a composition root's `id` to `data-hf-authored-id`: only the composition's own script finds it by id. Hand the element to a helper (`document.getElementById("…")`) rather than a selector; the kit's own `"#id"` lookups fall back to the attribute.
-- The review preview renders fast with `render --quality draft` (full size; 0.8.225 has no reduced-size option). The final uses the default quality.
+- The review preview renders fast with `render --quality draft` (full size; 0.9.88 has no reduced-size option). The final uses the default quality.
 - Open the snapshot contact sheet and read every Arabic line at full size: the word order, the joins, the dots, nothing clipped.
 - After the user approves, deliver with `workspace.py --deliver`, then make the cover with `scripts/cover.py` on the delivered file in «جاهز» (the hook frame and a profile-grid tile land beside it): `python "<skill>/scripts/cover.py" "<the delivered .mp4>" --words "assets/vo/<take>.words.json" --offset <same as the build> --cue "<the hook's last word>"` (the frame 0.3 s after that word starts, while the line is lit).
 
@@ -110,3 +110,14 @@ npx --yes hyperframes@0.8.225 render --output "renders/final/<name> v1.mp4"
 - **The built-in `tts` and `transcribe` are English-only by default.** Kokoro has no Arabic, and `transcribe` defaults to `small.en`. Use the user's own recording or ElevenLabs (`voiceover.md`) for voice. For Arabic word timings, use the ElevenLabs helper's alignment or `scripts/align_voice.py` (the user's recording + its script), never a `.en` model.
 - **Paths past 260 characters fail on Windows** (`ENOENT … mkdtemp`). The workspace lives near the top of the user's folders for that reason.
 - **Fresh GSAP:** compositions load GSAP from jsDelivr. A render needs the internet the first time; the browser caches it after that.
+
+## Upstream registry & assets (Batch 1+2+3, integrated)
+
+A selective Apache-2.0 snapshot from upstream HyperFrames (`add940201ebe5903c540232210e8f79264ef3a86`) is vendored in `integrations/hyperframes/`:
+- `registry/components/` (239 components) + `CATALOG.md` hero shelf
+- `registry/examples/` (9 examples)
+- `registry/registry.json`
+- `shader-transitions/` source snapshot
+- `registry/blocks/` full upstream set (210 blocks, ~89.8M)
+
+Use `reference/hyperframes-registry.md` for discovery/mount workflow and **Khaam Arabic/RTL adaptation rules** before reusing upstream components. All upstream registry blocks are now vendored. See also `reference/hyperframes-craft-notes.md` for Khaam-adapted motion/format/look/spec/review reminders.
