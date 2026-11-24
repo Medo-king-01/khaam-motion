@@ -1,0 +1,49 @@
+export function clamp(num, min, max) {
+    num = Number(num) || 0;
+    return Math.max(min, Math.min(max, num));
+}
+
+export function lerp(t, a, b) {
+    return a + t * (b - a);
+}
+
+export function map2d(value, min, max, amp = 1) {
+    let v = Math.sqrt(2 / 4) * amp;
+    let normalized = (value + v) / (2 * v);
+    normalized = clamp(normalized, 0, 1);
+    return lerp(normalized, min * amp, max * amp);
+}
+
+export function fillStops(at) {
+    let n = at.length - 1;
+    at[0] ||= 0;
+    if (isNaN(at[n])) at[n] = 1;
+    for (let i = 1, j = 0; i <= n; i++) {
+        for (j = Math.max(i, j); isNaN(at[j]); j++);
+        if (isNaN(at[i])) at[i] = at[i - 1] + (at[j] - at[i - 1]) / (j - i + 1);
+        at[i] = Math.max(at[i - 1], at[i]);
+    }
+    return at;
+}
+
+export function tidyNumber(n) {
+    if (!Number.isFinite(n) || Number.isInteger(n)) return n;
+    if (Math.abs(n) < 1e-9) return 0;
+    return Number(n.toPrecision(12));
+}
+
+// cyrb53
+export function hash(str, seed = 0) {
+    str = String(str);
+    let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+    for (let i = 0, ch; i < str.length; i++) {
+        ch = str.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1>>>16), 2246822507) ^ Math.imul(h2 ^ (h2>>>13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2>>>16), 2246822507) ^ Math.imul(h1 ^ (h1>>>13), 3266489909);
+    return 4294967296 * (2097151 & h2) + (h1>>>0);
+}
+
+export const { cos, sin, tan, asin, atan2, sqrt, hypot, log, ceil, floor, round, abs, min, max, PI } = Math;

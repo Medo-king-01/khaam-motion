@@ -1,0 +1,295 @@
+const symbols = ':;,()[]{}π±+-*/%"\'`@=^ß_<>&|!?~≤≥≠∆';
+const dropSpaceAfter = new Set(':;,{}([');
+const dropSpaceBefore = new Set(';,{})]');
+
+const SYMBOL = 1;
+const SPACE = 2;
+const HEX = 4;
+
+const ctype = new Uint8Array(128);
+for (let i = 48; i <= 57; ++i) ctype[i] = HEX;
+for (let i = 97; i <= 102; ++i) ctype[i] |= HEX;
+for (let i = 65; i <= 70; ++i) ctype[i] |= HEX;
+for (let c of [9, 10, 11, 12, 13, 32]) ctype[c] |= SPACE;
+
+const wideSymbols = new Set();
+for (let s of symbols) {
+    let c = s.charCodeAt(0);
+    if (c < 128) ctype[c] |= SYMBOL;
+    else wideSymbols.add(c);
+}
+
+export const NAME_CHAR = `(?:[\\w-]|[^\\x00-\\x7f${symbols.replace(/[\x00-\x7f]/g, '')}])`;
+
+function isSymbolCode(c) {
+    return c < 128 ? (ctype[c] & SYMBOL) > 0 : wideSymbols.has(c);
+}
+
+function isSpaceCode(c) {
+    if (c < 128) return (ctype[c] & SPACE) > 0;
+    // Non-ASCII part of /\s/
+    return c === 0xa0 || c === 0x1680 || (c >= 0x2000 && c <= 0x200a)
+            || c === 0x2028 || c === 0x2029 || c === 0x202f || c === 0x205f
+            || c === 0x3000 || c === 0xfeff;
+}
+
+function isDigitCode(c) {
+    return c >= 48 && c <= 57;
+}
+
+function isHexCode(c) {
+    return (ctype[c] & HEX) > 0;
+}
+
+class Token {
+    constructor(type, value, pos, index) {
+        this.type = type;
+        this.value = value;
+        this.pos = pos;
+        this.index = index;
+    }
+    // no argument: any symbol; up to three values: one of them
+    isSymbol(a, b, c) {
+        if (a === undefined) return this.type == 'Symbol';
+        return this.value === a || this.value === b || this.value === c;
+    }
+    isSpace() {
+        return this.type == 'Space';
+    }
+    isNumber() {
+        return this.type == 'Number';
+    }
+    isWord() {
+        return this.type == 'Word';
+    }
+}
+
+// the text the tokens came from
+function textOf(tokens) {
+    let text = '';
+    for (let t of tokens) text += t.value;
+    return text;
+}
+
+// the items of a comma list, split at the top level: `a, (b, c)` and
+// `a, "b, c"` are two
+function itemsOf(tokens, keepEmpty) {
+    let items = [];
+    let item = [];
+    let depth = 0, quote = false;
+    for (let token of tokens) {
+        if (token.status) quote = token.status === 'open';
+        else if (!quote && token.isSymbol('(')) depth++;
+        else if (!quote && token.isSymbol(')') && depth) depth--;
+        if (!depth && !quote && token.isSymbol(',')) {
+            if (item.length || keepEmpty) items.push(item);
+            item = [];
+        } else {
+            item.push(token);
+        }
+    }
+    if (item.length || keepEmpty && items.length) items.push(item);
+    return items;
+}
+
+function iterator(input) {
+    let pointer = -1;
+    return {
+        curr(n = 0) {
+            return input[pointer + n];
+        },
+        next() {
+            return input[++pointer];
+        }
+    }
+}
+
+function ignoreSpacingAround(prev, next) {
+    return dropSpaceAfter.has(prev) || dropSpaceBefore.has(next);
+}
+
+// The read* functions return the exclusive end of the token starting at i
+
+function readWord(input, i, len) {
+    let j = i + 1;
+    while (j < len) {
+        let c = input.charCodeAt(j);
+        if (isSymbolCode(c) || isSpaceCode(c) || isDigitCode(c) || c === 92 /* \ */) break;
+        if (c === 46 && isDigitCode(input.charCodeAt(j + 1)) && input.charCodeAt(j - 1) !== 46) break;
+        j++;
+    }
+    return j;
+}
+
+function readNumber(input, i) {
+    let j = i + 1;
+    let hasDot = input.charCodeAt(i) === 46 /* . */;
+    while (true) {
+        let c = input.charCodeAt(j);
+        if (c === 46) {
+            // A second dot or a ".." range ends the number
+            if (hasDot || input.charCodeAt(j + 1) === 46) break;
+            hasDot = true;
+        }
+        else if (c === 101 || c === 69 /* e E */) {
+            let sign = input.charCodeAt(j + 1);
+            if ((sign === 43 || sign === 45 /* + - */) && isDigitCode(input.charCodeAt(j + 2))) {
+                j += 3;
+                continue;
+            }
+            if (isDigitCode(sign)) {
+                j += 2;
+                continue;
+            }
+            break;
+        }
+        else if (!isDigitCode(c)) break;
+        j++;
+    }
+    return j;
+}
+
+function scan(source, options = {}) {
+    let input = String(source);
+    let len = input.length;
+    let tokens = [];
+    let quote = '';
+    let i = 0, row = 0, lineStart = 0;
+    // paren depth inside a call named by options.lineCommentsIn
+    let body = 0;
+
+    while (i < len) {
+        let curr = input.charCodeAt(i);
+        if (curr === 10 /* \n */) {
+            row++;
+            lineStart = i + 1;
+        }
+        let pos = [i - lineStart, row];
+        // Offset of the token's first raw char in the input
+        let index = i;
+        let next = input.charCodeAt(i + 1);
+        let lastToken = tokens.at(-1);
+
+        if (!quote && curr === 47 && next === 42 /* slash-star */) {
+            let found = input.indexOf('*/', i + 2);
+            let end = found === -1 ? len : found + 2;
+            for (let n = input.indexOf('\n', i + 2); n !== -1 && n < end; n = input.indexOf('\n', n + 1)) {
+                row++;
+                lineStart = n + 1;
+            }
+            let after = input[end];
+            if (lastToken && !lastToken.isSpace() && after && !isSpaceCode(input.charCodeAt(end))
+                    && !ignoreSpacingAround(lastToken.value, after)) {
+                tokens.push(new Token('Space', ' ', pos, index));
+            }
+            i = end;
+        }
+        else if ((options.ignoreInlineComment || body) && !quote && curr === 47 && next === 47 && input.charCodeAt(i - 1) !== 58) {
+            // Stop before the line break so it gets tokenized as space
+            let found = input.indexOf('\n', i + 1);
+            i = found === -1 ? len : found;
+        }
+        else if (curr === 48 && (next === 120 || next === 88 /* x X */) && isHexCode(input.charCodeAt(i + 2))) {
+            let end = i + 3;
+            while (isHexCode(input.charCodeAt(end))) end++;
+            tokens.push(new Token('Number', input.slice(i, end), pos, index));
+            i = end;
+        }
+        else if (isDigitCode(curr) || (
+            curr === 46 && isDigitCode(next)) || (
+            curr === 45 && (isDigitCode(next) || next === 46 && isDigitCode(input.charCodeAt(i + 2)))
+            && !(lastToken && (lastToken.isNumber() || lastToken.isWord() || lastToken.isSymbol(')', ']'))))) {
+            let end = readNumber(input, i);
+            tokens.push(new Token('Number', input.slice(i, end), pos, index));
+            i = end;
+        }
+        else if (quote && curr === 92 /* \ */) {
+            let start = i + 1;
+            let end = readWord(input, start, len);
+            // The escaped char may be a line break, the rest are no spaces
+            if (input.charCodeAt(start) === 10) {
+                row++;
+                lineStart = start + 1;
+            }
+            let word = input.slice(start, end).replace(/^[\r\n\f]+/, '');
+            if (word.length === end - start) {
+                tokens.push(new Token('Word', input.slice(i, end), pos, index));
+            } else if (word.length) {
+                let at = end - word.length;
+                tokens.push(new Token('Word', word, [at - lineStart, row], at));
+            }
+            i = end;
+        }
+        else if (isSymbolCode(curr)) {
+            let ch = input[i];
+            let token = new Token('Symbol', ch, pos, index);
+            if (curr === 34 || curr === 39 || curr === 96 /* " ' ` */) {
+                if (quote === ch) {
+                    quote = '';
+                    token.status = 'close';
+                } else if (!quote) {
+                    quote = ch;
+                    token.status = 'open';
+                }
+            }
+            if (options.lineCommentsIn && !quote) {
+                let k = tokens.length - 1;
+                while (curr === 40 && !body && (tokens[k]?.isNumber() || tokens[k]?.value === 'x')) k--;
+                while (curr === 40 && !body && tokens[k - 1]?.isSymbol('-') && tokens[k - 2]?.isWord()) k -= 2;
+                if (curr === 40 /* ( */ && (body || (tokens[k - 1]?.isSymbol('@')
+                        && tokens[k].isWord() && options.lineCommentsIn.test(tokens[k].value)))) {
+                    body++;
+                } else if (curr === 41 /* ) */ && body) {
+                    body--;
+                }
+            }
+            tokens.push(token);
+            i++;
+        }
+        else if (isSpaceCode(curr)) {
+            let end = i + 1;
+            let hasLineBreak = curr === 10;
+            while (end < len) {
+                let c = input.charCodeAt(end);
+                if (!isSpaceCode(c)) break;
+                if (c === 10) {
+                    hasLineBreak = true;
+                    row++;
+                    lineStart = end + 1;
+                }
+                end++;
+            }
+            // Leading and trailing spaces are dropped
+            if (lastToken && end < len) {
+                if (quote) {
+                    tokens.push(new Token('Space', input.slice(i, end), pos, index));
+                }
+                else if (!ignoreSpacingAround(lastToken.value, input[end])) {
+                    let value = (options.preserveLineBreak && hasLineBreak) ? '\n' : ' ';
+                    if (lastToken.isSpace()) {
+                        if (value === '\n') lastToken.value = '\n';
+                    } else {
+                        tokens.push(new Token('Space', value, pos, index));
+                    }
+                }
+            }
+            i = end;
+        }
+        else {
+            let end = readWord(input, i, len);
+            tokens.push(new Token('Word', input.slice(i, end), pos, index));
+            i = end;
+        }
+    }
+
+    if (tokens.at(-1)?.isSpace()) tokens.pop();
+    return tokens;
+}
+
+export {
+    iterator,
+    scan,
+    textOf,
+    itemsOf,
+    Token
+}

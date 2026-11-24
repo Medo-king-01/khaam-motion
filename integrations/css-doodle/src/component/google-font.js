@@ -1,0 +1,92 @@
+let embedFonts = new Map();
+let linkFonts = new Set();
+
+export function getGoogleFontLink(names) {
+    // the v1 css endpoint only honors the first `family` param, so join with a pipe
+    let params = names.map(encodeURIComponent).join('%7C');
+    return `https://fonts.googleapis.com/css?display=swap&family=${params}`;
+}
+
+let loading = new Set();
+let landed = () => loading.size ? Promise.all(loading).then(landed) : 0;
+
+export function loadGoogleFontLink(fonts) {
+    let names = fonts.filter(name => !linkFonts.has(name));
+    if (!names.length) {
+        return landed();
+    }
+    for (let name of names) {
+        linkFonts.add(name);
+    }
+    let link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = getGoogleFontLink(names);
+    document.head.appendChild(link);
+    let done = new Promise(resolve => link.onload = link.onerror = resolve);
+    loading.add(done);
+    return done.then(() => loading.delete(done)).then(landed);
+}
+
+function extractFonts(css) {
+    let seen = new Map();
+    for (let [, content] of css.matchAll(/@font-face\s*{([^}]+)}/gi)) {
+        let getProp = prop => content.match(new RegExp(`${prop}:\\s*['"]?([^'";\\)]+)`, 'i'))?.[1].trim();
+        let url = content.match(/url\(([^)]+)\)/i)?.[1].replace(/['"]/g, '');
+        let family = getProp('font-family');
+        if (!family || !url) continue;
+
+        let font = {
+            family,
+            url,
+            weight: getProp('font-weight') || '400',
+            style: getProp('font-style') || 'normal',
+            range: getProp('unicode-range')
+        };
+
+        // variable fonts reuse one file for multiple weights; merge them into a weight range
+        let key = [family, font.style, font.range, url].join('|');
+        let prev = seen.get(key);
+        if (prev) {
+            let weights = (prev.weight + ' ' + font.weight).split(' ').map(Number);
+            let min = Math.min(...weights);
+            let max = Math.max(...weights);
+            prev.weight = min === max ? min : `${min} ${max}`;
+        } else {
+            seen.set(key, font);
+        }
+    }
+
+    if (!seen.size) throw new Error('no fonts');
+    return [...seen.values()];
+}
+
+async function fetchFont(url, type) {
+    let res = await fetch(url);
+    if (!res.ok) throw new Error(`font ${res.status}`);
+    return res[type]();
+}
+
+async function embedFont(link) {
+    let fonts = extractFonts(await fetchFont(link, 'text'));
+    let embedded = await Promise.all(
+        fonts.map(async ({ family, url, weight, style, range }) => {
+            let base64 = (await fetchFont(url, 'bytes')).toBase64();
+            let rangeRule = range ? `unicode-range:${range};` : '';
+            return `@font-face{font-family:"${family}";font-weight:${weight};font-style:${style};${rangeRule}src:url("data:font/woff2;base64,${base64}") format("woff2");}`;
+        })
+    );
+    return embedded.join('\n');
+}
+
+export async function loadGoogleFontEmbed(names) {
+    if (!names.length) return '';
+    let link = getGoogleFontLink(names);
+    if (!embedFonts.has(link)) {
+        embedFonts.set(link, embedFont(link).catch(error => {
+            embedFonts.delete(link);
+            console.warn('fonts failed', error);
+            return '';
+        }));
+    }
+    return embedFonts.get(link);
+}

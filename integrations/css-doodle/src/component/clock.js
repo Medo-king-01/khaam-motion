@@ -1,0 +1,100 @@
+import { escapeSvg } from '../lib/svg.js';
+
+const RE_CSS_CLOCK = /\banimation(?:-name)?\s*:/;
+const RE_IMAGE_CLOCK = /%3Canimate|animation(?:-name)?%3A/;
+const RE_TIME = /(?<![\w.-])(-?\d*\.?\d+)(ms|s)(?![\w-])/g;
+const RE_ATTR = /([\w:-]+)\s*=\s*("[^"]*"|'[^']*')/g;
+const RE_SMIL = /<animate[^>]*>/g;
+
+const TIME_UNITS = { ms: 1, s: 1000, min: 60000, h: 3600000 };
+const PAUSED_RULE = '*,*::before,*::after{animation-play-state:paused!important}';
+
+export const TRANSITION_NONE = '*,*::before,*::after{transition:none!important}';
+
+export function smilTick(sheet) {
+    return RE_CSS_CLOCK.test(sheet) ? '<rect width="0" height="0"><set attributeName="x" to="0"/></rect>' : '';
+}
+
+export function hasImageClock(sheet) {
+    return RE_IMAGE_CLOCK.test(sheet);
+}
+
+export function isAnimatedSvg(svg) {
+    return /<(animate|set\b)/.test(svg) || RE_CSS_CLOCK.test(svg) || RE_IMAGE_CLOCK.test(svg);
+}
+
+function clockValue(value = '') {
+    let m = /^\s*([-+]?\d*\.?\d+)(ms|s|min|h)?\s*$/.exec(value);
+    return m ? parseFloat(m[1]) * TIME_UNITS[m[2] ?? 's'] : null;
+}
+
+function setAttr(tag, name, value) {
+    let re = new RegExp(`\\s${name}\\s*=\\s*("[^"]*"|'[^']*')`);
+    let attr = ` ${name}="${value}"`;
+    return re.test(tag) ? tag.replace(re, attr) : tag.replace(/\s*\/?>$/, m => attr + m.trim());
+}
+
+function shiftSmil(tag, t, paused) {
+    let attrs = {};
+    for (let [, name, quoted] of tag.matchAll(RE_ATTR)) {
+        attrs[name] = quoted.slice(1, -1);
+    }
+    let begin = clockValue(attrs.begin ?? '0');
+    if (begin === null) return tag;
+    let elapsed = Math.round(t - begin);
+    if (paused && elapsed < 0) return setAttr(tag, 'begin', 'indefinite');
+    tag = setAttr(tag, 'begin', -elapsed + 'ms');
+    if (!paused) return tag;
+    let dur = clockValue(attrs.dur);
+    let repeat = attrs.repeatCount === 'indefinite' ? Infinity : (parseFloat(attrs.repeatCount) || 1);
+    if (dur === null || elapsed < dur * repeat) {
+        tag = setAttr(setAttr(tag, 'end', '1ms'), 'fill', 'freeze');
+    }
+    return tag;
+}
+
+export function shiftCssAnimations(css, t) {
+    if (!t) return css;
+    return css.replace(/(\banimation(-delay)?\s*:\s*)([^;}]+)/g, (m, head, longhand, value) => {
+        if (/\b(var|calc)\(|\([^)]*\(/.test(value)) return m;
+        let items = value.split(/,(?![^(]*\))/).map(item => {
+            let count = 0;
+            item = item.replace(RE_TIME, (m, num, unit) => {
+                let ms = parseFloat(num) * TIME_UNITS[unit];
+                return (longhand || ++count === 2) ? Math.round(ms - t) + 'ms' : m;
+            });
+            return (!longhand && count === 1) ? item.replace(RE_TIME, m => `${m} ${Math.round(-t)}ms`) : item;
+        });
+        return head + items.join(',');
+    });
+}
+
+export function stampSvgImages(host, sheet) {
+    let paused = host.hasAttribute('cssd-paused');
+    if (!paused && !host._clock.base) return sheet;
+    let t = host.clockNow();
+    return sheet.replace(/url\("data:image\/svg\+xml;utf8,([^"#]*)(#[^"]*)?"\)/g, (m, data, hash = '') => {
+        if (!hasImageClock(data)) return m;
+        let svg = decodeURIComponent(data)
+            .replace(RE_SMIL, tag => shiftSmil(tag, t, paused))
+            .replace(/<style[^>]*>[\s\S]*?<\/style>|\sstyle=(?:"[^"]*"|'[^']*')/g, s => shiftCssAnimations(s, t));
+        if (paused && RE_CSS_CLOCK.test(svg)) {
+            svg = svg.replace(/<\/svg>\s*$/, `<style>${PAUSED_RULE}</style></svg>`);
+        }
+        return `url("data:image/svg+xml;utf8,${escapeSvg(svg)}${hash}")`;
+    });
+}
+
+export function stampSmil(host, markup) {
+    let paused = host.hasAttribute('cssd-paused');
+    if (!paused && !host._clock.base) return markup;
+    let t = host.clockNow();
+    return markup.replace(RE_SMIL, tag => shiftSmil(tag, t, paused));
+}
+
+export function stampSheet(host, sheet) {
+    let paused = host.hasAttribute('cssd-paused');
+    if (!paused && !host._clock.base) return sheet;
+    sheet = shiftCssAnimations(stampSvgImages(host, sheet), host.clockNow());
+    return paused ? sheet + PAUSED_RULE : sheet;
+}

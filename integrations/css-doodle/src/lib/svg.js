@@ -1,0 +1,54 @@
+export const NS = `xmlns="http://www.w3.org/2000/svg"`;
+export const NSXHtml = `xmlns="http://www.w3.org/1999/xhtml"`;
+export const NSXLink = `xmlns:xlink="http://www.w3.org/1999/xlink"`;
+
+export function cdata(text) {
+    return '<![CDATA[' + text.replaceAll(']]>', ']]]]><![CDATA[>') + ']]>';
+}
+
+export const FilterHolderStyle = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
+
+const RE_URL_ESCAPE = /[\t\n\r"#%:<>\\]/g;
+
+const URL_ESCAPES = {};
+for (let c of '\t\n\r"#%:<>\\') URL_ESCAPES[c] = encodeURIComponent(c);
+
+export function escapeSvg(svg) {
+    return svg.replace(RE_URL_ESCAPE, c => URL_ESCAPES[c]);
+}
+
+export function createSvgUrl(svg) {
+    return `url("data:image/svg+xml;utf8,${ escapeSvg(svg) }")`;
+}
+
+export function normalizeSvg(input) {
+    if (!input.includes('<svg')) {
+        input = `<svg ${NS} ${NSXLink}>${input}</svg>`;
+    }
+    if (!input.includes('xmlns')) {
+        input = input.replace(/<svg([\s>])/, `<svg ${NS} ${NSXLink}$1`);
+    }
+    return input;
+}
+
+const NAMES = 'animateMotion animateTransform clipPath feBlend feColorMatrix feComponentTransfer '
+    + 'feComposite feConvolveMatrix feDiffuseLighting feDisplacementMap feDistantLight '
+    + 'feDropShadow feFlood feFuncA feFuncB feFuncG feFuncR feGaussianBlur feImage feMerge '
+    + 'feMergeNode feMorphology feOffset fePointLight feSpecularLighting feSpotLight '
+    + 'feTile feTurbulence foreignObject linearGradient radialGradient textPath '
+    + 'attributeName attributeType baseFrequency calcMode clipPathUnits diffuseConstant '
+    + 'edgeMode filterUnits gradientTransform gradientUnits kernelMatrix kernelUnitLength '
+    + 'keyPoints keySplines keyTimes lengthAdjust limitingConeAngle markerHeight '
+    + 'markerUnits markerWidth maskContentUnits maskUnits numOctaves pathLength '
+    + 'patternContentUnits patternTransform patternUnits pointsAtX pointsAtY pointsAtZ '
+    + 'preserveAlpha preserveAspectRatio primitiveUnits refX refY repeatCount repeatDur '
+    + 'requiredExtensions specularConstant specularExponent spreadMethod startOffset '
+    + 'stdDeviation stitchTiles surfaceScale systemLanguage tableValues targetX targetY '
+    + 'textLength viewBox xChannelSelector yChannelSelector';
+
+const tagsMapping = new Map(NAMES.split(' ').map(name => [name.toLowerCase(), name]));
+
+export function adjustName(name) {
+    name = name.toLowerCase();
+    return tagsMapping.get(name) || name;
+}
