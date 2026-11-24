@@ -61,7 +61,7 @@ else:
     r['yt_dlp']={'available':bool(p and p.returncode==0),'version':(p.stdout.strip() if p else ''),'via':'python -m yt_dlp' if p else None}
 try: _major=int(checks['node']['version'].lstrip('v').split('.')[0]) if checks['node'].get('available') else 0
 except ValueError: _major=0
-r['hyperframes']={'node_major':_major,'node_ok':_major>=22,'minimum_node':22,'pinned':'hyperframes@0.8.225','note':'Runs through npx; the first render downloads the CLI and its Chrome.'}
+r['hyperframes']={'node_major':_major,'node_ok':_major>=22,'minimum_node':22,'pinned':'hyperframes@0.9.88','note':'Runs through npx; the first render downloads the CLI and its Chrome.'}
 # Optional creative package files in this skill checkout. Presence is not a runtime or render test.
 _creative = SKILL / 'integrations' / 'creative'
 _creative_cache = SKILL / '.cache' / 'creative-tools'
