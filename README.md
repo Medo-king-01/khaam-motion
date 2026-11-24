@@ -1,4 +1,4 @@
-# «موشن خام» — Khaam Motion v1.7
+# «موشن خام» — Khaam Motion v1.7.1
 
 أدوات وتعليمات لصناعة فيديوهات موشن جرافيك عربية: الفكرة، والتصميم، والحركة، والصوت، والرندر إلى MP4. صُممت النسخة الأصلية لـ Claude؛ أُضيفت طبقة توافق للوكلاء الآخرين في هذه النسخة الخاصة. قدرة كل وكيل تعتمد على صلاحياته وأدواته، ولا يوجد ضمان للتوافق مع جميع الوكلاء. اقرأ `reference/agent-compatibility.md`.
 
@@ -64,7 +64,7 @@
 
 ---
 ## English
-**Khaam Motion v1.7** by Khaam (@khaam.hq), edited by Rashed Alhazmi. Originally a Claude skill for Arabic-first motion graphics. This private copy includes an agent-neutral compatibility guide (`reference/agent-compatibility.md`); availability depends on each host’s capabilities and permissions.
+**Khaam Motion v1.7.1** by Khaam (@khaam.hq), edited by Rashed Alhazmi. Originally a Claude skill for Arabic-first motion graphics. This private copy includes an agent-neutral compatibility guide (`reference/agent-compatibility.md`); availability depends on each host’s capabilities and permissions.
 
 What's in it:
 - **Workspace.** Claude installs the skill into the user's own folder, never globally (a «مونتاجي» folder on the Desktop when the chat has no folder of its own), and builds خام / إلهام / جاهز there, so the user never makes or moves files by hand.

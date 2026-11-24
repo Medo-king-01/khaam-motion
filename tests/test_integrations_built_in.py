@@ -9,7 +9,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 VENDOR = [
-    'anything2explainer', 'awesome-canvas', 'awesome-lottie', 'creative', 'css-doodle',
+    'anything2explainer', 'awesome-canvas', 'awesome-lottie', 'css-doodle',
     'drei', 'gl-transitions', 'gsap', 'helios', 'html-video', 'hyperframes', 'lottie-web',
     'lucide-icons', 'magicui', 'mojs', 'motion-canvas', 'particles.js', 'recharts',
     'simple-icons', 'tabler-icons', 'three.js', 'tsparticles',
@@ -31,6 +31,15 @@ class IntegrationsBuiltInTest(unittest.TestCase):
         for name in VENDOR:
             d = ROOT / 'integrations' / name
             self.assertTrue(any((d / c).is_file() for c in PROVENANCE), name)
+
+    def test_on_demand_installer_is_tracked_but_not_a_vendored_snapshot(self):
+        # integrations/creative/ is our own installer/manifest for the downloaded-on-demand
+        # stack (Lemo-Opuscar, Blender MCP, PixelFX, the audio environments): tracked in
+        # the tree, reported via optional_creative_tools, and deliberately not counted as vendored.
+        d = ROOT / 'integrations' / 'creative'
+        self.assertTrue((d / 'README.md').is_file())
+        self.assertTrue((d / 'setup.py').is_file())
+        self.assertNotIn('creative', VENDOR)
 
     def test_khaam_integration_notes_record_snapshot_commits(self):
         notes = sorted((ROOT / 'integrations').glob('*/KHAAM-INTEGRATION.md'))
