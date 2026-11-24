@@ -1,6 +1,6 @@
 {
   "$schema": "https://hyperframes.heygen.com/schema/hyperframes.json",
-  "registry": "https://raw.githubusercontent.com/heygen-com/hyperframes/main/registry",
+  "registry": "https://raw.githubusercontent.com/heygen-com/hyperframes/add940201ebe5903c540232210e8f79264ef3a86/registry",
   "paths": {
     "blocks": "compositions",
     "components": "compositions/components",
