@@ -13,7 +13,8 @@ Act as director, motion designer, editor and sound designer. Read this short ent
 
 For every host, first read `reference/agent-compatibility.md`. Its capability checks and setup instructions override Claude-specific assumptions, model and menu directions below. Use the original workflow only where the current host actually supports it.
 
-## Integrated capabilities (use when relevant)
+## Built-in integrations (part of the skill)
+The vendored snapshots in `integrations/` are part of the skill, not optional add-ons: they ship in the repository, are copied on every install (only caches, `node_modules` and bytecode are excluded) and are inventoried read-only by `scripts/preflight.py` under `integrations_vendored`. They work offline once installed. Availability is not licence to use everything: select what the brief needs, apply the skill's Arabic/RTL, pace, sound and QA rules, and preserve every snapshot's licence and provenance. What stays optional is only the downloaded-on-demand stack (`integrations/creative/`, Lemo-Opuscar, Blender MCP, PixelFX, the audio environments), which is never fetched without the user's approval.
 - For Remotion starter templates, framework/docs/examples/package refs, use `reference/remotion.md`, `reference/remotion-templates.md`, `reference/remotion-capabilities.md`, `reference/remotion-docs/`, `reference/remotion-examples/`, `reference/remotion-package-refs/` and `templates/remotion/`; respect Remotion License/company-license boundaries.
 - For anything2explainer (topic→narrated explainer Remotion pipeline, private-use snapshot), use `reference/anything2explainer.md` and `integrations/anything2explainer/`; respect PolyForm NC 1.0.0 and SIL OFL fonts.
 - For motion-canvas, html-video, helios, awesome-canvas, mojs, gsap, particles.js, three.js, drei, and tsparticles, use `reference/canvas-motion-integrations.md` and `integrations/`; preserve upstream licenses (GSAP Standard License is not MIT/Apache).
@@ -265,7 +266,7 @@ Production rules behind the gates:
 | `reference/remotion-examples/` | Curated code-only examples from Remotion example package (private use) |
 | `reference/remotion-package-refs/` | Selected Remotion package READMEs/package.json/license snapshots (private use) |
 | `reference/adaptive-direction.md` | Reference interpretation, causal storyboards, product motion, Arabic-safe typography and final review |
-| `reference/external-creative-tools.md` | Optional Lemo-Opuscar, Three.js, PixelFX, Blender MCP, Rapier, React Postprocessing and librosa: selection, licensing, safety and host limits |
+| `reference/external-creative-tools.md` | Downloaded-on-demand creative stack (Lemo-Opuscar, Blender MCP, PixelFX, React Three Rapier, React Postprocessing, librosa): selection, licensing, safety and host limits; the vendored `integrations/` snapshots are built in and documented in their own references |
 | `reference/shotcraft.md` | **Product/UI promos:** the 124 video-shotcraft shot recipes (cached local library, Apache-2.0) adapted to our engines; never auto-run its scripts |
 | `reference/mg-styles-15.md` | **Style direction:** fifteen code-drawn MG styles as direction vocabulary (cached local library, MIT) adapted to our Arabic world; never auto-run its scripts or soundtracks |
 | `reference/bang-motion.md` | **Openers/promos/explainers:** candidate concepts, a direction vocabulary and the mechanical anti-template checks (cached local library, MIT); never installed as a skill, never run its scripts |
@@ -342,7 +343,7 @@ Production rules behind the gates:
   - `TASTE.md` and `design.html`.
   - `story-plan.md` (the plan sheet for told videos) and `caption.md` (the caption with its sources block).
 
-  Optional dependencies, fonts and AI weights are not bundled.
+  The `integrations/` snapshots are bundled and installed with the skill (see above). Lemo-Opuscar/Blender/PixelFX downloads, fonts and AI weights are not bundled.
 - `sounds/library/`: 30 real effects and 3 real beds, CC0, FLAC, with `MANIFEST.md` (what each is for, its level and its source). The only audio in the ZIP.
 - `templates/sfx-catalog.example.json`: an empty schema example for a user-owned catalog; `install_sounds.py` writes the Khaam library's own `catalog.json`.
 - **What was tested:** portable paths and commands are not proof of testing on every OS. See `CHANGELOG.md` for exactly what was tested: Windows; the Mac route (1.7.1) was checked on Windows (Python and Git Bash) with macOS mocked, and its macOS downloads checked, but has not run on a Mac yet.

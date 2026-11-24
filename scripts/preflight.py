@@ -62,7 +62,13 @@ else:
 try: _major=int(checks['node']['version'].lstrip('v').split('.')[0]) if checks['node'].get('available') else 0
 except ValueError: _major=0
 r['hyperframes']={'node_major':_major,'node_ok':_major>=22,'minimum_node':22,'pinned':'hyperframes@0.9.88','note':'Runs through npx; the first render downloads the CLI and its Chrome.'}
-# Optional creative package files in this skill checkout. Presence is not a runtime or render test.
+# Built-in vendored integrations: part of the skill, copied on every install.
+# Read-only presence inventory; a missing entry means an incomplete checkout of the skill itself.
+_INTEGRATIONS=['anything2explainer','awesome-canvas','awesome-lottie','creative','css-doodle','drei','gl-transitions','gsap','helios','html-video','hyperframes','lottie-web','lucide-icons','magicui','mojs','motion-canvas','particles.js','recharts','simple-icons','tabler-icons','three.js','tsparticles']
+_int_root=SKILL/'integrations'
+_missing=[d for d in _INTEGRATIONS if not (_int_root/d).is_dir()]
+r['integrations_vendored']={'expected':len(_INTEGRATIONS),'present':len(_INTEGRATIONS)-len(_missing),'missing':_missing,'complete':not _missing,'note':'Vendored snapshots are part of the skill and are copied on every install (only caches, node_modules and bytecode are excluded). Presence only, not a runtime/render test; each snapshot keeps its own licence.'}
+# Downloaded-on-demand creative stack in this skill checkout (integrations/creative/ via setup.py; never bundled). Presence is not a runtime or render test.
 _creative = SKILL / 'integrations' / 'creative'
 _creative_cache = SKILL / '.cache' / 'creative-tools'
 r['optional_creative_tools'] = {
