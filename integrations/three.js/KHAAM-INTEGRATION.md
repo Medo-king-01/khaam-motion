@@ -15,8 +15,8 @@ Three.js is a JavaScript 3D library for WebGL/WebGPU-based rendering: scenes, ca
 - Foundation for product/3D motion scenes in web and Remotion+R3F workflows.
 
 ## What this snapshot includes / omits
-- **Included:** `src/`, `docs/`, `tsl/`, `examples/jsm/`, `examples/fonts/`, root README/LICENSE/package files.
-- **Omitted for size/low benefit:** `manual/` (≈107M), full `examples/` beyond `jsm/`+`fonts/` (many heavy demo assets), `editor/`, `build/`, `test/`.
+- **Included:** `src/`, `docs/`, `tsl/`, `manual/`, `examples/` (including `jsm/`, `fonts/`, html demos, shaders, luts, materialsx, etc.), root README/LICENSE/package files.
+- **Omitted for size/low benefit:** heavy example asset dirs `examples/models/` (~269M), `examples/textures/` (~110M), `examples/screenshots/` (~21M), `examples/sounds/` (~15M), `examples/files/`; also `editor/`, `build/`, `test/`.
 
 ## How to use in Khaam
 - Use as reference for 3D capabilities and as dependency source guidance.

@@ -1,0 +1,24 @@
+import { ChartOffsetInternal, Coordinate, LayoutType } from '../types';
+
+export type CursorRectangle = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+export function getCursorRectangle(
+  layout: LayoutType,
+  activeCoordinate: Coordinate,
+  offset: ChartOffsetInternal,
+  tooltipAxisBandSize: number,
+): CursorRectangle {
+  const halfSize = tooltipAxisBandSize / 2;
+
+  return {
+    x: layout === 'horizontal' ? activeCoordinate.x - halfSize : offset.left + 0.5,
+    y: layout === 'horizontal' ? offset.top + 0.5 : activeCoordinate.y - halfSize,
+    width: layout === 'horizontal' ? tooltipAxisBandSize : offset.width - 1,
+    height: layout === 'horizontal' ? offset.height - 1 : tooltipAxisBandSize,
+  };
+}

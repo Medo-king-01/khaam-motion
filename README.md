@@ -28,6 +28,7 @@
 - **مكتبات أيقونات وأصول SVG مدمجة (استخدام خاص):** `simple-icons` (شعارات marcas/منصات، CC0)، و`lucide` (أيقونات UI عامة، ISC)، و`tabler-icons` (تغطية واسعة outline+filled، MIT) داخل `integrations/` مع مرجع `reference/icon-asset-integrations.md` (انتبه لحقوق العلامات التجارية عند استخدام شعارات).
 - **Lottie/After Effects JSON مدمج (استخدام خاص):** `lottie-web` لتشغيل رسوم Lottie في الويب/Remotion داخل `integrations/lottie-web/` مع مرجع `reference/lottie-integrations.md` (تحقق من حقوق ملفات Lottie JSON نفسها).
 - **Generative CSS / Shader resources:** `css-doodle` (MIT) مدمج في `integrations/css-doodle/` لأنماط CSS توليدية، و`The Book of Shaders` مُوثّق كمرجع خارجي فقط (All rights reserved - لا نسخ/استضافة) في `reference/generative-css-and-shader-resources.md`.
+- **GL Transitions / Charts / Animated UI (استخدام خاص):** `gl-transitions` (GLSL transitions، MIT مع ملاحظة تراخيص per-transition)، `recharts` (React+D3 charts، MIT)، `magicui` (سجل مكونات UI متحركة، MIT) داخل `integrations/` مع مرجع `reference/react-ui-charts-transitions-integrations.md` (snapshots مصدرية؛ تحتاج تثبيت deps في مشروع الهدف).
 - **حكايات بصوت (جديد في 1.7):** أربع طرق سرد جاهزة: الحكاية القصيرة، و«ورقة وفكرة»، و«السلّم»، و«السلسلة»، بأمثلة من مجالات مختلفة (`reference/story-formats.md`)، وستايل «حكاية بالضوء».
 - **الصوت أول:** صوتك أنت (تسجّل، وClaude يطلّع وقت كل كلمة على جهازك، مجانًا)، أو صوت يتصمّم لك في ElevenLabs ويصير لك وحدك. وكل حدث في الفيديو ينربط بكلمة من الكلام: البرق على «تخاف»، والفجر على «الفرج».
 - **قطع نص وقصة جاهزة:** جملة تضوي كلمة كلمة وكلماتها المهمة بالذهبي، وبطاقة ثابتة للنص المنقول ومرجعه، وسلّم بـ«؟» فوق، وبطاقتين للمقارنة، وبداية بآخر لقطة ثم رجوع، وخاتمة هادية.
@@ -56,7 +57,7 @@
 | `styles/` | بناء ستايلك، وأمثلة للإلهام |
 | `scripts/` | أدوات: الفحص، والتثبيت في مجلدك، والمفتاح، والبلاغ، والخطوط، والأصوات، والمعاينة |
 | `templates/` | قالب HyperFrames العربي وقطع النص والقصة وطقم المشاهد، وقالب الرندر، وملفات الذاكرة، وملف الذوق، وخطة الحكاية، وقالب الكابشن، وقوالب Remotion الجاهزة (`overlay`, `code-hike`, `tiktok-captions`) |
-| `integrations/` | تكاملات منسوخة للاستخدام الخاص (`anything2explainer`, `motion-canvas`, `html-video`, `helios`, `awesome-canvas`, `mojs`, `gsap`, `particles.js`, `three.js`, `drei`, `tsparticles`, `simple-icons`, `lucide-icons`, `tabler-icons`, `lottie-web`, `awesome-lottie`, `css-doodle`) مع إشعارات الترخيص |
+| `integrations/` | تكاملات منسوخة للاستخدام الخاص (`anything2explainer`, `motion-canvas`, `html-video`, `helios`, `awesome-canvas`, `mojs`, `gsap`, `particles.js`, `three.js`, `drei`, `tsparticles`, `simple-icons`, `lucide-icons`, `tabler-icons`, `lottie-web`, `awesome-lottie`, `css-doodle`, `gl-transitions`, `recharts`, `magicui`) مع إشعارات الترخيص |
 | `CHANGELOG.md` | الإصدارات |
 | `LICENSE.md` | الرخصة: مجانية للاستعمال، وممنوع إعادة النشر |
 
@@ -73,6 +74,7 @@ What's in it:
 - **Icon/SVG asset libraries (private use).** Vendored snapshots of `simple-icons` (CC0 brand logos), `lucide` (ISC UI icons), and `tabler-icons` (MIT wide icon set) in `integrations/`, with `reference/icon-asset-integrations.md`; respect trademark/context rules for brand marks.
 - **Lottie playback/discovery (private use).** Vendored `lottie-web` (MIT, selective) and `awesome-lottie` (no clear upstream license; vendored at owner's explicit request, private-use only, do not redistribute) in `integrations/`, with `reference/lottie-integrations.md`; verify rights for embedded Lottie JSON assets.
 - **Generative CSS / shader resources (private use / external ref).** Vendored `css-doodle` (MIT) in `integrations/css-doodle/`; documented The Book of Shaders as external-only reference (all rights reserved, not vendored) in `reference/generative-css-and-shader-resources.md`.
+- **GL transitions / charts / animated UI (private use).** Vendored source snapshots of `gl-transitions` (MIT, check per-transition headers), `recharts` (MIT), and `magicui` (MIT) in `integrations/`, with `reference/react-ui-charts-transitions-integrations.md`; install deps in target projects.
 - **Narration first (1.7).** The user's own recording is turned into word timings on their computer, or a voice is designed for them with ElevenLabs Voice Design; library voices only when the user names one. Scene events are placed by naming the spoken word.
 - **Stories (1.7).** Four ways of telling, a word-lit text block, a still card for verified quoted text, a ladder with «؟», comparison cards, a rewind cold open, an end card, the «حكاية بالضوء» style, and a code-drawn scene and faceless figure kit.
 - **Sound.** A film-style mix by default (since 1.7.0's sound v2: real recordings of what is shown, 3–5 of them, a real bed of the place or none, no music unless asked, a mix check that also fails static and buzz); 33 CC0 recordings ship in `sounds/library/`, and a free 1,409-sound library is built locally.

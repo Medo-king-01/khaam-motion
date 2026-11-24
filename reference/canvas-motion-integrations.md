@@ -12,9 +12,9 @@ Integrated repos for private use (canvas/motion/3D/particles/animation). Use the
 | [mojs/mojs](https://github.com/mojs/mojs) | `integrations/mojs/` | MIT | `0a9cf9a87dd5637e6fa770755e79048489bcf817` | Web motion toolbelt source/reference (shape/burst/timeline/path/tween patterns). |
 | [greensock/GSAP](https://github.com/greensock/GSAP) | `integrations/gsap/` | GSAP Standard License (no-charge, not MIT) | `5e6c35ff8eedea12d4f229129def635277d8b0f2` | High-performance web animation engine (tweens, timelines, easing, plugins). |
 | [VincentGarreau/particles.js](https://github.com/VincentGarreau/particles.js) | `integrations/particles.js/` | MIT | `d01286d6dcd61f497d07cc62bd48e692f6508ad5` | Lightweight canvas particle effects library. |
-| [mrdoob/three.js](https://github.com/mrdoob/three.js) | `integrations/three.js/` | MIT | `6d91309bfcf9c2779f32dd98b61fcc5415a74912` | 3D library (src+docs+tsl+examples/jsm+fonts; manual/full examples/editor/build/test omitted). |
+| [mrdoob/three.js](https://github.com/mrdoob/three.js) | `integrations/three.js/` | MIT | `6d91309bfcf9c2779f32dd98b61fcc5415a74912` | 3D library (src+docs+tsl+manual+examples; heavy example assets models/textures/screenshots/sounds/files omitted; editor/build/test omitted). |
 | [pmndrs/drei](https://github.com/pmndrs/drei) | `integrations/drei/` | MIT | `bf6f4addf47467d3885de272d94ca5127f6ef68f` | Useful helpers/abstractions for React Three Fiber (selective: src/test/sandboxes/config; omitted .storybook/docs). |
-| [tsparticles/tsparticles](https://github.com/tsparticles/tsparticles) | `integrations/tsparticles/` | MIT | `814efd3b661df2e0594168430926331ff753a0e6` | Particles/confetti/fireworks ecosystem (engine/bundles/utils + interactions/plugins/shapes/updaters/effects/paths/presets/cli; demo/palettes omitted). |
+| [tsparticles/tsparticles](https://github.com/tsparticles/tsparticles) | `integrations/tsparticles/` | MIT | `814efd3b661df2e0594168430926331ff753a0e6` | Particles/confetti/fireworks ecosystem (engine/bundles/utils + interactions/plugins/shapes/updaters/effects/paths/presets/cli/palettes; demo/wrappers/websites/templates omitted). |
 
 ## Per-repo notes
 
@@ -56,7 +56,7 @@ Integrated repos for private use (canvas/motion/3D/particles/animation). Use the
 - For deterministic rendering, drive particle state by frame/time seed.
 
 ### three.js
-- Core 3D capability. Snapshot includes `src/`, `docs/`, `tsl/`, `examples/jsm/`, `examples/fonts/`; **omitted** `manual/` (≈107M), full `examples/`, `editor/`, `build/`, `test/`.
+- Core 3D capability. Snapshot includes `src/`, `docs/`, `tsl/`, `manual/`, and `examples/` (code/demos/shaders/luts/materialx/jsm/fonts); **omitted** heavy example asset dirs `models/` (~269M), `textures/` (~110M), `screenshots/` (~21M), `sounds/` (~15M), `files/`, plus `editor/`, `build/`, `test/`.
 - For Khaam 3D work: project-local deps, deterministic frame loop, careful Arabic text handling (texture/overlay preferred).
 
 ### drei (@react-three/drei)
@@ -65,5 +65,5 @@ Integrated repos for private use (canvas/motion/3D/particles/animation). Use the
 - Use in target R3F/Remotion+Three projects with compatible peer deps; prefer deterministic settings for video capture.
 
 ### tsParticles
-- Richer particle ecosystem than particles.js. Snapshot now includes `engine/`, `bundles/`, `utils/`, `interactions/`, `plugins/`, `shapes/`, `updaters/`, `effects/`, `paths/`, `presets/`, `cli/`; **omitted** `demo/` (≈324M), `palettes/` (≈38M), wrappers/websites/templates/markdown/scripts.
+- Richer particle ecosystem than particles.js. Snapshot includes `engine/`, `bundles/`, `utils/`, `interactions/`, `plugins/`, `shapes/`, `updaters/`, `effects/`, `paths/`, `presets/`, `cli/`, `palettes/`; **omitted** `demo/` (≈324M), wrappers/websites/templates/markdown/scripts.
 - Use frame-seeded/deterministic motion for video export.
