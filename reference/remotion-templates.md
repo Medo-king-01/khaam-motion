@@ -1,7 +1,7 @@
 <!-- Khaam Motion · reference file, loaded on demand from SKILL.md -->
 # Remotion templates: ready starters for common video jobs
 
-Use these when the job is a Remotion job (`reference/remotion.md`) and one of these patterns fits. They are **third-party Remotion templates**, not Khaam defaults. HyperFrames remains the default engine for most Khaam work.
+Use these when the job is a Remotion job (`reference/remotion.md`) and one of these patterns fits. The 17 listed upstream starters are **third-party Remotion templates**, not Khaam defaults. `tegaki/` is a separate Khaam-authored optional starter that installs the external Tegaki package. HyperFrames remains the default engine for most Khaam work.
 
 ## License and safety (read before use)
 
@@ -33,6 +33,7 @@ Use these when the job is a Remotion job (`reference/remotion.md`) and one of th
 | `packages/template-electron` | Remotion + Electron desktop app starter. | Desktop Remotion tool/app workflows. | `templates/remotion/electron/` | Re-copy from pinned monorepo snapshot |
 | `packages/template-element-library` | Reusable Remotion element/component library. | Reusable branded motion components/elements. | `templates/remotion/element-library/` | Re-copy from pinned monorepo snapshot |
 | `packages/template-recorder` | Remotion Recorder app template. | Recording/studio workflow reference (large demo media omitted). | `templates/remotion/recorder/` | Re-copy from pinned monorepo snapshot |
+| Khaam + [Tegaki](https://github.com/gkurt/tegaki) | Arabic handwriting-reveal composition with frame-controlled progress. | Short hand-drawn title/word, only when the chosen look calls for it; test RTL and seeking. | `templates/remotion/tegaki/` (Khaam-authored; external Tegaki package is installed project-locally) | Follow `reference/tegaki.md`; pin and review the package/license |
 
 ## Vendored copies (private use) and refreshing
 
@@ -83,6 +84,11 @@ cat .cache/creative-tools/remotion-templates/template-overlay/README.md
 - The upstream sample video is intentionally skipped by the fetch script (large demo binary). Bring your own footage into the video project.
 - `public/theboldfont-license.rtf` is included upstream; read it before using the font. For Arabic projects, prefer Khaam's Arabic font flow (`reference/arabic-fonts.md`, `scripts/get_fonts.py`).
 - For Arabic captions, prefer Khaam's timed-narration path over the English-only Whisper example.
+
+### Tegaki handwriting starter
+- This is original Khaam integration code, not an upstream Remotion template. It uses the external `tegaki@1.1.0` package and its bundled Amiri font, with versions pinned in `templates/remotion/tegaki/package.json`.
+- Install only inside the copied project, after explaining the download and getting permission. Tegaki is MIT; Amiri is SIL OFL 1.1; Remotion has its own separate license.
+- Use only for a specific handwriting-reveal direction. Arabic joins, font coverage, rendered frames and deterministic seeking must pass `reference/tegaki.md` before production use.
 
 ## What not to do
 

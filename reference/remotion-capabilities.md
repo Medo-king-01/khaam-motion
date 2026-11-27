@@ -22,7 +22,7 @@ Stay with HyperFrames for most Arabic editorial/told/story videos where its star
 | Composition model | `Composition`, `Still`, `Folder`, `registerRoot` | Define video/still entry points; keep one composition per deliverable variant. |
 | Timing & animation | `useCurrentFrame`, `useVideoConfig`, `interpolate`, `spring`, `Easing`, `Sequence`, `Series`, `Loop` | Deterministic frame-based motion. Drive everything from frame/time, not wall clock. |
 | Layout & styling | React/CSS, `AbsoluteFill`, `Img`, inline styles | Build layouts as components; keep Arabic RTL rules in text containers. |
-| Text & fonts | `@remotion/google-fonts`, `@remotion/fonts`, `@font-face`, `staticFile` | Load Arabic-safe fonts; test shaping. Avoid letter-splitting Arabic text. |
+| Text & fonts | `@remotion/google-fonts`, `@remotion/fonts`, `@font-face`, `staticFile`; optional `tegaki` package | Load Arabic-safe fonts; test shaping. Avoid letter-splitting Arabic text. For an intentional handwriting reveal, use the project-local Tegaki starter and frame-controlled progress (`reference/tegaki.md`). |
 | Media | `<Video>`, `<Audio>`, `<Img>`, `<OffthreadVideo>`, `staticFile`, `getAudioDurationInFrames` | Sync footage/audio; prefer `OffthreadVideo` for heavy decode; keep assets in project/public. |
 | Captions/subtitles | `@remotion/captions`, caption components, word timings | Use Khaam narration timings for Arabic; do not assume English-only Whisper. See `templates/remotion/tiktok-captions/`. |
 | Metadata & props | `calculateMetadata`, Zod schema (`zod`, `@remotion/zod-types`) | Data-driven durations, dimensions, and input props. Validate inputs. |
@@ -37,7 +37,7 @@ Stay with HyperFrames for most Arabic editorial/told/story videos where its star
 
 ## Khaam-ready starter templates
 
-Vendored for private use in `templates/remotion/` (see `NOTICE.md`): 17 starters covering overlay, code, captions, 3D, stills, audiograms, data-driven visuals, Skia, and AI-assisted workflows, plus selected desktop/recorder references.
+Vendored for private use in `templates/remotion/` (see `NOTICE.md`): 17 upstream starters covering overlay, code, captions, 3D, stills, audiograms, data-driven visuals, Skia, and AI-assisted workflows, plus selected desktop/recorder references. `templates/remotion/tegaki/` is a separate Khaam-authored optional starter using the external Tegaki npm package; see `reference/tegaki.md` and its license notes.
 
 | Template | Capability showcased | Best for |
 |---|---|---|

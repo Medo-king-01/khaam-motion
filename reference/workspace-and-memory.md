@@ -97,5 +97,5 @@ Those versions were installed globally, in `~/.claude/skills/khaam-motion/`.
    - The old global copy moves to `~/.cache/khaam-motion/backup/khaam-motion-<old version>-<date>/`. Left there, it would override the folder's copy.
    - The workspace is completed: the handoff lists their old projects, and nothing is moved.
    - Their projects and taste live outside the skill and stay untouched.
-3. If the sound library isn't installed, offer it once.
+3. If the required sound library is absent, resume the required setup step before full production: explain the size/time, ask permission, install and verify it; a refusal leaves setup incomplete.
 4. Say what's new in 4 short lines.

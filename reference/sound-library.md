@@ -5,7 +5,7 @@ A free library of **1,409 sound effects** that the skill builds on the user's ow
 
 **Since 1.7 the default sound of every video is the film sound in `reference/film-sound.md`:** since sound v2 (2026-11-12) three to five real recordings of the things shown (`sounds/library/`, CC0, shipped with the skill) and a real bed of the place or none, mixed and checked by `scripts/sound_mix.py` and `scripts/check_mix.py`; the code-made beds and effects are sketches only. This library adds designed moves (whooshes, risers) and the sounds of **pictures of interfaces**; its interface packs are never the sound of a reflective, religious or story video.
 
-**Not installed yet? Nothing waits for it.** The real recordings in `sounds/library/` ship with the skill, so the first video already has its whole sound with no download and no licence (the mixer and the check need only NumPy and SciPy in the Python that runs them: preflight's `packages_in_current_python`). Offer the library after the first video, as before. A style that names a uisfx pack uses the shipped `button-click` on its interface moments until the library is in. (Until sound v2, beds and material effects were made by code here; they are sketches now.)
+The 33 real recordings in `sounds/library/` ship with the skill and remain available immediately. The separate 1,409-effect library is now a required part of standard setup, installed before the first video. Do not offer it after the first video as an optional add-on. The shipped recordings remain the limited fallback only when the user explicitly requests proceeding without the full setup. (Code-made beds and material effects are sketches, not final Foley.)
 
 ## What it holds
 | Folder | Source | Licence | What it is |
@@ -14,9 +14,9 @@ A free library of **1,409 sound effects** that the skill builds on the user's ow
 | `uisfx/sounds/<pack>/<cue>.mp3` | uisfx 0.4.0 (https://github.com/romainsimon/uisfx) | CC0 | 936 interface sounds: 12 packs (`minimal`, `soft`, `glass`, `studio`, `organic`, `mechanical`, `dreamy`, `scifi`, `rubber`, `arcade`, `cinematic`, `zen`) × 78 cues (`success`, `error`, `notification`, `toggle`, `send`, `add-to-cart`, `unlock`…). `uisfx/manifest.json` describes each pack (`description`, `bestFor`) and each cue |
 | `catalog.json` | written by the installer | | every file with its source, licence and SHA-256, in the skill's own catalog format (`reference/sfx-catalog-format.md`) |
 
-Both are fine in personal, business and client videos, with no credit needed. This library is not in the skill's ZIP (only the 33 CC0 recordings of `sounds/library/` are): the installer builds it from the official sources, and every download must match a fixed hash.
+Both are fine in personal, business and client videos, with no credit needed. The large pack is not stored in the skill ZIP; only the 33 CC0 recordings in `sounds/library/` are bundled. The installer builds the extra pack from official sources, and every download must match a fixed hash.
 
-## Install (ask once; never without a yes)
+## Required setup install (ask before downloading; not an optional add-on)
 - Where: `~/.cache/khaam-motion/sfx/` (the library) and `~/.cache/khaam-motion/earshot-venv/` (a small Python environment with numpy, scipy, soundfile, numba and Earshot; no torch, no AI models). Never inside the skill folder.
 - Cost: about 530 MB on disk and 5–10 minutes (most of it is downloading the Python packages). No account, no key, nothing paid, and no audio leaves the computer.
 - Command (the skill's scripts run on Python 3.9+; this installer's Earshot half needs 3.10+, Earshot's own requirement, so use `py -3.11` on Windows if `python` is older; on a Mac the tools' Python, `reference/mac.md`, is 3.12):
@@ -26,8 +26,8 @@ Both are fine in personal, business and client videos, with no credit needed. Th
   It prints its progress. If it stops with "does not match its published hash", tell the user and stop: never work around a hash check. On any other failure, fix the cause and rerun only that step (`setup`, `earshot`, `uisfx` or `catalog`).
 - Check: `python "<skill>/scripts/preflight.py"` shows `"khaam_sound_library": {"installed": true, "sounds": 1409}`, and from then on `sfx_library` points to the library by default (a project's `.khaam/config.json` or `KHAAM_SFX_LIBRARY` can still point elsewhere). `python "<skill>/scripts/verify_sfx.py"` re-checks every file's hash.
 - A user who installed the 1.4 sound add-on from Khaam's site already has this exact library (same script, same paths): nothing to redo.
-- The two halves install apart. If the Earshot step cannot run on this computer (a security tool may block freshly downloaded code: then stop, don't work around it), install the interface half alone: `install_sounds.py uisfx`, then `install_sounds.py catalog` (936 CC0 sounds, about a minute). Tell the user the designed-move half is missing; the material palette covers most of it.
-- Record the answer in `~/.cache/khaam-motion/onboarding.json` as `"sounds_choice": "yes|no|later"` so it is offered only once.
+- The pack is complete only when both halves and the 1,409-entry catalog verify. If Earshot is blocked by a security tool or any hash check fails, stop; never bypass the check or call a partial install complete. Fix the cause only with the user's authorization, then resume the failed step. If it cannot be installed, disclose that normal setup is incomplete.
+- After the user approves, run the installer during setup—not after the first video. Verify `khaam_sound_library.installed: true` and `sounds: 1409` in preflight; only then record `sounds_setup: complete` in `~/.cache/khaam-motion/onboarding.json`. Do not record `no` or `later` as a completed setup. If the user declines, normal setup remains incomplete; a reduced workflow using the bundled 33 recordings requires an explicit request.
 
 ## Choose: sources for each moment, in this order
 0. **Real recordings of the things shown, and a real bed of the place or none** (`sounds/library/`, `reference/film-sound.md`).

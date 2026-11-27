@@ -34,6 +34,7 @@ TEMPLATES = {
     'electron': 'Remotion + Electron desktop app template.',
     'element-library': 'Reusable Remotion element/component library template.',
     'recorder': 'Remotion Recorder app template (local recording/studio workflow; large demo media omitted).',
+    'tegaki': 'Arabic handwriting-reveal starter using the separately licensed Tegaki npm package.',
 }
 
 

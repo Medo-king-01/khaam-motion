@@ -54,7 +54,7 @@ Everything lives in `~/.cache/khaam-motion/tools/`. Deleting that folder (on the
 - **A download failed:** the internet; run `get --yes <that one>` again.
 - **A hash did not match:** stop and tell the user; never work around it.
 - **A Mac older than macOS 12:** say `blocked_tell_user` (update macOS first).
-- **The optional sound library** (`install_sounds.py`) runs on the tools' Python (3.12): its Earshot half needs Python 3.10+ (Earshot's own requirement), which that Python meets.
+- **The required sound library for standard setup** (`install_sounds.py`) runs on the tools' Python (3.12): its Earshot half needs Python 3.10+ (Earshot's own requirement), which that Python meets. Ask before the 530 MB download and verify it with preflight.
 
 ## What only a Mac can prove
 This route was built and checked on Windows (Python, and Git Bash for the script) with macOS mocked, and its downloads inspected (CPU, minimum macOS, signature) without running them; see `CHANGELOG.md` 1.7.1. What only a real Mac shows: the binaries running, Apple's windows not appearing, the privacy window's words, Safari's folder, and a whole first video.

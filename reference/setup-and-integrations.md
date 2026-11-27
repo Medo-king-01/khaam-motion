@@ -9,6 +9,9 @@ Run `scripts/preflight.py` from the project using a verified Python 3.9+ interpr
 
 For code video rendering: use compatible Node + renderer dependencies, Playwright/Chromium (or an already working capture path), FFmpeg and ffprobe. For simple footage assembly FFmpeg may be enough. Select a pipeline before asking to install anything. Prefer existing compatible versions and lock files. Use a project-local Node stack when no authorized shared toolkit exists.
 
+## Required sound library
+The 33 CC0 recordings in `sounds/library/` ship with the skill. The separate 1,409-effect library is required to complete normal setup: after the read-only preflight, explain its roughly 530 MB size and 5–10 minute install, ask permission, run `python -I "<skill>/scripts/install_sounds.py" all`, and rerun preflight to verify all 1,409 entries. It installs locally under `~/.cache/khaam-motion/`; no account, key, payment, or audio upload is involved. A refusal or failed hash/security check means setup is incomplete; never bypass verification. A limited workflow with the bundled recordings is only for a user who explicitly asks to proceed without the complete sound setup.
+
 For procedural sound: NumPy + SciPy. For waveform analysis: librosa + soundfile. With permission create a separate audio venv and install only those packages initially. Models/PyTorch are not required for baseline SFX use. Record versions after testing; don't claim arbitrary latest packages have been tested together. Optional CLAP/PANNs require the specific local-model prerequisites described in the sound guide. CoNeTTE is experimental/manual and can be skipped.
 
 Typical consented setup commands, not automatic actions:

@@ -4,7 +4,8 @@
 [Remotion](https://github.com/remotion-dev/remotion) writes video as React components. It complements HyperFrames rather than competing with it. Use it when React pays off:
 - real 3D through `@remotion/three` (React Three Fiber);
 - a data-driven video, or a templated series with typed props;
-- many variants rendered in one batch.
+- many variants rendered in one batch;
+- an approved handwriting-reveal direction using Tegaki's frame-controlled renderer (`reference/tegaki.md`), installed only in the project.
 
 Everything else starts in HyperFrames (`reference/hyperframes.md`).
 
@@ -41,4 +42,4 @@ npx remotion browser ensure
 
 ## Ready-made Remotion templates
 
-For common Remotion patterns (overlay, animated code snippets, TikTok-style captions), see `reference/remotion-templates.md`. It covers the four repos requested by users, license caveats (Remotion License), vendored private-use starters in `templates/remotion/`, and the fetch script: `python scripts/fetch_remotion_templates.py`. For a broader capability map (core APIs/packages, 3D, captions, data-driven, rendering), see `reference/remotion-capabilities.md`.
+For common Remotion patterns (overlay, animated code snippets, TikTok-style captions and the optional Tegaki handwriting starter), see `reference/remotion-templates.md`. It covers license caveats (Remotion License), vendored private-use starters in `templates/remotion/`, and the fetch script: `python scripts/fetch_remotion_templates.py`. For a broader capability map (core APIs/packages, 3D, captions, data-driven, rendering), see `reference/remotion-capabilities.md`.

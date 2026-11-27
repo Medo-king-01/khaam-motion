@@ -36,7 +36,8 @@
 - **قطع نص وقصة جاهزة:** جملة تضوي كلمة كلمة وكلماتها المهمة بالذهبي، وبطاقة ثابتة للنص المنقول ومرجعه، وسلّم بـ«؟» فوق، وبطاقتين للمقارنة، وبداية بآخر لقطة ثم رجوع، وخاتمة هادية.
 - **مشاهد مرسومة بالكود وشخصيات بلا وجوه:** ليل يصير فجر، مطر وبرق، حارة نجدية، غرفة، بحر، وورقة ترسم نفسها.
 - **صوت حقيقي مثل الأفلام:** ٣–٥ تسجيلات حقيقية للأشياء اللي تنشاف (٣٣ تسجيل مجاني CC0 يجون مع المهارة)، وخلفية حقيقية للمكان أو بدون خلفية، وبدون موسيقى إلا إذا طلبت، وفحص للمكس قبل ما تسمعه.
-- **مكتبة أصوات مجانية:** 1,409 مؤثر صوتي تنبني على جهازك، وتسجيلات حقيقية من Openverse. الصوت كامل من أول فيديو بدونها، والمكتبة إضافة.
+- **مكتبة المؤثرات جزء مطلوب من الإعداد:** 1,409 مؤثرًا للحركة والواجهات تُبنى محليًا قبل أول فيديو (نحو 530 ميغابايت و5–10 دقائق، بعد الإذن). تبقى 33 تسجيلًا حقيقيًا CC0 مرفقة للبدء المحدود، والتسجيلات الحقيقية تظل الأساس للأشياء الظاهرة.
+- **كتابة بخط اليد عند الحاجة:** قالب Remotion اختياري يستخدم Tegaki لإظهار كلمة عربية كأنها تُكتب، بتقدم مرتبط بإطار الفيديو. يتطلب تثبيتًا داخل مشروع الفيديو بعد الإذن، وفحصًا فعليًا لاتصال الحروف والرندر (`reference/tegaki.md`).
 - **صوت معلّق بالذكاء الاصطناعي** من ElevenLabs (تصميم الصوت ثم Eleven v4)، متزامن مع الحركة والكابشن. اختياري، ويكلف ٦$ بالشهر في Starter (أول شهر ١$)، والمفتاح يدخل بملف صغير، ما يمر بالمحادثة أبدًا.
 - **النشر:** الغلاف من إطار الهوك مع فحص بحجم شبكة البروفايل، وكابشن جاهز فيه سطر المصادر لما يكون في الفيديو نص منقول.
 - **«بلّغ عن مشكلة»:** تقرير قصير ترسله لنا، عشان نحسّن النسخة الجاية.
@@ -48,6 +49,7 @@
 | كمبيوتر أو لابتوب (ويندوز أو ماك) | ✅ | الجوال والمتصفح ما يكفون |
 | تطبيق Claude للكمبيوتر + اشتراك Pro أو أعلى | ✅ | Pro بـ٢٠$ بالشهر. المجاني ما فيه قسم Code |
 | Python (مع NumPy وSciPy وPillow) وNode 22+ وFFmpeg | ✅ | Claude يتأكد منها ويثبّت الناقص بعد ما تأذن له. الماك: macOS 12 أو أحدث |
+| مكتبة المؤثرات الإضافية (1,409) | مطلوبة لإكمال الإعداد، بعد الإذن | تنزيل محلي بنحو 530 ميغابايت؛ 33 تسجيلًا أساسيًا مرفقة |
 | حساب ElevenLabs | اختياري | لتصميم صوت لك والصوت المعلّق والمؤثرات المولّدة. صوتك المسجّل ما يحتاجه |
 
 ## الملفات
@@ -82,7 +84,7 @@ What's in it:
 - **HyperFrames upstream registry (Batch 1, Apache-2.0).** Vendored selected HyperFrames upstream assets in `integrations/hyperframes/` (239 components, 9 examples, registry index, shader-transitions) with `reference/hyperframes-registry.md` and `reference/hyperframes-craft-notes.md`; adapt LTR components to Khaam Arabic/RTL rules before use.
 - **Narration first (1.7).** The user's own recording is turned into word timings on their computer, or a voice is designed for them with ElevenLabs Voice Design; library voices only when the user names one. Scene events are placed by naming the spoken word.
 - **Stories (1.7).** Four ways of telling, a word-lit text block, a still card for verified quoted text, a ladder with «؟», comparison cards, a rewind cold open, an end card, the «حكاية بالضوء» style, and a code-drawn scene and faceless figure kit.
-- **Sound.** A film-style mix by default (since 1.7.0's sound v2: real recordings of what is shown, 3–5 of them, a real bed of the place or none, no music unless asked, a mix check that also fails static and buzz); 33 CC0 recordings ship in `sounds/library/`, and a free 1,409-sound library is built locally.
+- **Sound.** A film-style mix by default (sound v2: real recordings of what is shown, 3–5 of them, a real bed of the place or none, no music unless asked, with a mix check); 33 CC0 recordings ship in `sounds/library/`, and the separate free 1,409-effect library is required during setup and built locally (about 530 MB, after permission).
 - **Pace.** The pace and motion standard P1–P13 (`reference/pace.md`) for planning every video, and `scripts/check_pace.py`, which measures the draft against it.
 - **Publishing (1.7).** The cover from the hook frame, a caption template with a sources block.
 - **Keys.** The ElevenLabs key is set up through a file opened in Notepad/TextEdit, never through the chat.

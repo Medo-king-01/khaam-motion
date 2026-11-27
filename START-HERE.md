@@ -20,9 +20,10 @@
 1. **نزّل التطبيق** وسجّل دخولك.
 2. **افتح قسم Code**، واختر المجلد اللي تبي فيه فيديوهاتك. المهارة تنثبّت داخله بس، مو على كل الجهاز.
 3. **اسحب ملف `khaam-motion.zip` للمحادثة**، واكتب: **«ثبّت المهارة»**. لما يطلب إذن، اضغط **Allow**. على الماك: لو طلع لك مجلد بدل الملف (سفاري يفك الضغط بنفسه)، اسحب المجلد نفسه.
-4. **علّمه ذوقك:** حط في مجلد «إلهام» فيديوهات أو صور تعجبك، أو الصق له رابط فيديو.
-5. **اطلب أول فيديو:** «سوّ لي فيديو عن [فكرتك]».
-6. **كل مرة بعدها:** افتح نفس المجلد في قسم Code، وقل **«كمّل»**.
+4. **أكمل إعداد الصوت:** قبل أول فيديو، ثبّت مكتبة المؤثرات المطلوبة بعد موافقتك (نحو 530 ميغابايت و5–10 دقائق؛ بلا حساب أو مفتاح).
+5. **علّمه ذوقك:** حط في مجلد «إلهام» فيديوهات أو صور تعجبك، أو الصق له رابط فيديو.
+6. **اطلب أول فيديو:** «سوّ لي فيديو عن [فكرتك]».
+7. **كل مرة بعدها:** افتح نفس المجلد في قسم Code، وقل **«كمّل»**.
 
 Claude يجهّز لك داخل المجلد ثلاث مجلدات بس:
 - **خام:** حط فيه مقاطعك اللي تصوّرها.
@@ -65,12 +66,10 @@ Claude ما يطلع اللي في بالك من أول مرة. أول فيدي�
 - Claude **يستأذنك قبل كل طلب مدفوع**، ويقول لك كم بيكلف من رصيدك: تصميم الصوت حوالي ١٥٠–٣٠٠ رصيد للمرة، والكلام حوالي ٤٠٠ رصيد لكل ألف حرف.
 - **ما تبي صوت؟** عادي، الموشن يطلع مع صوت كامل مجاني: أصوات حقيقية للأشياء اللي تنشاف، وتجي مع المهارة.
 
-## ٦. مكتبة أصوات مجانية
-الصوت كامل من أول فيديو: ٣٣ تسجيل حقيقي (CC0) يجون مع المهارة نفسها، والمكتبة إضافة. ما نستخدم أصوات مصنوعة بالكود في الفيديو النهائي: الخلفية المصنوعة تنسمع «تشويش».
+## ٦. مكتبة الأصوات المطلوبة في الإعداد
+تأتي المهارة مع ٣٣ تسجيلًا حقيقيًا (CC0) للاستخدام فورًا. ولإكمال الإعداد القياسي، تُثبّت قبل أول فيديو مكتبة الـ**1,409 مؤثرًا** للحركة والواجهات. حجم التنزيل نحو 530 ميغابايت ويستغرق ٥–١٠ دقائق؛ مجاني، بلا حساب أو مفتاح.
 
-المهارة تبني لك على جهازك مكتبة فيها **1,409 مؤثر صوتي** للحركة والواجهات: ضغطات، وفرقعات، وwhoosh، وضربات، ونغمات تنبيه.
-- Claude يعرضها عليك مرة وحدة بعد أول فيديو، أو قل له أي وقت: **«ثبّت الأصوات»**.
-- مجانية، بدون حساب ولا مفتاح. المساحة حوالي 530 ميقا، والوقت من ٥ إلى ١٠ دقايق.
+بعد فحص المتطلبات، يشرح Claude الحجم والوقت ويطلب إذنك قبل التنزيل، ثم يشغّل `scripts/install_sounds.py all` ويتأكد من ظهور 1,409 صوتًا في الفحص المسبق. إذا رفضت التنزيل أو فشل التثبيت، يبقى الإعداد القياسي غير مكتمل؛ ويمكن متابعة التخطيط، أو تنفيذ مسار محدود بالتسجيلات الـ33 إذا طلبت ذلك صراحة. التثبيت لا يعني استخدام هذه المؤثرات في كل فيديو: تسجيلات الأشياء الحقيقية تظل الأساس، ومكتبة الحركة تُستخدم فقط حيث يناسب المشهد.
 
 ## ٧. التكلفة
 - **Claude:** اشتراكك الشهري.
@@ -83,7 +82,7 @@ Claude ما يطلع اللي في بالك من أول مرة. أول فيدي�
 | Claude ما يشوف المهارة | افتح دردشة جديدة في نفس المجلد |
 | ناقص برنامج | قل: «ثبّت الناقص» |
 | Claude قال ناقص Pillow (أو NumPy أو SciPy) | قل: «ثبّت الناقص». مكتبة صغيرة يثبّتها بعد إذنك، مرة وحدة |
-| المؤثرات الصوتية ضعيفة | قل: «ثبّت الأصوات» (§٦) |
+| مكتبة الأصوات غير مثبتة | أكمل خطوة الصوت المطلوبة في الإعداد (§٦) |
 | الحروف العربية مقطّعة | قل: «طبّق دليل الكتابة العربية في المهارة» |
 | «حتى» طلعت «حق» في العنوان | قل: «بدّل خط العنوان». خط IBM Plex يسويها في HyperFrames، والحل خط ثاني أو «حتـى» بتطويل |
 | الرندر بطيء | قل: «سوّ معاينة صغيرة أول» |
@@ -163,12 +162,16 @@ Follow this when the user says «ابدأ» / «ثبّت المهارة» / «ح
    - **HyperFrames** needs Node 22+ and nothing else ahead of time (`reference/hyperframes.md`).
    - **NumPy, SciPy and Pillow** (the mixer and the sound and pace checks run on NumPy and SciPy; Pillow gives a reference's contact sheets their time labels): if preflight's `packages_in_current_python` shows `numpy`, `scipy` or `PIL` false, ask once («ناقص مكتبات صغيرة يحتاجها الصوت والفحص. أثبّتها؟»), then `python -m pip install numpy scipy pillow`, the missing ones only. **1.7.1:** Pillow joined this Windows step. A script that still finds one missing says so in one plain line with the command; the user's own sentence is «ثبّت الناقص». On a Mac, step 3's `get` puts NumPy, SciPy and Pillow in its own private environment: never `pip install` into another Python there.
    - Re-run preflight after installs. Never install everything "just in case".
-7. **Their taste first.**
+7. **Required sound-library setup, before the first video.**
+   - If preflight already reports `khaam_sound_library.installed: true` and 1,409 sounds, continue. Otherwise explain the download (about 530 MB, 5–10 minutes, free, no account or key) and ask permission.
+   - On a yes, run `python -I "<skill>/scripts/install_sounds.py" all`, then rerun preflight. Record `sounds_setup: complete` only after verification.
+   - If declined or blocked by a hash/security failure, stop the normal setup and explain that it is incomplete; never bypass hash checks. Do not offer this as a post-first-video add-on. A limited workflow using the 33 bundled recordings is available only if the user explicitly requests it.
+8. **Their taste first.**
    - Say the taste line (`SKILL.md` §0).
    - Ask for 2–3 references: files in «إلهام», or links (yt-dlp, study only), plus brand colours, fonts or a mood.
    - Build their own style and save it in `.khaam/styles/`.
    - Offer the examples in `styles/` only if they have no direction, framed as starting points.
-8. **First video.**
+9. **First video.**
    - Keep it small: 6–10 s, 9:16. Make the folder with `workspace.py --new-video`.
    - **The user's own first request wins:** when it already says what they want (a length, a narration, a designed voice), make that video instead of the small one, with Gate A and every paid request approved as usual, and fold step 9's voice offer into its plan.
    - **Engine:** HyperFrames by default (`reference/hyperframes.md`), or the canvas renderer when Node 22+ isn't there.
@@ -179,7 +182,7 @@ Follow this when the user says «ابدأ» / «ثبّت المهارة» / «ح
      4. The final, delivered into «جاهز» and opened for the user.
    - **No key needed:** the sound ships with the skill: 3–5 real recordings of the things shown and a real bed of the place or none (`sounds/library/`, `reference/film-sound.md`); Openverse adds what the library lacks. Code-made sounds are sketches only, never the sound of a delivered video (sound v2).
    - For any Arabic text, `reference/arabic-typography.md` is mandatory.
-9. **After the first preview, offer narration (first run only, in full).**
+10. **After the first preview, offer narration (first run only, in full).**
    - Explain §5 in a few lines: (a) their own voice, free: they record, Claude times it on their computer (`scripts/align_voice.py`; the one-time setup's size is said first and needs a yes); (b) their own voice made in ElevenLabs from a short recording (`reference/voiceover.md` §10.7), or (c) a voice designed for them; both with ElevenLabs Starter ($6/month, $1 the first month), the voice made and saved first, then Eleven v4, approval before every paid request. The alternative is motion + free sound. Never offer a library voice.
    - **If they choose their own voice:** run `align_voice.py plan`, ask its `ask_user` line, then `setup --yes` (`reference/voiceover.md` §10c).
    - **If they choose their own voice made in ElevenLabs, or a designed voice:**
@@ -188,9 +191,6 @@ Follow this when the user says «ابدأ» / «ثبّت المهارة» / «ح
      3. Run `key_setup.py --check --online`. It prints only OK or the problem.
      4. Make their voice on their next narrated video (designed: `reference/voiceover.md` §10d; from their recording: §10.7), not now: it takes a voice slot, the first design call is paid, and both belong in that video's Gate A. (When the first video is itself the narrated one they asked for, that video's Gate A is the place.)
    - Record `voice_offer_done` and `voice_choice` (own|cloned|designed|no|later) in `~/.cache/khaam-motion/onboarding.json`.
-10. **Offer the sound library (once).**
-    - In two short lines (§6): 1,409 free sounds, about 530 MB, 5–10 minutes, no account or key.
-    - On a yes, follow `reference/sound-library.md`. Record `sounds_choice`.
 11. **Close the onboarding** in the user's language (Arabic users get Arabic only, no English labels such as "Tip:") with three short tips:
     - where their files live (the three folders, in their folder);
     - how to ask for changes («غيّر اللون»، «أبطئ الحركة»، «بدّل الخط»);
