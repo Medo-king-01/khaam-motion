@@ -1,13 +1,14 @@
 <!doctype html>
 <!--
   khaam-motion HyperFrames starter (Arabic, 9:16, 8 s). Copy this folder into the video's folder, then:
-  fonts → assets/fonts/display.ttf and text.ttf (the same file when there is no second language), words → timing.js (scripts/cues.py), look → the :root variables (<skill>/reference/hyperframes.md).
+  fonts → assets/fonts/display.ttf and text.ttf (the same file when there is no second language), words → timing.js (scripts/cues.py), look → motion-tokens.json → motion-tokens.css (<skill>/reference/hyperframes.md).
   Arabic rules: dir="rtl" on every row of separate words, never on <html>; whole words only, never letter splits.
 -->
 <html lang="ar" data-resolution="portrait">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1080, height=1920" />
+    <link rel="stylesheet" href="motion-tokens.css" />
     <!-- GSAP 3.15.1 — copied from the skill's vendored snapshot (integrations/gsap/, commit 5e6c35ff8eedea12d4f229129def635277d8b0f2, GSAP Standard License); see vendor/GSAP-NOTICE.md. Loaded locally so the template works offline. -->
     <script src="vendor/gsap.min.js"></script>
     <!-- The narration's word times and cue("<spoken word>"): made by scripts/cues.py build -->
@@ -19,11 +20,6 @@
     <script src="kit/paper.js"></script>
     -->
     <style>
-      :root {
-        --bg: #111317;      /* background */
-        --ink: #f5f2ec;     /* text */
-        --accent: #ff5a36;  /* one accent colour */
-      }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); }
       #root { position: relative; width: 100%; height: 100%; }
