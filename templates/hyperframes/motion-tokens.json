@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "description": "Khaam HyperFrames starter tokens. Set these from the approved project TASTE.md; this is a neutral starter, not a required style.",
+  "tokens": {
+    "bg": "#111317",
+    "ink": "#f5f2ec",
+    "accent": "#ff5a36"
+  }
+}

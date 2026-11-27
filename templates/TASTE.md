@@ -31,6 +31,7 @@ Visual version for the user: plan/design.html (same values as §2–§5 — alwa
 - **Must NOT feel like:** <e.g. corporate stock template, glossy 3D, trailer-style>
 
 ## 3. Visual design system
+- **Shared HyperFrames style tokens:** `templates/hyperframes/motion-tokens.json` is the single editable source for `bg`, `ink`, and `accent`; generate/verify its CSS with `python3 scripts/sync_motion_tokens.py templates/hyperframes/motion-tokens.json [--check]`. Copy the project's approved §3 values here before use; starter values are not approved brand choices. Keep extended palette entries in this TASTE section until the token schema is intentionally extended.
 - **Palette (hex + role, 60-30-10):** background <#…> · primary <#…> · accent <#…> (only hero words/CTA) · text <#…> · shadow/outline <#…>
 - **Typography:** display <family, weight, file path> · keyword <…> · captions <…> · sizes (px at 1080 w): filler <…>, keyword <…>, hero <…> · tracking/leading <…> · case <…>
 - **Arabic (if any):** display <family + weight + file> · text <family> · numerals <Western 0–9 | Arabic-Indic ٠–٩> · language <Gulf dialect | MSA> · line-height <1.4–1.7> · rules: whole words only, RTL, no tracking (`<skill>/reference/arabic-typography.md`)

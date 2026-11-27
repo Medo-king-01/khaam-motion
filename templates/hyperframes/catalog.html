@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>فهرس مشاهد Khaam HyperFrames</title>
+  <link rel="stylesheet" href="motion-tokens.css">
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: clamp(20px, 5vw, 64px); background: var(--bg, #111317); color: var(--ink, #f5f2ec); font-family: system-ui, sans-serif; }
+    main { max-width: 1200px; margin: auto; }
+    h1 { font-size: clamp(2rem, 5vw, 3.3rem); margin: 0 0 12px; }
+    .intro { max-width: 72ch; line-height: 1.8; color: color-mix(in srgb, var(--ink, #f5f2ec), transparent 20%); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 22px; margin-top: 34px; }
+    article { border: 1px solid #ffffff29; background: #ffffff08; border-radius: 20px; overflow: hidden; }
+    article img { display: block; width: 100%; aspect-ratio: 9 / 16; object-fit: cover; background: #191b20; }
+    .body { padding: 18px; }
+    h2 { margin: 0 0 10px; font-size: 1.25rem; }
+    p { line-height: 1.7; margin: 8px 0; }
+    .meta { color: #b8b8b8; font: .85rem/1.6 ui-monospace, monospace; direction: ltr; text-align: right; }
+    .badge { display: inline-block; border: 1px solid var(--accent, #ff5a36); color: var(--ink, #f5f2ec); border-radius: 999px; padding: 3px 9px; font-size: .8rem; }
+    a { color: var(--ink, #f5f2ec); }
+    .warning { border-right: 3px solid var(--accent, #ff5a36); padding: 10px 14px; margin: 20px 0; background: #ffffff09; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>فهرس مشاهد Khaam</h1>
+  <p class="intro">ستة تراكيب معلوماتية مملوكة لـ Khaam، وليست استيرادًا لمكتبة خارجية. الصور أدناه رسومات تخطيطية تقريبية وليست لقطات تصيير أو ضمانًا لشكل الإخراج. راجع تكوينات المشروع والخطوط والتوقيت الفعلي قبل الاستخدام.</p>
+  <p class="warning">قواعد العربية وRTL وسياق المصدر مقدّمة على شكل القالب. لا تضف اقتباسًا أو قياسًا أو حقيقة لم يقدّمها المستخدم أو مصدر موثوق واضح.</p>
+  <section class="grid" id="catalog" aria-live="polite"></section>
+  <noscript>يلزم تفعيل JavaScript لقراءة motion-catalog.json محليًا.</noscript>
+</main>
+<script>
+(async () => {
+  const target = document.querySelector('#catalog');
+  try {
+    const response = await fetch('motion-catalog.json');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const catalog = await response.json();
+    for (const item of catalog.templates) {
+      const card = document.createElement('article');
+      const image = document.createElement('img');
+      image.src = item.preview;
+      image.alt = `رسم تخطيطي: ${item.name}`;
+      image.loading = 'lazy';
+      card.append(image);
+      const body = document.createElement('div');
+      body.className = 'body';
+      const title = document.createElement('h2');
+      title.textContent = item.name;
+      const purpose = document.createElement('p');
+      purpose.textContent = item.purpose;
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.textContent = 'رسم تخطيطي · ليس تصييرًا نهائيًا';
+      const source = document.createElement('p');
+      source.className = 'meta';
+      source.textContent = item.source;
+      const link = document.createElement('a');
+      link.href = item.source;
+      link.textContent = 'فتح ملف القالب';
+      body.append(title, purpose, badge, source, link);
+      card.append(body);
+      target.append(card);
+    }
+  } catch (error) {
+    target.textContent = `تعذر تحميل الفهرس: ${error.message}. افتح هذا الملف عبر خادم محلي إذا كان fetch محجوبًا عند فتح file://.`;
+  }
+})();
+</script>
+</body>
+</html>

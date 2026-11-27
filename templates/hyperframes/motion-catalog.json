@@ -1,0 +1,465 @@
+{
+  "version": 1,
+  "source": "Khaam-owned HyperFrames compositions; metadata only, not a renderer or a third-party asset pack.",
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "orientation": "portrait"
+  },
+  "sharedTokens": "motion-tokens.json",
+  "templates": [
+    {
+      "id": "title",
+      "name": "عنوان عربي",
+      "source": "compositions/title.html",
+      "purpose": "عنوان افتتاحي قصير يقرأ من أول إطار أو يظهر مع بداية الجملة.",
+      "layoutModes": [
+        "fullscreen",
+        "transition"
+      ],
+      "sourceConfig": {
+        "line": "LINE"
+      },
+      "variables": {
+        "required": [
+          "line"
+        ],
+        "properties": {
+          "line": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 72
+          }
+        }
+      },
+      "layoutAudit": {
+        "subjectSelectors": [
+          "#t-row"
+        ],
+        "frameSelectors": [
+          "#root"
+        ],
+        "sampleSeconds": [
+          1.0
+        ],
+        "baseline": null,
+        "state": "unmeasured"
+      },
+      "preview": "previews/title.svg",
+      "previewStatus": "schematic-only-not-a-render"
+    },
+    {
+      "id": "verified-card",
+      "name": "بطاقة نص موثّق",
+      "source": "compositions/verified-card.html",
+      "purpose": "اقتباس أو نص موثّق ثابت، مصدره ومرجعه من المستخدم؛ لا تستخدمه لإنشاء معلومة من الذاكرة.",
+      "layoutModes": [
+        "overlay",
+        "fullscreen"
+      ],
+      "sourceConfig": {
+        "card": "CARD",
+        "show": "SHOW",
+        "hide": "HIDE",
+        "top": "TOP",
+        "look": "LOOK",
+        "cardFont": "CARD_FONT"
+      },
+      "timingBindings": {
+        "start": "SHOW",
+        "end": "HIDE"
+      },
+      "variables": {
+        "required": [
+          "card"
+        ],
+        "properties": {
+          "card": {
+            "type": "object",
+            "required": [
+              "text",
+              "reference"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "maxLength": 48
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 700
+              },
+              "reference": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 180
+              },
+              "second": {
+                "type": "string",
+                "maxLength": 700
+              },
+              "secondCredit": {
+                "type": "string",
+                "maxLength": 160
+              },
+              "source": {
+                "type": "string",
+                "maxLength": 500
+              }
+            }
+          },
+          "top": {
+            "type": "integer",
+            "minimum": 250,
+            "maximum": 1540
+          },
+          "look": {
+            "type": "string",
+            "enum": [
+              "box",
+              "sky"
+            ]
+          },
+          "cardFont": {
+            "type": "string",
+            "maxLength": 180
+          }
+        }
+      },
+      "layoutAudit": {
+        "subjectSelectors": [
+          "#vc-card"
+        ],
+        "frameSelectors": [
+          "#vc-root"
+        ],
+        "sampleSeconds": [
+          1.5,
+          3.0
+        ],
+        "baseline": null,
+        "state": "unmeasured"
+      },
+      "preview": "previews/verified-card.svg",
+      "previewStatus": "schematic-only-not-a-render"
+    },
+    {
+      "id": "compare",
+      "name": "مقارنة بطاقتين",
+      "source": "compositions/compare.html",
+      "purpose": "مقارنة مفهومين أو حالتين وردتا في النص؛ المقياس اختياري ولا يضاف رقم بلا مصدر.",
+      "layoutModes": [
+        "overlay",
+        "fullscreen",
+        "data"
+      ],
+      "sourceConfig": {
+        "cards": "CARDS",
+        "focus": "FOCUS",
+        "top": "TOP",
+        "gap": "GAP"
+      },
+      "timingBindings": {
+        "start": "SHOW",
+        "end": "HIDE"
+      },
+      "variables": {
+        "required": [
+          "cards",
+          "focus"
+        ],
+        "properties": {
+          "cards": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "object",
+              "required": [
+                "title"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 56
+                },
+                "second": {
+                  "type": "string",
+                  "maxLength": 56
+                },
+                "line": {
+                  "type": "string",
+                  "maxLength": 150
+                },
+                "meter": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            }
+          },
+          "focus": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 12,
+            "items": {
+              "type": "object",
+              "required": [
+                "card",
+                "at"
+              ],
+              "properties": {
+                "card": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "at": {
+                  "type": "anchor"
+                }
+              }
+            }
+          },
+          "top": {
+            "type": "integer",
+            "minimum": 250,
+            "maximum": 1150
+          },
+          "gap": {
+            "type": "integer",
+            "minimum": 16,
+            "maximum": 180
+          }
+        }
+      },
+      "layoutAudit": {
+        "subjectSelectors": [
+          ".cp-card"
+        ],
+        "frameSelectors": [
+          "#cp-root"
+        ],
+        "sampleSeconds": [
+          1.2,
+          3.2
+        ],
+        "baseline": null,
+        "state": "unmeasured"
+      },
+      "preview": "previews/compare.svg",
+      "previewStatus": "schematic-only-not-a-render"
+    },
+    {
+      "id": "ladder",
+      "name": "سلّم تقدّم",
+      "source": "compositions/ladder.html",
+      "purpose": "تسلسل خطوات يضيء مع الكلمة المنطوقة؛ يصلح للسرد الذي يتدرج فعلًا، لا لترقيم زخرفي.",
+      "layoutModes": [
+        "overlay"
+      ],
+      "sourceConfig": {
+        "steps": "STEPS",
+        "show": "SHOW",
+        "hide": "HIDE",
+        "top": "TOP",
+        "passedOpacity": "DONE"
+      },
+      "timingBindings": {
+        "start": "SHOW",
+        "end": "HIDE"
+      },
+      "variables": {
+        "required": [
+          "steps"
+        ],
+        "properties": {
+          "steps": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 7,
+            "items": {
+              "type": "object",
+              "required": [
+                "title",
+                "at"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 40
+                },
+                "second": {
+                  "type": "string",
+                  "maxLength": 48
+                },
+                "at": {
+                  "type": "anchor"
+                },
+                "reveal": {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                "revealSecond": {
+                  "type": "string",
+                  "maxLength": 48
+                }
+              }
+            }
+          },
+          "top": {
+            "type": "integer",
+            "minimum": 250,
+            "maximum": 1540
+          },
+          "passedOpacity": {
+            "type": "number",
+            "minimum": 0.25,
+            "maximum": 0.9
+          }
+        }
+      },
+      "layoutAudit": {
+        "subjectSelectors": [
+          ".ld-panel"
+        ],
+        "frameSelectors": [
+          "#ld-root"
+        ],
+        "sampleSeconds": [
+          1.4,
+          4.5
+        ],
+        "baseline": null,
+        "state": "unmeasured"
+      },
+      "preview": "previews/ladder.svg",
+      "previewStatus": "schematic-only-not-a-render"
+    },
+    {
+      "id": "end-card",
+      "name": "خاتمة هادئة",
+      "source": "compositions/end-card.html",
+      "purpose": "خاتمة قصيرة لاسم أو دعوة وردت في التكليف؛ الحقول الاختيارية تبقى فارغة ما لم يقدمها المستخدم.",
+      "layoutModes": [
+        "fullscreen",
+        "overlay"
+      ],
+      "sourceConfig": {
+        "end": "END",
+        "at": "AT",
+        "hold": "HOLD",
+        "top": "TOP"
+      },
+      "timingBindings": {
+        "start": "AT",
+        "duration": "HOLD"
+      },
+      "variables": {
+        "required": [
+          "end"
+        ],
+        "properties": {
+          "end": {
+            "type": "object",
+            "required": [
+              "name",
+              "line"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "handle": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "line": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "second": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "keyword": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "logo": {
+                "type": "string",
+                "maxLength": 180
+              }
+            }
+          },
+          "top": {
+            "type": "integer",
+            "minimum": 250,
+            "maximum": 1540
+          }
+        }
+      },
+      "layoutAudit": {
+        "subjectSelectors": [
+          "#ec-box"
+        ],
+        "frameSelectors": [
+          "#ec-root"
+        ],
+        "sampleSeconds": [
+          1.0,
+          2.2
+        ],
+        "baseline": null,
+        "state": "unmeasured"
+      },
+      "preview": "previews/end-card.svg",
+      "previewStatus": "schematic-only-not-a-render"
+    },
+    {
+      "id": "rewind",
+      "name": "رجعة افتتاحية",
+      "source": "compositions/rewind.html",
+      "purpose": "انتقال رجوعي قصير بعد لقطة افتتاحية؛ لا يقرر إيقاعه أو الصوت بدل المونتاج.",
+      "layoutModes": [
+        "transition"
+      ],
+      "sourceConfig": {
+        "at": "AT",
+        "duration": "DUR"
+      },
+      "timingBindings": {
+        "start": "AT",
+        "duration": "DUR"
+      },
+      "variables": {
+        "required": [],
+        "properties": {}
+      },
+      "layoutAudit": {
+        "subjectSelectors": [
+          "#rw-mark"
+        ],
+        "frameSelectors": [
+          "#rw-root"
+        ],
+        "sampleSeconds": [
+          2.3
+        ],
+        "baseline": null,
+        "state": "unmeasured"
+      },
+      "preview": "previews/rewind.svg",
+      "previewStatus": "schematic-only-not-a-render"
+    }
+  ],
+  "aspectRatios": [
+    "9:16"
+  ]
+}
