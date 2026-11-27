@@ -1,6 +1,6 @@
 # Portable setup and path resolution
 
-Use the installed skill location as `<skill>` and the chosen working folder as `<project>`. Do not infer either from another person's machine. No private toolkit, library, model environment or user configuration is shipped.
+Use the installed skill location as `<skill>` and the chosen working folder as `<project>`. Do not infer either from another person's machine. No private renderer toolkit, model environment or user configuration is shipped; the 33 small CC0 recordings in `sounds/library/` are included.
 
 ## Configuration precedence
 - For models: explicit `--models-dir` → `KHAAM_MODELS` → `models_dir` in config → `~/.cache/khaam-motion/models`.
@@ -13,7 +13,7 @@ Example config (copy `config.example.json`, customize locally):
 ```json
 {"models_dir":"~/.cache/khaam-motion/models","audio_python":null,"toolkit_dir":null,"sfx_library":null,"ffmpeg":null,"ffprobe":null}
 ```
-Leave `sfx_library` null to use the Khaam sound library when it is installed, else project-local `assets/sfx`. No audio collection ships inside the skill; the Khaam library is built locally from its official sources. For custom sounds, use a project-relative path or absolute local library and keep its catalog/provenance. User decisions belong in that project, not in the shared vendor pack.
+Leave `sfx_library` null to use the Khaam sound library when it is installed, else project-local `assets/sfx`. The 33 CC0 recordings in `sounds/library/` ship inside the skill; the larger 1,409-effect pack is required for standard setup and is built locally from official sources after permission. For custom sounds, use a project-relative path or absolute local library and keep its catalog/provenance. User decisions belong in that project, not in the shared vendor pack.
 
 ## Windows
 Use `py -3` or the verified selected interpreter. Quote all paths. A new audio venv, if needed and authorized, may be created with `py -3 -m venv .venv-audio`; invoke `.venv-audio\Scripts\python.exe` explicitly. Configure paths locally. Do not assume a drive letter, Node junction or NVIDIA CUDA.

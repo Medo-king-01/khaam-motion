@@ -1,0 +1,30 @@
+{
+  "name": "khaam-remotion-tegaki",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Khaam Arabic handwriting reveal starter using Tegaki in Remotion",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "remotion studio src/index.ts",
+    "still:start": "remotion still src/index.ts ArabicHandwriting out/frame-000.png --frame=0",
+    "still:middle": "remotion still src/index.ts ArabicHandwriting out/frame-middle.png --frame=60",
+    "still:end": "remotion still src/index.ts ArabicHandwriting out/frame-end.png --frame=179",
+    "render": "remotion render src/index.ts ArabicHandwriting out/handwriting.mp4",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.529",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.529",
+    "tegaki": "1.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
