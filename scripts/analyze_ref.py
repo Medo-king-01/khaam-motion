@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 """Analyze a reference locally. Owned outputs are refreshed on each run; no downloads.
-Usage: python analyze_ref.py ref.mp4 --dur 15 --start 0 --fps 4 --frames 3 --out cache/ref_name
-Pillow gives timestamp labels; without it FFmpeg makes an explicitly unlabelled sheet.
+Usage: python analyze_ref.py ref.mp4 --dur 15 --start 0 --fps 4 --frames 3 --out cache/ref_name [--metrics] [--bpm 120 --phase 0]
+Pillow gives timestamp labels; without it FFmpeg makes an explicitly unlabelled sheet. Optional metrics are descriptive, not judgments.
 """
-import sys, json, argparse, subprocess, re
+import sys, json, argparse, subprocess, re, tempfile, wave, math
 from pathlib import Path
 from fractions import Fraction
 import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))  # works under python -I
 from _common import ffmpeg, ffprobe
-p=argparse.ArgumentParser();p.add_argument('ref');p.add_argument('--dur',type=float,default=15);p.add_argument('--start',type=float,default=0);p.add_argument('--fps',type=float,default=4);p.add_argument('--frames',type=float,default=3);p.add_argument('--stems',action='store_true');p.add_argument('--out');o=p.parse_args()
-import math
-if not all(math.isfinite(x) for x in [o.dur,o.start,o.fps,o.frames]) or o.dur<=0 or o.fps<=0 or o.start<0 or o.frames<0:p.error('Use positive duration/fps and non-negative start/hook duration')
+from reference_metrics import audio_level_track, beat_offsets, luminance_samples, make_text_report
+p=argparse.ArgumentParser();p.add_argument('ref');p.add_argument('--dur',type=float,default=15);p.add_argument('--start',type=float,default=0);p.add_argument('--fps',type=float,default=4);p.add_argument('--frames',type=float,default=3);p.add_argument('--stems',action='store_true');p.add_argument('--out');p.add_argument('--metrics',action='store_true',help='write low-resolution luminance, RMS and transient measurements');p.add_argument('--bpm',type=float,help='optional known BPM for cut-offset measurements; never inferred');p.add_argument('--phase',type=float,help='beat-grid phase in source seconds (requires --bpm; default 0)');o=p.parse_args()
+if not all(math.isfinite(x) for x in [o.dur,o.start,o.fps,o.frames]) or (o.phase is not None and not math.isfinite(o.phase)) or o.dur<=0 or o.fps<=0 or o.start<0 or o.frames<0:p.error('Use positive duration/fps and non-negative start/hook duration')
+if o.bpm is not None and (not math.isfinite(o.bpm) or o.bpm<=0):p.error('--bpm must be a finite positive number')
+if o.phase is not None and o.bpm is None:p.error('--phase requires --bpm')
+if o.phase is None:o.phase=0.0
+if o.bpm is not None:o.metrics=True
 ref=Path(o.ref).resolve()
 if not ref.is_file():p.error('Reference file not found')
 name=''.join(c if c.isalnum() else '_' for c in ref.stem)[:40]
@@ -34,7 +38,7 @@ for d in [out/'f',out/'frames']:
         if f.stem.isdigit():f.unlink()
 for f in out.glob('sheet_*.jpg'):
     if re.fullmatch(r'sheet_\d+\.jpg',f.name):f.unlink()
-for name in ['strip_hook.jpg','spectrogram.png','audio.wav','audio44.wav']:
+for name in ['strip_hook.jpg','spectrogram.png','audio.wav','audio44.wav','measurements.json','measurements.txt']:
     (out/name).unlink(missing_ok=True)
 (out/'info.txt').write_text(json.dumps(info,indent=2),encoding='utf8')
 ss=['-ss',str(o.start)] if o.start else []
@@ -80,5 +84,24 @@ if has_audio:
     for name,channels,rate in [('audio.wav',1,16000),('audio44.wav',2,44100)]:run(base+['-t',str(o.dur),'-i',str(ref),'-map','0:a:0','-vn','-ac',str(channels),'-ar',str(rate),str(out/name)])
     if o.stems:run([sys.executable,'-m','demucs','-n','htdemucs','-o',str(out/'stems'),str(out/'audio44.wav')])
 else:print('No audio stream: spectrogram, audio extraction and requested stems skipped. Existing stems, if any, are not part of this run.')
-(out/'analysis.json').write_text(json.dumps({'source':ref.name,'start':o.start,'duration_requested':o.dur,'sample_fps':o.fps,'frames':len(fs),'sheets':(len(fs)+29)//30,'has_audio':has_audio,'stems_generated_this_run':bool(has_audio and o.stems)},indent=2),encoding='utf8')
+measurements_generated=False
+if o.metrics:
+    width,height,sample_fps=64,36,2.0
+    command=[FF,'-v','error']+ss+['-t',str(o.dur),'-i',str(ref),'-map','0:v:0','-an','-vf',f'fps={sample_fps},scale={width}:{height}:flags=area,format=gray','-f','rawvideo','-pix_fmt','gray','-']
+    with tempfile.TemporaryFile() as raw_frames:
+        proc=subprocess.run(command,stdout=raw_frames,stderr=subprocess.PIPE)
+        if proc.returncode:raise RuntimeError('FFmpeg luminance sampling failed ('+str(proc.returncode)+'): '+proc.stderr.decode('utf8','replace')[-1800:])
+        raw_frames.seek(0);gray=raw_frames.read()
+    measured_luma=luminance_samples(gray,width=width,height=height,start=o.start,fps=sample_fps)
+    measured_audio={}
+    if has_audio:
+        with wave.open(str(out/'audio.wav'),'rb') as wav:
+            if wav.getnchannels()!=1 or wav.getsampwidth()!=2:raise RuntimeError('Expected mono signed-16-bit analysis audio.')
+            measured_audio=audio_level_track(wav.readframes,sample_rate=wav.getframerate(),start=o.start)
+    measurements={'source':ref.name,'range':{'start_s':o.start,'duration_s':o.dur},'video':{'luminance_every_approx_0_5s':measured_luma},'audio':measured_audio,'scene_cuts_s':cuts,'measurement_note':'Descriptive signals only; no quality, semantic, sync, rights, or listening judgment.'}
+    if o.bpm is not None:measurements['beat_alignment']={'bpm':o.bpm,'phase_s':o.phase,'period_s':60.0/o.bpm,'cut_offsets':beat_offsets(cuts,bpm=o.bpm,phase_s=o.phase)}
+    (out/'measurements.json').write_text(json.dumps(measurements,indent=2),encoding='utf8')
+    (out/'measurements.txt').write_text(make_text_report(measurements),encoding='utf8')
+    measurements_generated=True
+(out/'analysis.json').write_text(json.dumps({'source':ref.name,'start':o.start,'duration_requested':o.dur,'sample_fps':o.fps,'frames':len(fs),'sheets':(len(fs)+29)//30,'has_audio':has_audio,'stems_generated_this_run':bool(has_audio and o.stems),'measurements_generated_this_run':measurements_generated},indent=2),encoding='utf8')
 print(f'Done -> {out} | {(len(fs)+29)//30} sheet(s), {len(fr)} hook frames, {len(cuts)} cuts')

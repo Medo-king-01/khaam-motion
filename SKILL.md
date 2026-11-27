@@ -1,6 +1,6 @@
 ---
 name: khaam-motion
-description: "Arabic-first motion graphics: kinetic type, Arabic captions, narrated stories, style presets, sound effects and narration rendered to MP4. Use for animated or edited videos with file/terminal access."
+description: "Arabic-first motion graphics, animated diagrams and visual direction: RTL, narration, sound and video. Use for video work with file/terminal access."
 ---
 
 # Khaam Motion «موشن خام» — v1.7.1
@@ -25,6 +25,9 @@ The vendored snapshots in `integrations/` are part of the skill, not optional ad
 - For generative CSS patterns (css-doodle, MIT snapshot) and shader-learning external reference (The Book of Shaders, external only / not vendored), use `reference/generative-css-and-shader-resources.md` and `integrations/css-doodle/`; preserve licenses and do not copy The Book of Shaders content.
 - For GL transitions, React charting, and animated UI component registries (gl-transitions, recharts, magicui), use `reference/react-ui-charts-transitions-integrations.md` and `integrations/`; preserve licenses, check gl-transitions per-transition headers, and install deps in target projects.
 - For HyperFrames upstream registry/components/examples and shader-transitions (Apache-2.0, Batch 1), use `reference/hyperframes-registry.md`, `reference/hyperframes-craft-notes.md`, and `integrations/hyperframes/`; adapt LTR components to Khaam Arabic/RTL rules and preserve provenance.
+- For animated technical diagrams (architecture, sequence, flowchart, data flow, code walkthrough, concept map, or an input SVG/PNG/Mermaid/PlantUML), load `reference/animated-diagrams.md` and the matching originals under `reference/animated-diagrams-upstream/`. Use the existing Khaam renderer and gates; the upstream source subset is reference material, not a second renderer or setup dependency.
+- For content-led visual direction, infographic ideas, motion arcs, or critique of a draft/render, load `reference/huashu-design.md` and only the matching originals in `reference/huashu-design-upstream/`. Adapt the design mechanisms to Khaam; do not add Huashu's mandatory three-direction gate, runtime, music or download workflow.
+- For local reference boards, frame measurements/comparisons, optional cross-project visual-history checks, or structured preference notes in the existing user-taste file, load `reference/visual-reference-tools.md`. The tools are optional, local-only, and diagnostic; they do not create approval gates, install dependencies, fetch assets, or replace watching the render.
 
 ## 0. First run and language
 - **When onboarding runs:** the user says «ابدأ» / «ثبّت المهارة» / start / install, attaches this skill's folder or ZIP, or has no workspace yet. Follow the protocol at the end of `START-HERE.md`:
@@ -101,7 +104,7 @@ For installation and Claude app versus local execution limits, read `reference/i
 **Before building:**
 - **New video beside earlier ones:** inherit the most recent approved `TASTE.md` (style, fonts, palette, sound palette, voice, hook learnings) and ask one line, e.g. «نفس ستايل [الفيديو السابق]؟». Never re-ask decided things or rerun onboarding.
 - **Learn from every round:**
-  - A general preference the user states (e.g. «سلّمني دايم مع الصوت») becomes a rule in `TASTE.md` §9 **and** in `user-taste.md`.
+  - A general preference the user states (e.g. «سلّمني دايم مع الصوت») becomes a rule in `TASTE.md` §9 **and** in `user-taste.md`. Use `scripts/taste_notes.py add` for a durable cross-project note, preserving the user's wording, scope and evidence; use `show` to query the managed notes and `supersede` when a preference changes. Keep the current project's §9 in sync; the helper preserves all unstructured text and does not infer or read chat history.
   - A one-off fix stays in the project only.
   - Preserve approved parts, source voice masters and working renderers.
 - **References teach the taste:**
@@ -130,7 +133,7 @@ For a new project, collect only missing essentials: story, references, format, d
 - Any quoted text (an ayah, a hadith, a saying with a name on it, a law, a study) comes from the user with its reference, goes on the still card (`verified-card.html`), and is never written from memory or animated word by word.
 
 ## 3. Fast path: three user gates, one complete preview
-Use `reference/adaptive-direction.md` for reference analysis, causal shot design, product/UI motion and honest review; use `reference/verified-motion-workflow.md` when a new choreography or risky render needs a pilot and verification plan. These are internal craft/QA, not extra user approval gates; the user's brief and Arabic/sound rules still take precedence.
+Use `reference/adaptive-direction.md` for reference analysis, causal shot design, product/UI motion and honest review; `reference/huashu-design.md` for Huashu's content-led form, infographic/style mechanisms and critique ideas adapted to Khaam; use `reference/verified-motion-workflow.md` when a new choreography or risky render needs a pilot and verification plan. These are internal craft/QA, not extra user approval gates; the user's brief and Arabic/sound rules still take precedence.
 The user reviews **three times only**. Contact sheets, sync measurements, loudness checks and silent test renders are Claude's internal QA: never send them as review rounds, and never add sound as a separate round.
 - **Gate A · Plan (one message).** On a returning project, prefill all of it from `TASTE.md` and ask only what is new. The message covers:
   - **Hook:** research per `reference/hooks.md` and offer 3 options (spoken line + on-screen text + 0–3 s motion), recommending one.
@@ -266,6 +269,11 @@ Production rules behind the gates:
 | `reference/remotion-examples/` | Curated Remotion code examples (private use); upstream test harnesses and regression samples are omitted |
 | `reference/remotion-package-refs/` | Selected Remotion package READMEs/package.json/license snapshots (private use); cloud-rendering package refs are omitted |
 | `reference/adaptive-direction.md` | Reference interpretation, causal storyboards, product motion, Arabic-safe typography and final review |
+| `reference/animated-diagrams.md` | Technical diagrams in Khaam: semantic SVG, sequence/architecture flow, Arabic direction, source converters, frame-safe motion and QA |
+| `reference/huashu-design.md` | Huashu Design methods adapted to Khaam: content-led form, selected visual mechanisms, motion arcs and critique without replacing Khaam gates |
+| `reference/huashu-design-upstream/` | Pinned MIT source subset: 92-style catalogue, motion/camera/direction/critique guides, style sheets and selected original examples; reference only |
+| `reference/visual-reference-tools.md` | Local-only image reference boards, measurable frame comparisons, non-blocking style history and evidence-scoped taste notes |
+| `reference/animated-diagrams-upstream/` | Pinned Apache-2.0 source subset from animated-diagrams-skill: guides, source examples, SVG/code helpers and notices; reference only |
 | `reference/verified-motion-workflow.md` | ReelForge-inspired, Khaam-adapted direction planning, internal pilot rendering, deterministic verification and safe reuse |
 | `reference/reelforge-gallery/` | Exact pinned ReelForge gallery source snapshot (Apache-2.0 + NOTICE); offline reference only, not drop-in Khaam code |
 | `reference/tegaki.md` | Optional Arabic handwriting reveal with Tegaki + Remotion, project-local install, licensing and render/RTL acceptance tests |
@@ -334,6 +342,7 @@ Production rules behind the gates:
     - optional local model tagging;
     - `sound_mix.py` (the film mix from `plan/sound.json`: real recordings, the levels of sound v2; `--library` lists the bundled recordings) and `check_mix.py` (the sound check: levels, static floor, buzz, real sounds only);
     - `check_pace.py` (the pace check: P1–P7 measured on the draft against `reference/pace.md`, every number against its limit);
+    - optional visual helpers: `reference_board.py` (local images → contact sheet), `visual_reference.py` (frame colour/layout descriptors and side-by-side comparison), `visual_ledger.py` (private metadata only; repetition prompts, never a block), and `taste_notes.py` (scoped/evidence-tagged notes in the existing `user-taste.md`; no second memory store). See `reference/visual-reference-tools.md`.
     - `sound_beds.py` (9 beds made by code) and `material_sfx.py` (42 effects made by code): sketches only since sound v2;
     - seeded procedural sound recipes;
     - an explicit helper to download PANNs from its official source and check it.

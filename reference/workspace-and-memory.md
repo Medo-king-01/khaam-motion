@@ -87,7 +87,7 @@ The workspace is the user's own folder: the one the chat was opened on, or «م�
   1. Run `analyze_ref.py` on each reference.
   2. A pasted link goes through yt-dlp into `إلهام/`. It is for study only: never reuse its footage or sound.
   3. Write the look, motion and sound values into the project's `TASTE.md`.
-- **After every round,** turn the user's general preference into a rule in `user-taste.md`. A one-off fix stays in that project.
+- **After every round,** turn the user's general preference into a rule in `user-taste.md`. A one-off fix stays in that project. For durable general notes, `scripts/taste_notes.py add` can store the exact statement with its scope, topic and evidence in the file's marked section; `show` filters those entries and `supersede` preserves history when a preference changes. Keep the current video's `TASTE.md` §9 in sync. Never put a one-off observation, secret or sensitive detail into cross-project taste.
 
 ## 5. Updating from 1.4 or 1.5
 Those versions were installed globally, in `~/.claude/skills/khaam-motion/`.
