@@ -8,7 +8,6 @@
 //   node scripts/release.mjs --publish [--otp 123456]           publish what npm doesn't have yet
 //
 // Setting versions edits files and stops; commit them through a PR. Publish from the merged commit.
-// Design: docs/rfcs/2026-10-24-npm-packaging.md
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';

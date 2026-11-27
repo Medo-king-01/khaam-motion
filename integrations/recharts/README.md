@@ -72,11 +72,6 @@ The UMD build is also available on unpkg.com:
 
 Then you can find the library on `window.Recharts`.
 
-## Contributing
-
-Recharts is open source. If you want to contribute to the project, please read the [CONTRIBUTING.md](/CONTRIBUTING.md)
-to understand how to contribute to the project and [DEVELOPING.md](/DEVELOPING.md) to set up your development
-environment.
 
 ## Thanks
 

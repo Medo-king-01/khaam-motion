@@ -12,10 +12,11 @@ Helios: programmatic video creation with web technologies (CSS animations, web-n
 - Web-native animation/video engine concepts
 - Player/studio/renderer/CLI packages
 - Examples, docs, skills, plugins, and integrations
-- Portable/runtime experiments (tests omitted in this snapshot to reduce size)
+- Portable/runtime experiments and eight concise `.sys/llmdocs/context-*.md` architecture summaries
+- Upstream test suites, GitHub workflows, contributor policies, changelogs, private agent journals, and performance plans/results are intentionally omitted from this reference-oriented copy
 
 ## How to use in Khaam
-Use as reference/integration for web-native video workflows. This snapshot omits `packages/portable/tests` (large) for size; fetch upstream if those tests are needed. Verify deterministic rendering and Arabic text handling before production use.
+Use as a reference for web-native video workflows, not as a complete Helios development checkout. The upstream test suites and maintainer workflows are not bundled. Verify deterministic rendering and Arabic text handling before production use.
 
 ## Notes
 - Preserve upstream LICENSE/NOTICE files.

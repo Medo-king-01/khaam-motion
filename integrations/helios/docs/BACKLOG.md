@@ -92,15 +92,6 @@ This backlog tracks concrete deliverables derived from [`AGENTS.md`](../AGENTS.m
   - ANSI code handling: Base64-encode or strip logs before returning from steps.
   - **Files**: `examples/distributed-rendering/cloudflare-workflow/`.
 
-- [x] **Cloudflare rendering footguns documentation.**
-  - Replay determinism pitfalls and fixes.
-  - Container recycling detection via `ps aux` (PID 1 start time) and mitigation via R2 checkpoints.
-  - `keepAlive` heartbeat placement (options, not step side-effects).
-  - ANSI code handling in Workflow state serialization.
-  - Checkpoint/resume pattern for long renders.
-  - **Files**: `docs/site/guides/cloudflare-rendering-footguns.md`.
-
-
 ## Component Registry
 *Helios will support a Shadcn-style component registry.*
 
@@ -110,7 +101,7 @@ This backlog tracks concrete deliverables derived from [`AGENTS.md`](../AGENTS.m
 - [x] Create initial set of core components.
 
 ## AI Host Distribution
-*Helios ships as one agent plugin in the Claude directory, the ChatGPT plugin directory and the Codex marketplace. Design and gates: [`docs/rfcs/2026-10-01-ai-host-distribution.md`](rfcs/2026-10-01-ai-host-distribution.md).*
+*Helios ships as one agent plugin in the Claude directory, the ChatGPT plugin directory and the Codex marketplace.*
 
 ### Phase 1 — List the skill plugin
 - [x] **SKILLS**: Merge `feat/agent-video-entry-skill` in `helios-skills` (`plugins/helios`, entry skill `make-video`).
@@ -146,7 +137,7 @@ This backlog tracks concrete deliverables derived from [`AGENTS.md`](../AGENTS.m
 
 ### Phase 3 — Hosted view for web and mobile
 - [ ] **INFRASTRUCTURE**: A stateless streamable-HTTP deployment of the same server: no rendering, no accounts.
-- [ ] **PLAYER**: In-view export spike. Measure frame exactness against `helios still`, find how the file leaves the sandbox, and record the decision in `docs/rfcs/`.
+- [ ] **PLAYER**: In-view export spike. Measure frame exactness against `helios still` and find how the file leaves the sandbox.
 
 ### Checks a script can run, and music sync
 Lessons from a production that drew its motion layer with a renderer shaped like Helios (claudia.gallery): every bar that held was something a script measured.
@@ -164,7 +155,7 @@ Lessons from a production that drew its motion layer with a renderer shaped like
 - [ ] **SKILLS**: Retire the `helios-skills` repository: replace its README with a pointer to this repo, then archive it.
 
 ## Packaging
-*Three npm packages at one version: `cli`, `core`, `infrastructure`. Design and slices: [`docs/rfcs/2026-10-24-npm-packaging.md`](rfcs/2026-10-24-npm-packaging.md).*
+*Three npm packages at one version: `cli`, `core`, `infrastructure`.*
 
 - [x] **INFRASTRUCTURE**: Root `build` includes `packages/infrastructure`, which the CLI imports.
 - [x] **CLI**: Read the CLI version from its `package.json` instead of a hardcoded string.

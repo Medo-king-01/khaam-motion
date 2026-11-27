@@ -4,7 +4,7 @@ Ready-to-copy Remotion starters integrated into Khaam Motion for personal/privat
 
 > **License:** These are third-party Remotion templates/snapshots. Remotion License applies (free for individuals/non-profits/companies <=3 employees; company 4+ needs a Company License). See `NOTICE.md`.
 
-## Included templates (21)
+## Included templates (17)
 
 | Template | What it gives | Best for |
 |---|---|---|
@@ -17,17 +17,13 @@ Ready-to-copy Remotion starters integrated into Khaam Motion for personal/privat
 | `three/` | @remotion/three + R3F 3D starter | 3D scenes, product/logo 3D |
 | `audiogram/` | Audiogram/waveform + captions | Podcast/audio-led clips |
 | `music-visualization/` | Audio-reactive visuals | Music visualizations (only when requested) |
-| `render-server/` | Programmatic render server pattern | API/service rendering workflows |
 | `skia/` | @remotion/skia graphics | 2D vector/Skia effects |
 | `prompt-to-motion-graphics/` | Prompt-to-motion-graphics workflow | AI-assisted MG workflow reference |
 | `prompt-to-video/` | Prompt-to-video workflow | AI-assisted video workflow reference |
-| `react-router/` | Remotion + React Router app | Web app embedding Remotion |
-| `next-app-tailwind/` | Remotion + Next.js + Tailwind | Web app/dashboard embedding Remotion |
 | `stargazer/` | Data-driven Stargazer recap | Data-driven recap videos |
 | `vibe-code/` | Vibe-code visual style | Stylized promo/code visuals |
 | `electron/` | Remotion + Electron desktop app | Desktop Remotion tools/apps |
 | `element-library/` | Reusable Remotion element library | Reusable branded motion components |
-| `vercel/` | Remotion + Vercel template | Vercel deployment/render patterns |
 | `recorder/` | Remotion Recorder app template | Recording/studio workflow reference (demo media omitted) |
 
 ## Quick use

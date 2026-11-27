@@ -57,7 +57,7 @@ HTTP Trigger → Worker → Workflow
 ## Key Patterns
 
 ### Replay Determinism
-All state-generating logic (IDs, timestamps) runs inside `step.do()` so values survive workflow hibernation and replay. See the [footguns guide](../../../docs/site/guides/cloudflare-rendering-footguns.md).
+All state-generating logic (IDs, timestamps) runs inside `step.do()` so values survive workflow hibernation and replay.
 
 ### Adaptive Polling
 The poll loop uses a phased strategy: long initial sleep (3+ min), medium second poll (60s), then short responsive polls (30s). This minimizes Workflow step count while maintaining responsiveness.

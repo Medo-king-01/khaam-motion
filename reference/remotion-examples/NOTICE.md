@@ -1,6 +1,6 @@
 # Remotion upstream examples snapshot (private use)
 
-Curated code-only snapshot from `packages/example` of `remotion-dev/remotion`, copied for private in-project reference at the repository owner's request.
+Curated code-only selection from `packages/example` of `remotion-dev/remotion`, retained for private in-project reference at the repository owner's request. Upstream test harnesses, regression samples, and package-runner configuration were removed; reusable visual examples remain.
 
 - **Upstream:** https://github.com/remotion-dev/remotion
 - **Source path:** `packages/example` (code/config files only; large media/public assets omitted)

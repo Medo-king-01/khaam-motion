@@ -6,9 +6,7 @@
 
 Helios is developed with AI-assisted tooling. A fleet of specialized agents handles planning, implementation, testing, and documentation — orchestrated through a structured planning-execution cycle. Human oversight directs architecture and reviews all changes before merge.
 
-The agent prompts that drive this workflow are available in [`docs/prompts/`](./docs/prompts/) for transparency.
-
-For project governance and roadmap, see [`docs/AGENTS.md`](./docs/AGENTS.md).
+For the public-facing feature backlog, see [`docs/BACKLOG.md`](./docs/BACKLOG.md).
 </details>
 <!-- AGENT_SKIP_END -->
 
@@ -27,7 +25,6 @@ For project governance and roadmap, see [`docs/AGENTS.md`](./docs/AGENTS.md).
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![npm](https://img.shields.io/badge/npm-workspace-red.svg)](https://www.npmjs.com/)
 [![GitHub](https://img.shields.io/badge/GitHub-BintzGavin%2Fhelios-black.svg)](https://github.com/BintzGavin/helios)
-[![Made with](https://img.shields.io/badge/made%20with-AI%20Agents-purple.svg)](./docs/prompts/)
 
 **A programmatic video engine that runs on web standards.**  
 Stop reinventing animation in JavaScript. Use the platform.
@@ -327,13 +324,10 @@ Helios is designed from the ground up for AI-assisted development. Whether you'r
 
 Helios uses a **Black Hole Architecture** where AI agents continuously pull the codebase toward this documented vision. If you're building similar systems:
 
-- **Vision Document**: This README serves as the authoritative vision. Planning agents scan it to identify gaps.
-- **Status Files**: `docs/status/[ROLE].md` tracks each domain's progress
-- **Progress Log**: `docs/PROGRESS.md` records completed work
-- **Backlog**: `docs/BACKLOG.md` tracks planned features
-- **Context Files**: `.sys/llmdocs/context-*.md` provides architectural summaries
-
-See [`docs/prompts/`](./docs/prompts/) for the complete agent orchestration system.
+- **Project overview**: This README describes Helios and its user-facing workflows.
+- **Backlog**: [`docs/BACKLOG.md`](./docs/BACKLOG.md) lists planned features.
+- **Architecture context**: `.sys/llmdocs/context-*.md` contains concise architectural summaries.
+- **Agent skills**: The `skills/` and `plugins/helios/` directories contain reusable video-production workflows.
 
 ### Diagnostics for AI Environments
 
@@ -686,7 +680,7 @@ We welcome contributions! This project is primarily developed by an autonomous A
 
 **☀️ Video is light over time.**
 
-[Documentation](./docs/) • [Examples](./examples/) • [Backlog](./docs/BACKLOG.md) • [Progress](./docs/PROGRESS.md)
+[Documentation](./docs/) • [Examples](./examples/) • [Backlog](./docs/BACKLOG.md)
 
 *Built with AI agents by [Gavin Bintz](https://github.com/BintzGavin)*
 

@@ -15,17 +15,13 @@ These templates were vendored into this repository at the repository owner's req
 | `three/` | https://github.com/remotion-dev/remotion/tree/0e4c50cc93265b92eaaa40892c86b19c9fc07a0f/packages/template-three | `0e4c50cc9326` | LICENSE.md preserved |
 | `audiogram/` | https://github.com/remotion-dev/remotion/tree/0e4c50cc93265b92eaaa40892c86b19c9fc07a0f/packages/template-audiogram | `0e4c50cc9326` | No LICENSE file in template dir; verify against Remotion repo terms |
 | `music-visualization/` | https://github.com/remotion-dev/remotion/tree/0e4c50cc93265b92eaaa40892c86b19c9fc07a0f/packages/template-music-visualization | `0e4c50cc9326` | No LICENSE file in template dir; verify against Remotion repo terms |
-| `render-server/` | https://github.com/remotion-dev/remotion/tree/0e4c50cc93265b92eaaa40892c86b19c9fc07a0f/packages/template-render-server | `0e4c50cc9326` | No LICENSE file in template dir; verify against Remotion repo terms |
 | `skia/` | https://github.com/remotion-dev/remotion/tree/0e4c50cc93265b92eaaa40892c86b19c9fc07a0f/packages/template-skia | `0e4c50cc9326` | No LICENSE file in template dir; verify against Remotion repo terms |
 | `prompt-to-motion-graphics/` | https://github.com/remotion-dev/remotion/tree/0e4c50cc93265b92eaaa40892c86b19c9fc07a0f/packages/template-prompt-to-motion-graphics | `0e4c50cc9326` | No LICENSE file in template dir; verify against Remotion repo terms |
 | `prompt-to-video/` | https://github.com/remotion-dev/remotion/tree/0e4c50cc93265b92eaaa40892c86b19c9fc07a0f/packages/template-prompt-to-video | `0e4c50cc9326` | No LICENSE file in template dir; verify against Remotion repo terms |
-| `react-router/` | https://github.com/remotion-dev/remotion/tree/0e4c50cc93265b92eaaa40892c86b19c9fc07a0f/packages/template-react-router | `0e4c50cc9326` | No LICENSE file in template dir; verify against Remotion repo terms |
-| `next-app-tailwind/` | https://github.com/remotion-dev/remotion/tree/0e4c50cc93265b92eaaa40892c86b19c9fc07a0f/packages/template-next-app-tailwind | `0e4c50cc9326` | No LICENSE file in template dir; verify against Remotion repo terms |
 | `stargazer/` | https://github.com/remotion-dev/remotion/tree/0e4c50cc93265b92eaaa40892c86b19c9fc07a0f/packages/template-stargazer | `0e4c50cc9326` | No LICENSE file in template dir; verify against Remotion repo terms |
 | `vibe-code/` | https://github.com/remotion-dev/remotion/tree/0e4c50cc93265b92eaaa40892c86b19c9fc07a0f/packages/template-vibe-code | `0e4c50cc9326` | No LICENSE file in template dir; verify against Remotion repo terms |
 | `electron/` | https://github.com/remotion-dev/remotion/tree/0e4c50cc93265b92eaaa40892c86b19c9fc07a0f/packages/template-electron | `0e4c50cc9326` | No LICENSE file in template dir; verify against Remotion repo terms |
 | `element-library/` | https://github.com/remotion-dev/remotion/tree/0e4c50cc93265b92eaaa40892c86b19c9fc07a0f/packages/template-element-library | `0e4c50cc9326` | No LICENSE file in template dir; verify against Remotion repo terms |
-| `vercel/` | https://github.com/remotion-dev/remotion/tree/0e4c50cc93265b92eaaa40892c86b19c9fc07a0f/packages/template-vercel | `0e4c50cc9326` | No LICENSE file in template dir; verify against Remotion repo terms |
 | `recorder/` | https://github.com/remotion-dev/remotion/tree/0e4c50cc93265b92eaaa40892c86b19c9fc07a0f/packages/template-recorder | `0e4c50cc9326` | No LICENSE file in template dir; verify against Remotion repo terms |
 
 ## Remotion License

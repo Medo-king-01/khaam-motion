@@ -25,17 +25,13 @@ Use these when the job is a Remotion job (`reference/remotion.md`) and one of th
 | `packages/template-three` | @remotion/three + React Three Fiber 3D starter. | 3D product/logo scenes, camera moves; deterministic render. | `templates/remotion/three/` | Re-copy from pinned monorepo snapshot |
 | `packages/template-audiogram` | Audiogram/waveform + captions. | Podcast clips, quote/audio-led social posts; Arabic via Khaam timings. | `templates/remotion/audiogram/` | Re-copy from pinned monorepo snapshot |
 | `packages/template-music-visualization` | Audio-reactive visuals. | Only when user explicitly wants music/visualization (Khaam default: no music). | `templates/remotion/music-visualization/` | Re-copy from pinned monorepo snapshot |
-| `packages/template-render-server` | Programmatic render server/API pattern. | API/service render workflows; consent+cost+security review required. | `templates/remotion/render-server/` | Re-copy from pinned monorepo snapshot |
 | `packages/template-skia` | @remotion/skia graphics starter. | 2D vector/Skia effects; test runtime support. | `templates/remotion/skia/` | Re-copy from pinned monorepo snapshot |
 | `packages/template-prompt-to-motion-graphics` | Prompt-to-motion-graphics workflow pattern. | AI-assisted MG workflow reference; review keys/costs/terms. | `templates/remotion/prompt-to-motion-graphics/` | Re-copy from pinned monorepo snapshot |
 | `packages/template-prompt-to-video` | Prompt-to-video workflow pattern. | AI-assisted video workflow reference; review keys/costs/terms. | `templates/remotion/prompt-to-video/` | Re-copy from pinned monorepo snapshot |
-| `packages/template-react-router` | Remotion + React Router app. | Web app embedding Remotion/player flows. | `templates/remotion/react-router/` | Re-copy from pinned monorepo snapshot |
-| `packages/template-next-app-tailwind` | Remotion + Next.js + Tailwind app. | Web dashboard/preview app with Remotion. | `templates/remotion/next-app-tailwind/` | Re-copy from pinned monorepo snapshot |
 | `packages/template-stargazer` | Data-driven Stargazer recap. | Data-driven recap/celebration videos. | `templates/remotion/stargazer/` | Re-copy from pinned monorepo snapshot |
 | `packages/template-vibe-code` | Vibe-code visual style starter. | Stylized promo/code visuals; adapt to Khaam taste. | `templates/remotion/vibe-code/` | Re-copy from pinned monorepo snapshot |
 | `packages/template-electron` | Remotion + Electron desktop app starter. | Desktop Remotion tool/app workflows. | `templates/remotion/electron/` | Re-copy from pinned monorepo snapshot |
 | `packages/template-element-library` | Reusable Remotion element/component library. | Reusable branded motion components/elements. | `templates/remotion/element-library/` | Re-copy from pinned monorepo snapshot |
-| `packages/template-vercel` | Remotion + Vercel/Next.js deployment template. | Vercel deployment/render patterns (consent/cost). | `templates/remotion/vercel/` | Re-copy from pinned monorepo snapshot |
 | `packages/template-recorder` | Remotion Recorder app template. | Recording/studio workflow reference (large demo media omitted). | `templates/remotion/recorder/` | Re-copy from pinned monorepo snapshot |
 
 ## Vendored copies (private use) and refreshing

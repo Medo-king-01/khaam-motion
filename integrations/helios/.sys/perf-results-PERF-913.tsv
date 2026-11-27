@@ -1,3 +1,0 @@
-run	time_ms	status	description
-1	139.40	keep	baseline
-2	135.69	keep	unroll writer wait loop

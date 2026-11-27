@@ -28,15 +28,6 @@ Each package's README has a usage example. Example apps: [SwiftUI](examples/swif
 
 Outside this project, the transitions are also used by [editly](https://github.com/mifi/editly), [ffmpeg-gl-transition](https://github.com/transitive-bullshit/ffmpeg-gl-transition) and [xfade-easing](https://github.com/scriptituk/xfade-easing) (FFmpeg).
 
-## Contribute a transition
-
-1. Write it in the [editor](https://gl-transitions.com/editor), which renders it as you type.
-2. Open a pull request that adds `transitions/YourTransition.glsl`, following the [specification](#gl-transition-specification-v1) and [CONTRIBUTING.md](CONTRIBUTING.md).
-3. CI checks it, renders it and comments preview GIFs on the pull request.
-
-## Releases
-
-New transitions merged into master are published in the next minor release of the npm package, listed in the [changelog](packages/gl-transitions/CHANGELOG.md). The Swift package and the Android library are released with the same version, and the Rust crate with a patch release ([changelog](crates/gl-transitions/CHANGELOG.md)).
 
 ## License
 
@@ -178,7 +169,7 @@ The npm package exposes the collection as an array of objects:
 
 | Field | Description |
 |---|---|
-| `name` | File name without `.glsl`: PascalCase, unique ignoring case (see [Naming](CONTRIBUTING.md#naming)). Only renamed in a major version, as in 2.0 |
+| `name` | File name without `.glsl`: PascalCase, unique ignoring case. Only renamed in a major version, as in 2.0 |
 | `author`, `license` | From the header comments |
 | `glsl` | The transition source |
 | `paramsTypes`, `defaultParams` | Parameter types and default values (legacy, kept for compatibility) |
