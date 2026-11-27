@@ -1,0 +1,103 @@
+<template>
+  <!--
+    Khaam-adapted, deterministic UI cursor/click starter.
+    This generic mock only demonstrates movement and feedback. Replace its button and resulting state with
+    product behavior and copy that the project has actually verified and is authorized to show.
+    GSAP is supplied by the existing HyperFrames starter; do not add a remote script or install another engine.
+    For audio, use a real recording in plan/sound.json (see reference/product-launch-films.md), never a generated click.
+  -->
+  <style>
+    #pl-cursor-demo { position: absolute; inset: 0; overflow: hidden; background: #f4f0e8; color: #20231f; }
+    #pl-panel {
+      position: absolute; left: 100px; right: 100px; top: 640px; height: 620px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 54px;
+      border: 1px solid rgba(32,35,31,.12); border-radius: 36px; background: #fffdf8;
+      box-shadow: 0 36px 100px rgba(40,35,24,.10);
+    }
+    #pl-heading { font: 700 52px/1.4 sans-serif; margin: 0; }
+    #pl-button {
+      position: relative; width: 420px; height: 132px; border: 0; border-radius: 26px;
+      background: #222820; color: #fffdf8; font: 700 42px/1.2 sans-serif;
+      box-shadow: 0 14px 28px rgba(30,34,29,.18); transform-origin: 50% 50%;
+    }
+    #pl-button:focus-visible { outline: 5px solid #bd7b38; outline-offset: 8px; }
+    .pl-button-label { position: absolute; inset: 0; display: grid; place-items: center; }
+    #pl-ripple {
+      position: absolute; inset: 0; border: 4px solid rgba(255,253,248,.78); border-radius: inherit;
+      opacity: 0; transform: scale(.86); pointer-events: none;
+    }
+    #pl-result { min-height: 58px; font: 500 34px/1.5 sans-serif; color: #58624f; opacity: 0; visibility: hidden; }
+    #pl-cursor {
+      position: absolute; left: 300px; top: 640px; width: 58px; height: 72px;
+      z-index: 5; opacity: 0; transform-origin: 8px 5px; pointer-events: none;
+      filter: drop-shadow(0 5px 9px rgba(20,22,18,.28));
+    }
+  </style>
+  <div id="pl-cursor-demo" data-composition-id="product-cursor-demo" data-width="1080" data-height="1920">
+    <section id="pl-panel" aria-label="واجهة تجريبية">
+      <h1 id="pl-heading" dir="rtl">تفاعل تجريبي</h1>
+      <button id="pl-button" type="button" dir="rtl">
+        <span class="pl-button-label" id="pl-label">زر المنتج</span>
+        <span class="pl-button-label" id="pl-label-done" aria-hidden="true">تم التنفيذ</span>
+        <span id="pl-ripple" aria-hidden="true"></span>
+      </button>
+      <div id="pl-result" dir="rtl" aria-live="polite">الحالة بعد التفاعل</div>
+    </section>
+    <svg id="pl-cursor" viewBox="0 0 58 72" aria-hidden="true">
+      <path d="M7 4 L7 55 L20 43 L30 64 L40 59 L30 38 L49 36 Z" fill="#fff" stroke="#20231f" stroke-width="4" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <script>
+    (function () {
+      // Example only: for narration, replace with window.cue("the approved spoken word").
+      // For a voiceless piece, set this to the named beat's resolved time from the Khaam cue plan.
+      var CLICK = 2.4;
+      var TRAVEL = 0.34;
+      var HOVER = 0.10;
+      var cursor = document.getElementById("pl-cursor");
+      var button = document.getElementById("pl-button");
+      var ripple = document.getElementById("pl-ripple");
+      var result = document.getElementById("pl-result");
+      var label = document.getElementById("pl-label");
+      var labelDone = document.getElementById("pl-label-done");
+      var TARGET_X = 532;  // button center (540) minus the cursor's 8 px tip offset
+      var TARGET_Y = 952;  // button center (957) minus the cursor's 5 px tip offset
+      var MOVE_AT = CLICK - TRAVEL - HOVER;
+
+      // Explicit initial states make frame 0 stable in random-access rendering.
+      gsap.set(cursor, { x: 0, y: 0, opacity: 0, scale: 1 });
+      gsap.set(button, { scale: 1 });
+      gsap.set(ripple, { opacity: 0, scale: 0.86 });
+      gsap.set(result, { opacity: 0, visibility: "hidden" });
+      gsap.set(label, { opacity: 1, visibility: "visible" });
+      gsap.set(labelDone, { opacity: 0, visibility: "hidden" });
+
+      var tl = gsap.timeline({ paused: true });
+      // Small anticipation, followed by a slightly bowed path (different X/Y durations).
+      tl.to(cursor, { opacity: 1, duration: 0.08, ease: "none" }, MOVE_AT);
+      tl.to(cursor, { x: -22, y: 12, duration: 0.06, ease: "power1.out" }, MOVE_AT);
+      tl.to(cursor, { x: TARGET_X - 300, duration: TRAVEL * 0.90, ease: "power2.inOut" }, MOVE_AT + 0.06);
+      tl.to(cursor, { y: TARGET_Y - 640, duration: TRAVEL, ease: "power1.inOut" }, MOVE_AT + 0.06);
+      // A restrained focus cue arrives just before contact; the pointer then settles on target.
+      tl.to(button, { boxShadow: "0 0 0 7px rgba(189,123,56,.20), 0 14px 28px rgba(30,34,29,.18)", duration: HOVER, ease: "power1.out" }, CLICK - HOVER);
+      // Press + release, plus a subtle ring. The control itself must visibly respond too.
+      tl.to(cursor, { scale: 0.88, duration: 0.06, ease: "power1.in" }, CLICK);
+      tl.to(button, { scale: 0.96, duration: 0.06, ease: "power1.in" }, CLICK);
+      tl.to(ripple, { opacity: 0.62, scale: 1.02, duration: 0.07, ease: "power1.out" }, CLICK);
+      tl.to(cursor, { scale: 1, duration: 0.16, ease: "power2.out" }, CLICK + 0.06);
+      tl.to(button, { scale: 1, duration: 0.20, ease: "power2.out" }, CLICK + 0.06);
+      tl.to(ripple, { opacity: 0, scale: 1.12, duration: 0.30, ease: "power1.out" }, CLICK + 0.07);
+      // Illustrative state change: replace only after verifying the real product's response and wording.
+      // Keep both labels as timeline-controlled elements: no callbacks or state mutation, so arbitrary seeks replay cleanly.
+      tl.to(label, { opacity: 0, duration: 0.08, ease: "none" }, CLICK + 0.10);
+      tl.set(labelDone, { visibility: "visible" }, CLICK + 0.10);
+      tl.to(labelDone, { opacity: 1, duration: 0.12, ease: "power1.out" }, CLICK + 0.10);
+      tl.set(result, { visibility: "visible" }, CLICK + 0.10);
+      tl.to(result, { opacity: 1, duration: 0.18, ease: "power1.out" }, CLICK + 0.10);
+      tl.to(button, { clearProps: "boxShadow", duration: 0.12 }, CLICK + 0.16);
+      tl.to(cursor, { opacity: 0, duration: 0.14, ease: "power1.out" }, CLICK + 0.40);
+
+      window.__timelines["product-cursor-demo"] = tl;
+    })();
+  </script>
+</template>
