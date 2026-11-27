@@ -12,7 +12,7 @@ It ships inside the Helios CLI: `helios render` sends Canvas modules and plans h
 | Platforms | macOS arm64, Linux x64, Node 22+ |
 | GPU helper (Metal/VideoToolbox), HTTP render service, VM/Vercel templates and wizards, S3 store | [Experimental](#experimental-native-gpu-rendering) |
 
-**Evidence retention (2026-10-01):** Earlier `/private/tmp` benchmark evidence is unavailable. Historical measurements below are reported records, not freshly reverified results or a current public competitor claim. The [fresh October 1 study](../../docs/rfcs/2026-10-01-cpu-benchmarks.md) links its retained source receipts; its every-frame quality and complete cadence checks remain pending.
+**Evidence retention (2026-10-01):** Earlier `/private/tmp` benchmark evidence is unavailable. Historical measurements below are reported records, not freshly reverified results or a current public competitor claim. A fresh source-verified study, every-frame quality check, and complete cadence check remain pending.
 
 ## Install
 
@@ -81,9 +81,9 @@ From a repository checkout, build first and run `node packages/portable/dist/cli
 
 For assets, declare `{ "sha256": "…", "bytes": 1234, "type": "font" }` under an asset ID in `plan.assets`. Put each file at `ASSET_DIRECTORY/SHA256` and pass `--assets ASSET_DIRECTORY`. The renderer verifies bytes against the declared identity. It uses no system fonts and fetches no asset URLs.
 
-The Wasm option replaces rasterization; decode, encode, audio and filesystem access still use native Node facilities. Cloud isolates are unsupported. See the [measured evidence and RFC gates](../../docs/rfcs/2026-09-09-portable-rendering-evidence.md).
+The Wasm option replaces rasterization; decode, encode, audio and filesystem access still use native Node facilities. Cloud isolates are unsupported.
 
-The opt-in `skia` backend keeps TypeScript for seeking, layout and jobs, and uses native C++ Skia through a pinned Rust Node-API binding for drawing. It caches decoded images and glyph paths, avoids per-frame SVG parsing, streams raw video pixels and resets native drawing history between frames. It retains explicit fontkit shaping; no browser or system font lookup is used. It is a native performance option, with different edge antialiasing from resvg. See the [controlled performance comparison and important code](../../docs/rfcs/2026-09-09-portable-rendering-performance.md).
+The opt-in `skia` backend keeps TypeScript for seeking, layout and jobs, and uses native C++ Skia through a pinned Rust Node-API binding for drawing. It caches decoded images and glyph paths, avoids per-frame SVG parsing, streams raw video pixels and resets native drawing history between frames. It retains explicit fontkit shaping; no browser or system font lookup is used. It is a native performance option, with different edge antialiasing from resvg.
 
 ## Render a trusted Canvas composition on CPU
 

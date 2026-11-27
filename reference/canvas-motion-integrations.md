@@ -7,13 +7,13 @@ Integrated repos for private use (canvas/motion/3D/particles/animation). Use the
 |---|---|---|---|---|
 | [motion-canvas/motion-canvas](https://github.com/motion-canvas/motion-canvas) | `integrations/motion-canvas/` | MIT | `7b91435c301d530351dcf5ebb91dd139c002e405` | Generator-based 2D programmatic video/animation engine, docs, examples, 2D/core/ui packages. |
 | [nexu-io/html-video](https://github.com/nexu-io/html-video) | `integrations/html-video/` | Apache-2.0 | `ae9a8cd3a7ec07daaf36d91e5f8ae020f971b631` | HTML/CSS/data → MP4 workflow, templates, docs, agent/render pipeline patterns. |
-| [BintzGavin/helios](https://github.com/BintzGavin/helios) | `integrations/helios/` | Apache-2.0 | `e03e89703f03e551e9fe9f38f2fc1731f8a0bf86` | Web-native programmatic video engine (player/studio/renderer/CLI/plugins/examples). `packages/portable/tests` omitted in snapshot for size. |
+| [BintzGavin/helios](https://github.com/BintzGavin/helios) | `integrations/helios/` | Apache-2.0 | `e03e89703f03e551e9fe9f38f2fc1731f8a0bf86` | Web-native programmatic video engine (player/studio/renderer/CLI/plugins/examples). Upstream tests, GitHub workflows, maintainer plans and changelogs are omitted; eight architecture context summaries remain. |
 | [raphamorim/awesome-canvas](https://github.com/raphamorim/awesome-canvas) | `integrations/awesome-canvas/` | MIT | `28390e0f2f200bfef5d810d0b34df6fe175a261e` | Curated discovery list for Canvas libraries/examples/articles. |
 | [mojs/mojs](https://github.com/mojs/mojs) | `integrations/mojs/` | MIT | `0a9cf9a87dd5637e6fa770755e79048489bcf817` | Web motion toolbelt source/reference (shape/burst/timeline/path/tween patterns). |
 | [greensock/GSAP](https://github.com/greensock/GSAP) | `integrations/gsap/` | GSAP Standard License (no-charge, not MIT) | `5e6c35ff8eedea12d4f229129def635277d8b0f2` | High-performance web animation engine (tweens, timelines, easing, plugins). |
 | [VincentGarreau/particles.js](https://github.com/VincentGarreau/particles.js) | `integrations/particles.js/` | MIT | `d01286d6dcd61f497d07cc62bd48e692f6508ad5` | Lightweight canvas particle effects library. |
 | [mrdoob/three.js](https://github.com/mrdoob/three.js) | `integrations/three.js/` | MIT | `6d91309bfcf9c2779f32dd98b61fcc5415a74912` | 3D library (src+docs+tsl+manual+examples; heavy example assets models/textures/screenshots/sounds/files omitted; editor/build/test omitted). |
-| [pmndrs/drei](https://github.com/pmndrs/drei) | `integrations/drei/` | MIT | `bf6f4addf47467d3885de272d94ca5127f6ef68f` | Useful helpers/abstractions for React Three Fiber (selective: src/test/sandboxes/config; omitted .storybook/docs). |
+| [pmndrs/drei](https://github.com/pmndrs/drei) | `integrations/drei/` | MIT | `bf6f4addf47467d3885de272d94ca5127f6ef68f` | Useful helpers/abstractions for React Three Fiber (selective: src/sandboxes/config; upstream tests omitted, as are .storybook/docs). |
 | [tsparticles/tsparticles](https://github.com/tsparticles/tsparticles) | `integrations/tsparticles/` | MIT | `814efd3b661df2e0594168430926331ff753a0e6` | Particles/confetti/fireworks ecosystem (engine/bundles/utils + interactions/plugins/shapes/updaters/effects/paths/presets/cli/palettes; demo/wrappers/websites/templates omitted). |
 
 ## Per-repo notes
@@ -30,7 +30,7 @@ Integrated repos for private use (canvas/motion/3D/particles/animation). Use the
 
 ### helios
 - Broad web-native video stack; useful for renderer/player/studio/plugin patterns.
-- Snapshot excluded `packages/portable/tests` (17M) to keep repo size manageable. If needed, fetch upstream tests in a follow-up batch.
+- Upstream test suites, GitHub workflows, and private maintainer plans/performance records are omitted from this reference snapshot; eight `.sys/llmdocs/context-*.md` summaries remain.
 - Validate deterministic frame capture and Arabic text/layout before production use.
 
 ### awesome-canvas

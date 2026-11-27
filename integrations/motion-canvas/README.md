@@ -124,10 +124,6 @@ Then run `npm install` in to apply the changes and that's it.
 
 You can use the same technique to test out any custom package you're working on.
 
-## Contributing
-
-Read through our [Contribution Guide](./CONTRIBUTING.md) to learn how you can
-help make Motion Canvas better.
 
 [authenticate]:
   https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#authenticating-with-a-personal-access-token

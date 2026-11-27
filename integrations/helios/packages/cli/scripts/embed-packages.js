@@ -4,7 +4,7 @@ import { builtinModules, createRequire } from 'module';
 import { fileURLToPath } from 'url';
 
 // Ship the renderer, Studio and the portable renderer inside the CLI
-// (docs/rfcs/2026-10-24-npm-packaging.md, slices 3–4). Copy each package's compiled output into
+// Copy each package's compiled output into
 // dist/, then point the CLI's compiled imports at the copy. Source and tests keep importing the
 // workspace packages by name.
 // The renderer and portable copies are also public APIs: @helios-project/cli/renderer and

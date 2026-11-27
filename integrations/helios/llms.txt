@@ -117,13 +117,10 @@ The entry skill ships in the Helios agent plugin (`plugins/helios/`); the rest o
 - `skills/studio/SKILL.md` - Studio usage and extensions
 - `skills/getting-started/SKILL.md` - Initial scaffolding and basic tasks
 - `skills/workflows/*/SKILL.md`, `skills/examples/*/SKILL.md`, `skills/guided/*/SKILL.md` & `skills/design/*/SKILL.md` - Task-specific workflows, examples, guided and design skills
-- `.agents/skills/skill-creator/SKILL.md` - Meta-skill for generating new agent skills (for this repo's agents)
 
 ## Key Files for Agents
 - `README.md` - Vision document
 - `docs/BACKLOG.md` - Feature backlog
-- `docs/PROGRESS-*.md` - Completed work (per domain)
-- `docs/status/[ROLE].md` - Domain-specific status
 - `.sys/llmdocs/context-*.md` - Architecture summaries
 - `packages/core/src/index.ts` - Core public API
 - `packages/player/src/index.ts` - Player public API

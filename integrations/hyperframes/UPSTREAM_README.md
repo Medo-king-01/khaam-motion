@@ -135,7 +135,7 @@ for Copilot, VS Code, Cursor, Gemini CLI, updates, and migration.
 Run project-local installs from your video project's directory. From a HyperFrames
 checkout, use `npx hyperframes skills update` for a global install instead: a
 project-local installer target can overlap the tracked `skills/` source and
-overwrite uncommitted edits. See [contributor setup](CONTRIBUTING.md#getting-started).
+overwrite uncommitted edits.
 
 </details>
 
@@ -333,7 +333,6 @@ HyperFrames is used in production at [HeyGen](https://www.heygen.com?utm_source=
 - Bugs and feature requests: [GitHub Issues](https://github.com/heygen-com/hyperframes/issues)
 - User research: [Book a casual 30-minute conversation with the HyperFrames team](https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ2cSpKoDgmcmRrgekrnrgqmvPT8W6F2Zg6e7MY7IJqaZKwpn_I0NdTHkN390iguMepE_NVg8ezb?gv=true) — no preparation or sales pitch
 - Security reports: [SECURITY.md](SECURITY.md)
-- Contributions: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Follow along: [X](https://x.com/HyperFrames_) · [YouTube](https://www.youtube.com/@HyperFrames_Official)
 
 [![Star History Chart](https://api.star-history.com/svg?repos=heygen-com/hyperframes&type=Date)](https://www.star-history.com/#heygen-com/hyperframes&Date)

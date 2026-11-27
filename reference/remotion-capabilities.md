@@ -31,13 +31,13 @@ Stay with HyperFrames for most Arabic editorial/told/story videos where its star
 | Charts/data viz | React components + D3/vis libs as needed | Data-driven explainers; verify licences of added libs. |
 | Audio visualization | frame/audio data utilities, custom canvas/SVG | Only when it serves the story; keep mix discipline. |
 | Rendering | `npx remotion render`, `npx remotion still`, `@remotion/renderer`, `bundle` | Preview stills first, then short render, then final. Render from video project folder. |
-| Server/cloud rendering | `@remotion/lambda`, `@remotion/cloudrun` (separate setup/cost) | Only with explicit user consent, account setup, and cost awareness. Not default. |
+| Server/cloud rendering | Optional Remotion hosting APIs | Not part of the local workflow. Detailed cloud-rendering docs are intentionally omitted from this bundle; use only if explicitly requested, after checking current official documentation, licensing, credentials, and costs. |
 | Player/embed | `@remotion/player` | Useful for app previews; separate from MP4 delivery workflow. |
 | Studio/dev | `npx remotion studio`, `remotion.config.ts` | Local preview/dev; install deps in project, not globally. |
 
 ## Khaam-ready starter templates
 
-Vendored for private use in `templates/remotion/` (see `NOTICE.md`): 21 starters covering overlay, code, captions, 3D, stills, audiograms, data-driven, Skia, app shells, desktop/Vercel/recorder workflows, and AI-assisted workflow patterns.
+Vendored for private use in `templates/remotion/` (see `NOTICE.md`): 17 starters covering overlay, code, captions, 3D, stills, audiograms, data-driven visuals, Skia, and AI-assisted workflows, plus selected desktop/recorder references.
 
 | Template | Capability showcased | Best for |
 |---|---|---|
@@ -50,17 +50,13 @@ Vendored for private use in `templates/remotion/` (see `NOTICE.md`): 21 starters
 | `three/` | @remotion/three + React Three Fiber | 3D product/logo/camera scenes |
 | `audiogram/` | Waveform + captions/audio-led layout | Podcast clips, quote videos |
 | `music-visualization/` | Audio-reactive visuals | Music viz only when explicitly requested |
-| `render-server/` | Programmatic render server/API | API/service render workflows (consent+security) |
 | `skia/` | @remotion/skia 2D graphics | Vector/Skia visual effects |
 | `prompt-to-motion-graphics/` | AI-assisted MG workflow pattern | Reference for prompt->MG pipelines (review keys/costs) |
 | `prompt-to-video/` | AI-assisted video workflow pattern | Reference for prompt->video pipelines (review keys/costs) |
-| `react-router/` | Remotion + React Router app | Web app embedding Remotion |
-| `next-app-tailwind/` | Remotion + Next.js + Tailwind | Dashboard/preview app with Remotion |
 | `stargazer/` | Data-driven recap template | Data-driven celebration/recap videos |
 | `vibe-code/` | Stylized promo/code visuals | Stylized promo visuals; adapt to Khaam taste |
 | `electron/` | Remotion + Electron app | Desktop Remotion tool/app workflows |
 | `element-library/` | Reusable element/component library | Reusable branded motion components |
-| `vercel/` | Remotion + Vercel deployment pattern | Vercel deployment/render workflows (consent/cost) |
 | `recorder/` | Recorder app workflow (demo media omitted) | Recording/studio workflow reference |
 
 Use `python scripts/use_remotion_template.py --list` and copy a starter into a video project.
@@ -90,8 +86,8 @@ Use these as pattern references; only fetch/copy code with license review and us
 
 ## Local upstream docs/examples/package refs
 
-- `reference/remotion-docs/` — MDX docs snapshot (1372 files) for API/capability lookup.
-- `reference/remotion-examples/` — curated code-only examples from `packages/example` (461 files) showing practical patterns.
-- `reference/remotion-package-refs/` — selected package README/package.json/license snapshots for key Remotion packages.
+- `reference/remotion-docs/` — curated MDX subset (1,207 pages) for local API and authoring lookup; cloud-rendering sections are omitted.
+- `reference/remotion-examples/` — 378 retained source examples from `packages/example`; test harnesses, regression cases, and package-runner files are omitted.
+- `reference/remotion-package-refs/` — selected README/package/license references (66 files); Lambda and Cloud Run package refs are omitted.
 
 All are private-use snapshots; check each `NOTICE.md` for provenance and Remotion License.

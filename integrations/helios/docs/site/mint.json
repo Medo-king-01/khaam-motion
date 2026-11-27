@@ -80,17 +80,6 @@
       "pages": [
         "architecture/overview"
       ]
-    },
-    {
-      "group": "Changelog",
-      "pages": [
-        "changelog/core",
-        "changelog/renderer",
-        "changelog/player",
-        "changelog/demo",
-        "changelog/studio",
-        "changelog/cli"
-      ]
     }
   ]
 }

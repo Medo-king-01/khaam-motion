@@ -261,11 +261,11 @@ Production rules behind the gates:
 | `reference/figure-kit.md` | **Any person in a scene:** faceless figures, clothing (a plain ghutra or kufi; the igal only when asked), poses (day, work and study; prayer poses only in a prayer scene; seated upright), hands and held things (`fig.hold`, `fig.handAt`, `fig.reach`), walking and carrying, a phone, crowds; the rule: no face, no prophet or companion ever, and no figure while the narration speaks of one |
 | `reference/story-formats.md` | **Told videos:** the ways of telling (the short story, «ورقة وفكرة», «السلّم», «السلسلة»), their beats and timings, worked examples, care for religious content |
 | `reference/remotion.md` | 3D, data-driven or templated videos (Remotion), licence and weight |
-| `reference/remotion-templates.md` | Ready Remotion starters (21 vendored templates: overlay/code-hike/captions/3D/still/audiogram/render-server/apps etc.) + fetch/license/cautions |
+| `reference/remotion-templates.md` | Ready Remotion starters (17 vendored templates for video work, 3D, captions and selected workflows) + license/adaptation cautions |
 | `reference/remotion-capabilities.md` | Remotion capability map (APIs/packages/patterns) mapped to Khaam use cases and rules |
-| `reference/remotion-docs/` | Upstream Remotion docs snapshot (MDX, private use) for local API/capability lookup |
-| `reference/remotion-examples/` | Curated code-only examples from Remotion example package (private use) |
-| `reference/remotion-package-refs/` | Selected Remotion package READMEs/package.json/license snapshots (private use) |
+| `reference/remotion-docs/` | Curated subset of Remotion docs (MDX, private use) for local authoring and API lookup; cloud-rendering docs are omitted |
+| `reference/remotion-examples/` | Curated Remotion code examples (private use); upstream test harnesses and regression samples are omitted |
+| `reference/remotion-package-refs/` | Selected Remotion package READMEs/package.json/license snapshots (private use); cloud-rendering package refs are omitted |
 | `reference/adaptive-direction.md` | Reference interpretation, causal storyboards, product motion, Arabic-safe typography and final review |
 | `reference/external-creative-tools.md` | Downloaded-on-demand creative stack (Lemo-Opuscar, Blender MCP, PixelFX, React Three Rapier, React Postprocessing, librosa): selection, licensing, safety and host limits; the vendored `integrations/` snapshots are built in and documented in their own references |
 | `reference/shotcraft.md` | **Product/UI promos:** the 124 video-shotcraft shot recipes (cached local library, Apache-2.0) adapted to our engines; never auto-run its scripts |

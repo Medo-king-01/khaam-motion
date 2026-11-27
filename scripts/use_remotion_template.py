@@ -26,17 +26,13 @@ TEMPLATES = {
     'three': '3D scene starter using @remotion/three + React Three Fiber.',
     'audiogram': 'Audiogram/podcast waveform + captions visualization.',
     'music-visualization': 'Music-reactive visualization starter.',
-    'render-server': 'Server-side/programmatic Remotion rendering starter.',
     'skia': 'React Native Skia / @remotion/skia graphics starter.',
     'prompt-to-motion-graphics': 'Prompt-to-motion-graphics template (AI-assisted workflow pattern).',
     'prompt-to-video': 'Prompt-to-video template (AI-assisted workflow pattern).',
-    'react-router': 'Remotion + React Router app template.',
-    'next-app-tailwind': 'Remotion + Next.js + Tailwind app template.',
     'stargazer': 'GitHub Stargazer data-driven video template.',
     'vibe-code': 'Vibe-code style Remotion template.',
     'electron': 'Remotion + Electron desktop app template.',
     'element-library': 'Reusable Remotion element/component library template.',
-    'vercel': 'Remotion + Vercel/Next rendering template.',
     'recorder': 'Remotion Recorder app template (local recording/studio workflow; large demo media omitted).',
 }
 
