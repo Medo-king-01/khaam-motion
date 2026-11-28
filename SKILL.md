@@ -268,7 +268,7 @@ Production rules behind the gates:
 | `reference/remotion-docs/` | Curated subset of Remotion docs (MDX, private use) for local authoring and API lookup; cloud-rendering docs are omitted |
 | `reference/remotion-examples/` | Curated Remotion code examples (private use); upstream test harnesses and regression samples are omitted |
 | `reference/remotion-package-refs/` | Selected Remotion package READMEs/package.json/license snapshots (private use); cloud-rendering package refs are omitted |
-| `reference/adaptive-direction.md` | Reference interpretation, causal storyboards, product motion, Arabic-safe typography and final review |
+| `skills/scene-design-director/SKILL.md` | **Scene design after an approved breakdown:** original visual concepts, composition, staging, camera, choreography, transitions, technical routes and production-ready design cards; keeps breakdown and implementation separate |\n| `reference/adaptive-direction.md` | Reference interpretation, causal storyboards, product motion, Arabic-safe typography and final review |
 | `reference/animated-diagrams.md` | Technical diagrams in Khaam: semantic SVG, sequence/architecture flow, Arabic direction, source converters, frame-safe motion and QA |
 | `reference/huashu-design.md` | Huashu Design methods adapted to Khaam: content-led form, selected visual mechanisms, motion arcs and critique without replacing Khaam gates |
 | `reference/huashu-design-upstream/` | Pinned MIT source subset: 92-style catalogue, motion/camera/direction/critique guides, style sheets and selected original examples; reference only |
